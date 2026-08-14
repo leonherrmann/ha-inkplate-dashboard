@@ -1,99 +1,320 @@
+/* Bauhaus: black, red, yellow, blue, white. Heavy rules, hard offset shadows,
+   square corners, circles and arcs as the only curves. */
+
 :root {
-  --ink: #111;
-  --paper: #fff;
-  --edge: #d5d5d5;
-  --accent: #03a9f4;
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --ink: #14110f;
+  --red: #e63946;
+  --blue: #1d3557;
+  --yellow: #f4b942;
+  --paper: #ffffff;
+  --grey: #f2efe9;
+
+  --rule: 3px;
+  --shadow: 6px 6px 0 var(--ink);
+  --shadow-sm: 4px 4px 0 var(--ink);
+
+  --font: "Helvetica Neue", Helvetica, Arial, system-ui, sans-serif;
 }
 
 * {
   box-sizing: border-box;
 }
 
+html,
 body {
   margin: 0;
-  background: #f5f5f5;
+  background: var(--grey);
   color: var(--ink);
+  font-family: var(--font);
+  /* The panel is dragged on; never let the browser hijack that as a gesture */
+  overscroll-behavior: none;
 }
 
 .app {
-  padding: 16px;
+  padding: 20px;
+  max-width: 1600px;
+  margin: 0 auto;
 }
+
+/* ---------- header ---------- */
 
 header {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   gap: 16px;
+  flex-wrap: wrap;
   margin-bottom: 16px;
 }
 
-header h1 {
-  font-size: 20px;
-  margin: 0;
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--yellow);
+  border: var(--rule) solid var(--ink);
+  box-shadow: var(--shadow);
+  padding: 10px 16px;
+}
+
+/* Quarter-circle over a square: the Bauhaus motif */
+.brand-mark {
+  width: 26px;
+  height: 26px;
+  background: var(--red);
+  border: var(--rule) solid var(--ink);
+  border-radius: 26px 0 0 0;
   flex: 0 0 auto;
 }
 
-.status {
-  flex: 1 1 auto;
-  font-size: 14px;
-  color: #555;
+.brand h1 {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.brand h1 em {
+  font-style: normal;
+  font-weight: 400;
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.34em;
+}
+
+.actions {
   display: flex;
+  gap: 10px;
   align-items: center;
-  gap: 8px;
+  margin-left: auto;
 }
 
-.dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  display: inline-block;
-}
-
-.dot.online {
-  background: #4caf50;
-}
-
-.dot.offline {
-  background: #bbb;
-}
+/* ---------- controls ---------- */
 
 button {
   font: inherit;
-  padding: 8px 14px;
-  border: 1px solid var(--edge);
-  border-radius: 8px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 12px 20px;
+  border: var(--rule) solid var(--ink);
   background: var(--paper);
+  color: var(--ink);
+  box-shadow: var(--shadow-sm);
   cursor: pointer;
+  /* Big enough to hit on a phone */
+  min-height: 46px;
 }
 
-button:hover {
-  border-color: var(--accent);
+button:active {
+  transform: translate(4px, 4px);
+  box-shadow: none;
+}
+
+button.primary {
+  background: var(--red);
+  color: var(--paper);
 }
 
 button.danger {
-  color: #c62828;
+  background: var(--ink);
+  color: var(--paper);
   width: 100%;
-  margin-top: 16px;
+  margin-top: 20px;
 }
 
-.message,
-.error {
-  padding: 10px 14px;
-  border-radius: 8px;
-  background: #fff8e1;
-  border: 1px solid #ffe082;
+.icon-button {
+  padding: 0;
+  width: 38px;
+  min-height: 38px;
+  font-size: 22px;
+  line-height: 1;
+  box-shadow: none;
+  background: transparent;
+  border: none;
+}
+
+.icon-button:active {
+  transform: none;
+}
+
+input,
+select {
+  font: inherit;
+  width: 100%;
+  padding: 10px;
+  border: var(--rule) solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  min-height: 44px;
+}
+
+select[size] {
+  min-height: 0;
+}
+
+/* ---------- banners ---------- */
+
+.banner {
+  border: var(--rule) solid var(--ink);
+  background: var(--yellow);
+  box-shadow: var(--shadow-sm);
+  padding: 14px 18px;
   margin-bottom: 16px;
   font-size: 14px;
+  font-weight: 600;
 }
 
-.error {
-  background: #ffebee;
-  border-color: #ef9a9a;
+.banner.error {
+  background: var(--red);
+  color: var(--paper);
+  margin: 20px;
 }
+
+/* ---------- device stats ---------- */
+
+.device-stats {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  border: var(--rule) solid var(--ink);
+  box-shadow: var(--shadow);
+  background: var(--paper);
+  overflow: hidden;
+  flex-wrap: wrap;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  padding: 8px 16px;
+  border-right: var(--rule) solid var(--ink);
+  min-width: 88px;
+}
+
+.stat:last-child {
+  border-right: none;
+}
+
+.stat b {
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.stat small {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  opacity: 0.7;
+}
+
+.stat.status {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  background: var(--blue);
+  color: var(--paper);
+}
+
+.stat.status.offline {
+  background: var(--ink);
+}
+
+.stat.status .dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--yellow);
+  border: 2px solid var(--paper);
+}
+
+.stat.status.offline .dot {
+  background: transparent;
+}
+
+.stat.version.pending {
+  background: var(--yellow);
+}
+
+.battery {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.battery-shell {
+  width: 46px;
+  height: 22px;
+  border: var(--rule) solid var(--ink);
+  padding: 2px;
+}
+
+.battery-fill {
+  height: 100%;
+  background: var(--red);
+  transition: width 0.3s;
+}
+
+.battery-cap {
+  width: 5px;
+  height: 10px;
+  background: var(--ink);
+}
+
+.battery-label {
+  font-weight: 800;
+  font-size: 15px;
+  margin-left: 4px;
+}
+
+/* ---------- toolbar ---------- */
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.toolbar-label {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+}
+
+.chip {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 8px 14px;
+  min-height: 40px;
+  box-shadow: none;
+}
+
+.chip small {
+  font-size: 9px;
+  opacity: 0.6;
+  letter-spacing: 0.08em;
+}
+
+.chip.active {
+  background: var(--blue);
+  color: var(--paper);
+}
+
+/* ---------- workspace ---------- */
 
 .workspace {
   display: grid;
-  grid-template-columns: 180px 1fr 260px;
+  grid-template-columns: 190px minmax(0, 1fr) 300px;
   gap: 16px;
   align-items: start;
 }
@@ -101,141 +322,319 @@ button.danger {
 .palette,
 .inspector {
   background: var(--paper);
-  border: 1px solid var(--edge);
-  border-radius: 12px;
-  padding: 12px;
+  border: var(--rule) solid var(--ink);
+  box-shadow: var(--shadow);
+  padding: 14px;
 }
 
 .palette h2,
 .inspector h2 {
-  font-size: 13px;
+  font-size: 10px;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #777;
-  margin: 0 0 10px;
+  letter-spacing: 0.22em;
+  margin: 0 0 12px;
+  font-weight: 800;
+}
+
+.palette-items {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .palette button {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: baseline;
   width: 100%;
-  margin-bottom: 8px;
+  background: var(--yellow);
 }
 
-.palette small {
-  color: #999;
+.palette button small {
+  font-size: 9px;
+  opacity: 0.7;
+  letter-spacing: 0.04em;
 }
 
-.inspector label {
-  display: block;
-  font-size: 13px;
-  margin-bottom: 12px;
-}
+/* ---------- panel ---------- */
 
-.inspector select,
-.inspector input {
-  display: block;
+.panel-wrapper {
   width: 100%;
-  margin-top: 4px;
-  padding: 6px 8px;
-  font: inherit;
-  border: 1px solid var(--edge);
-  border-radius: 6px;
 }
 
-.hint {
-  font-size: 13px;
-  color: #888;
+.panel-scaler {
+  border: var(--rule) solid var(--ink);
+  box-shadow: var(--shadow);
+  background: var(--paper);
+  overflow: hidden;
 }
 
-/* The panel: a 1:1 map of the e-ink surface, one grid line per cell */
+/* Drawn at a true 1280x720 then scaled, so the preview is proportionally exact */
 .panel {
   position: relative;
+  transform-origin: top left;
   background-color: var(--paper);
-  background-image: linear-gradient(to right, #eee 1px, transparent 1px),
-    linear-gradient(to bottom, #eee 1px, transparent 1px);
-  border: 1px solid var(--edge);
-  border-radius: 4px;
-  overflow: hidden;
+  background-image: linear-gradient(to right, rgba(20, 17, 15, 0.11) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(20, 17, 15, 0.11) 1px, transparent 1px);
+  /* dnd-kit needs the browser to not claim the gesture first */
+  touch-action: none;
 }
 
 .widget {
+  position: absolute;
   cursor: grab;
+  touch-action: none;
+  /* No transition on transform: it would lag the drag */
 }
 
-.widget.selected > * {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-  border-radius: 8px;
+.widget.dragging {
+  cursor: grabbing;
+  z-index: 10;
+  opacity: 0.85;
 }
 
-/* --- widget previews ----------------------------------------------------- */
+.widget.selected {
+  outline: var(--rule) solid var(--red);
+  outline-offset: 4px;
+}
 
-.preview-frame {
+.pv {
+  width: 100%;
+  height: 100%;
+}
+
+/* ---------- widget previews ---------- */
+
+.pv-frame {
   width: 100%;
   height: 100%;
   background: var(--paper);
-  border: 2px solid var(--ink);
-  border-radius: 8px;
-  box-shadow: 2px 2px 0 var(--ink);
-  padding: 6px;
+  border: 3px solid var(--ink);
+  box-shadow: 4px 4px 0 var(--ink);
+  padding: 12px;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
-.preview-clock {
+.pv-clock {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.pv-clock-time {
   display: flex;
   align-items: baseline;
-  gap: 4px;
-  line-height: 1;
+  gap: 6px;
+  line-height: 0.9;
 }
 
-.preview-clock-hours {
+.pv-clock-hours {
+  font-size: 108px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+
+.pv-clock-minutes {
   font-size: 44px;
   font-weight: 800;
 }
 
-.preview-clock-minutes {
-  font-size: 22px;
+.pv-clock-date {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  margin-top: 6px;
+}
+
+.pv-climate-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.pv-climate-temp {
+  font-size: 72px;
+  font-weight: 800;
+  line-height: 0.85;
+}
+
+.pv-climate-deg {
+  width: 14px;
+  height: 14px;
+  border: 4px solid var(--ink);
+  border-radius: 50%;
+  margin-top: 6px;
+}
+
+.pv-climate-room {
+  margin-left: auto;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
   font-weight: 800;
 }
 
-.preview-clock-date {
-  font-size: 11px;
-  font-weight: 700;
-  align-self: flex-end;
-  color: #444;
-}
-
-.preview-climate {
+.pv-climate-bottom {
   display: flex;
-  flex-direction: column;
-  height: 100%;
   justify-content: space-between;
+  align-items: flex-end;
 }
 
-.preview-climate-icon {
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #888;
-}
-
-.preview-climate-temp {
+.pv-climate-hum {
   font-size: 26px;
   font-weight: 800;
 }
 
-.preview-climate-humidity {
-  font-size: 13px;
-  color: #555;
+.pv-climate-target {
+  font-size: 24px;
+  font-weight: 800;
+  background: var(--ink);
+  color: var(--paper);
+  padding: 2px 10px;
 }
 
-.preview-placeholder {
-  display: flex;
+.pv-placeholder {
   align-items: center;
   justify-content: center;
-  height: 100%;
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  background: var(--grey);
+}
+
+/* ---------- inspector ---------- */
+
+.inspector-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.inspector-head h2 {
+  margin: 0;
+}
+
+.inspector-meta {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 6px 0 14px;
+  opacity: 0.65;
+}
+
+.inspector label {
+  display: block;
+  margin-bottom: 18px;
+}
+
+.inspector label > span {
+  display: block;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  margin-bottom: 6px;
+}
+
+.entity-search {
+  margin-bottom: 6px;
+}
+
+.entity-list {
+  padding: 4px;
+}
+
+.entity-id {
+  font-size: 10px;
+  opacity: 0.6;
+  margin-top: 4px;
+  word-break: break-all;
+}
+
+.hint {
   font-size: 12px;
-  color: #888;
+  opacity: 0.7;
+  line-height: 1.5;
+}
+
+/* ---------- mobile ---------- */
+
+@media (max-width: 900px) {
+  .app {
+    padding: 12px;
+  }
+
+  header {
+    gap: 12px;
+  }
+
+  .actions {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .actions button {
+    flex: 1;
+  }
+
+  .device-stats {
+    width: 100%;
+  }
+
+  .stat {
+    flex: 1;
+    min-width: 78px;
+  }
+
+  /* Panel first: it is what you are actually working on */
+  .workspace {
+    display: flex;
+    flex-direction: column;
+  }
+
+  main {
+    order: 1;
+  }
+
+  .palette {
+    order: 2;
+  }
+
+  .palette-items {
+    flex-direction: row;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .palette button {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    white-space: nowrap;
+  }
+
+  /* The inspector becomes a bottom sheet over the selected widget */
+  .inspector {
+    order: 3;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 50;
+    max-height: 68vh;
+    overflow-y: auto;
+    box-shadow: 0 -6px 0 var(--ink);
+    border-bottom: none;
+    display: none;
+  }
+
+  .inspector.open {
+    display: block;
+  }
 }

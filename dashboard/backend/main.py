@@ -13,6 +13,7 @@ from fastapi.staticfiles import StaticFiles
 import store
 from ha_bridge import bridge
 from mqtt import link
+from registry import registry
 from settings import HA_REST_URL, LOG_LEVEL, STATIC_DIR, SUPERVISOR_TOKEN, DEVICE_ID
 
 logging.basicConfig(level=LOG_LEVEL, format="%(levelname)s %(name)s: %(message)s")
@@ -42,6 +43,7 @@ async def get_status() -> dict[str, Any]:
         "online": link.online,
         "manifest": link.manifest,
         "applied": link.applied,
+        "stats": link.stats,
         "draft_version": layout.get("version", 0),
         "bridge_enabled": bool(SUPERVISOR_TOKEN),
     }
@@ -92,7 +94,7 @@ async def refresh_device() -> dict[str, Any]:
 
 @app.get("/api/entities")
 async def get_entities() -> list[dict[str, str]]:
-    """Entity ids for the editor's pickers, straight from Home Assistant."""
+    """Entities for the editor's pickers, annotated with domain and area."""
     if not SUPERVISOR_TOKEN:
         return []
     headers = {"Authorization": f"Bearer {SUPERVISOR_TOKEN}"}
@@ -101,13 +103,7 @@ async def get_entities() -> list[dict[str, str]]:
             response.raise_for_status()
             states = await response.json()
 
-    return [
-        {
-            "entity_id": state["entity_id"],
-            "name": (state.get("attributes") or {}).get("friendly_name", state["entity_id"]),
-        }
-        for state in states
-    ]
+    return await registry.entities(states)
 
 
 # The built editor is mounted last so it does not shadow /api. Ingress serves the

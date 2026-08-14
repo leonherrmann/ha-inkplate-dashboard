@@ -31,6 +31,7 @@ class DeviceLink:
         # Latest retained values seen from the device
         self.manifest: dict[str, Any] | None = None
         self.applied: dict[str, Any] | None = None
+        self.stats: dict[str, Any] | None = None
         self.online: bool = False
 
         self.on_change: Callable[[], None] | None = None
@@ -62,8 +63,15 @@ class DeviceLink:
 
     def _on_connect(self, client: mqtt.Client, userdata, flags, reason_code) -> None:
         log.info("Connected to MQTT (%s)", reason_code)
-        # All three are retained, so the current values land immediately
-        client.subscribe([(topics.manifest, 0), (topics.config_current, 0), (topics.status, 0)])
+        # All retained, so the current values land immediately
+        client.subscribe(
+            [
+                (topics.manifest, 0),
+                (topics.config_current, 0),
+                (topics.status, 0),
+                (topics.stats, 0),
+            ]
+        )
 
     def _on_message(self, client: mqtt.Client, userdata, message: mqtt.MQTTMessage) -> None:
         payload = message.payload.decode("utf-8", errors="replace")
@@ -79,6 +87,8 @@ class DeviceLink:
         elif message.topic == topics.config_current:
             self.applied = self._parse(payload, "applied config")
             log.info("Device reports applied layout: %s", self.applied)
+        elif message.topic == topics.stats:
+            self.stats = self._parse(payload, "stats")
 
         if self.on_change:
             self.on_change()

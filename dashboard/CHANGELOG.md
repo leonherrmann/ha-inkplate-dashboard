@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.2.0
+
+- Tap a widget to select it. Selection no longer requires dragging first, and widgets
+  have stable ids, so deleting one leaves the others alone.
+- Works on a phone: long-press to drag, swipe still scrolls, and the panel scales to
+  the viewport with the palette and inspector reflowing.
+- Positions are pixels with a Coarse / Fine / Free snap toggle, instead of a fixed
+  80px grid. Existing layouts are migrated.
+- Bauhaus redesign.
+- Device stats: battery, voltage, WiFi signal, uptime and free heap.
+- Entity picker is searchable and grouped by Home Assistant area.
+
 ## 0.1.1
 
 - Icon options are picked from a dropdown of the names the firmware reports it has,

@@ -1,52 +1,56 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import GridLayout from "react-grid-layout";
-import "react-grid-layout/css/styles.css";
-import "react-resizable/css/styles.css";
+import { useCallback, useEffect, useState } from "react";
 
-import WidgetPreview from "./WidgetPreview.jsx";
+import DeviceStats from "./DeviceStats.jsx";
+import Inspector from "./Inspector.jsx";
+import Panel from "./Panel.jsx";
 import * as api from "./api.js";
-
-// Rendered at half the panel's 1280x720 so the editor fits on a laptop screen
-const SCALE = 0.5;
+import { DEFAULT_SNAP, SNAP_STEPS, newId } from "./layout.js";
 
 function useStatus() {
   const [status, setStatus] = useState(null);
   const [error, setError] = useState(null);
 
-  const reload = useCallback(async () => {
-    try {
-      setStatus(await api.getStatus());
-      setError(null);
-    } catch (problem) {
-      setError(problem.message);
-    }
-  }, []);
-
   useEffect(() => {
+    let cancelled = false;
+    const reload = async () => {
+      try {
+        const next = await api.getStatus();
+        if (!cancelled) {
+          setStatus(next);
+          setError(null);
+        }
+      } catch (problem) {
+        if (!cancelled) setError(problem.message);
+      }
+    };
     reload();
     const timer = setInterval(reload, 5000);
-    return () => clearInterval(timer);
-  }, [reload]);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, []);
 
-  return { status, error, reload };
+  return { status, error };
 }
 
 export default function App() {
   const { status, error: statusError } = useStatus();
   const [layout, setLayout] = useState(null);
   const [entities, setEntities] = useState([]);
-  const [selected, setSelected] = useState(null);
+  const [selectedId, setSelectedId] = useState(null);
+  const [snapStep, setSnapStep] = useState(DEFAULT_SNAP);
   const [message, setMessage] = useState(null);
 
   const manifest = status?.manifest;
-  const grid = manifest?.grid || { cols: 16, rows: 9, cell: 80 };
+  const panel = manifest?.display || { width: 1280, height: 720 };
+  const widgets = layout?.pages?.[0]?.widgets || [];
+  const selected = widgets.find((widget) => widget.id === selectedId) || null;
 
   useEffect(() => {
     api.getLayout().then(setLayout).catch((problem) => setMessage(problem.message));
     api.getEntities().then(setEntities).catch(() => setEntities([]));
   }, []);
-
-  const widgets = layout?.pages?.[0]?.widgets || [];
 
   const persist = useCallback(async (next) => {
     setLayout(next);
@@ -58,57 +62,40 @@ export default function App() {
   }, []);
 
   const updateWidgets = useCallback(
-    (nextWidgets) => {
-      const next = structuredClone(layout);
-      next.pages[0].widgets = nextWidgets;
-      persist(next);
+    (updater) => {
+      setLayout((current) => {
+        if (!current) return current;
+        const next = structuredClone(current);
+        next.pages[0].widgets = updater(next.pages[0].widgets);
+        persist(next);
+        return next;
+      });
     },
-    [layout, persist]
+    [persist]
   );
-
-  const gridLayout = useMemo(
-    () =>
-      widgets.map((widget, index) => {
-        const type = manifest?.widgets?.find((candidate) => candidate.type === widget.type);
-        return {
-          i: String(index),
-          x: widget.col,
-          y: widget.row,
-          w: type?.span?.cols || 2,
-          h: type?.span?.rows || 2,
-          // The firmware sizes widgets itself; the grid only positions them
-          static: false,
-          isResizable: false,
-        };
-      }),
-    [widgets, manifest]
-  );
-
-  const onLayoutChange = (next) => {
-    const moved = widgets.map((widget, index) => {
-      const position = next.find((item) => item.i === String(index));
-      return position ? { ...widget, col: position.x, row: position.y } : widget;
-    });
-    updateWidgets(moved);
-  };
 
   const addWidget = (type) => {
-    updateWidgets([...widgets, { type: type.type, col: 0, row: 0, options: {} }]);
-    setSelected(widgets.length);
+    const widget = { id: newId(), type: type.type, x: 0, y: 0, options: {} };
+    updateWidgets((current) => [...current, widget]);
+    setSelectedId(widget.id);
   };
 
-  const removeWidget = (index) => {
-    updateWidgets(widgets.filter((_, position) => position !== index));
-    setSelected(null);
+  const moveWidget = (id, position) =>
+    updateWidgets((current) =>
+      current.map((widget) => (widget.id === id ? { ...widget, ...position } : widget))
+    );
+
+  const removeWidget = (id) => {
+    updateWidgets((current) => current.filter((widget) => widget.id !== id));
+    setSelectedId(null);
   };
 
-  const setOption = (index, key, value) => {
-    updateWidgets(
-      widgets.map((widget, position) =>
-        position === index ? { ...widget, options: { ...widget.options, [key]: value } } : widget
+  const setOption = (id, key, value) =>
+    updateWidgets((current) =>
+      current.map((widget) =>
+        widget.id === id ? { ...widget, options: { ...widget.options, [key]: value } } : widget
       )
     );
-  };
 
   const push = async () => {
     try {
@@ -120,147 +107,99 @@ export default function App() {
   };
 
   if (statusError) {
-    return <div className="error">Cannot reach the add-on backend: {statusError}</div>;
+    return <div className="banner error">Cannot reach the add-on backend: {statusError}</div>;
   }
   if (!layout) {
-    return <div className="loading">Loading…</div>;
+    return <div className="banner">Loading…</div>;
   }
-
-  const selectedWidget = selected !== null ? widgets[selected] : null;
-  const selectedType = manifest?.widgets?.find((type) => type.type === selectedWidget?.type);
 
   return (
     <div className="app">
       <header>
-        <h1>Inkplate Dashboard</h1>
-        <div className="status">
-          <span className={status?.online ? "dot online" : "dot offline"} />
-          {status?.online ? "Device online" : "Device offline"}
-          {status?.applied ? ` · applied v${status.applied.version}` : ""}
-          {` · draft v${status?.draft_version ?? 0}`}
+        <div className="brand">
+          <span className="brand-mark" aria-hidden="true" />
+          <h1>
+            INKPLATE<em>DASHBOARD</em>
+          </h1>
         </div>
+
+        <DeviceStats
+          online={status?.online}
+          stats={status?.stats}
+          applied={status?.applied}
+          draftVersion={status?.draft_version ?? 0}
+        />
+
         <div className="actions">
-          <button onClick={push}>Push to device</button>
-          <button onClick={() => api.refreshDevice()}>Force refresh</button>
+          <button className="primary" onClick={push}>
+            Push
+          </button>
+          <button onClick={() => api.refreshDevice()}>Refresh</button>
         </div>
       </header>
 
-      {message && <div className="message" onClick={() => setMessage(null)}>{message}</div>}
-
-      {!manifest && (
-        <div className="message">
-          Waiting for the device to publish its widget manifest. It does that at boot —
-          check that it is powered on and using the same MQTT broker.
+      {message && (
+        <div className="banner" onClick={() => setMessage(null)} role="status">
+          {message}
         </div>
       )}
+
+      {!manifest && (
+        <div className="banner">
+          Waiting for the device to publish its widget manifest. It does that at boot, so
+          power it on and check it is using the same MQTT broker.
+        </div>
+      )}
+
+      <div className="toolbar">
+        <span className="toolbar-label">Snap</span>
+        {SNAP_STEPS.map(({ label, step }) => (
+          <button
+            key={label}
+            className={step === snapStep ? "chip active" : "chip"}
+            onClick={() => setSnapStep(step)}
+          >
+            {label}
+            <small>{step}px</small>
+          </button>
+        ))}
+      </div>
 
       <div className="workspace">
         <aside className="palette">
           <h2>Widgets</h2>
-          {(manifest?.widgets || []).map((type) => (
-            <button key={type.type} onClick={() => addWidget(type)}>
-              {type.label}
-              <small>
-                {type.span.cols}×{type.span.rows}
-              </small>
-            </button>
-          ))}
+          <div className="palette-items">
+            {(manifest?.widgets || []).map((type) => (
+              <button key={type.type} onClick={() => addWidget(type)}>
+                <span>{type.label}</span>
+                <small>
+                  {type.width}×{type.height}
+                </small>
+              </button>
+            ))}
+          </div>
         </aside>
 
         <main>
-          <div
-            className="panel"
-            style={{
-              width: grid.cols * grid.cell * SCALE,
-              height: grid.rows * grid.cell * SCALE,
-              backgroundSize: `${grid.cell * SCALE}px ${grid.cell * SCALE}px`,
-            }}
-          >
-            <GridLayout
-              className="layout"
-              layout={gridLayout}
-              cols={grid.cols}
-              maxRows={grid.rows}
-              rowHeight={grid.cell * SCALE}
-              width={grid.cols * grid.cell * SCALE}
-              margin={[0, 0]}
-              containerPadding={[0, 0]}
-              compactType={null}
-              preventCollision
-              onLayoutChange={onLayoutChange}
-            >
-              {widgets.map((widget, index) => (
-                <div
-                  key={String(index)}
-                  className={selected === index ? "widget selected" : "widget"}
-                  onClick={() => setSelected(index)}
-                >
-                  <WidgetPreview type={widget.type} options={widget.options} />
-                </div>
-              ))}
-            </GridLayout>
-          </div>
+          <Panel
+            panel={panel}
+            widgets={widgets}
+            manifest={manifest}
+            selectedId={selectedId}
+            onSelect={setSelectedId}
+            onMove={moveWidget}
+            snapStep={snapStep}
+          />
         </main>
 
-        <aside className="inspector">
-          <h2>Options</h2>
-          {!selectedWidget && <p className="hint">Select a widget on the grid.</p>}
-          {selectedWidget && (
-            <>
-              <h3>{selectedType?.label || selectedWidget.type}</h3>
-              {(selectedType?.options || []).map((option) => (
-                <label key={option.key}>
-                  {option.label}
-                  {option.type === "entity" && (
-                    <select
-                      value={selectedWidget.options[option.key] || ""}
-                      onChange={(event) => setOption(selected, option.key, event.target.value)}
-                    >
-                      <option value="">— none —</option>
-                      {entities
-                        .filter((entity) => !option.filter || entity.entity_id.startsWith(`${option.filter}.`))
-                        .map((entity) => (
-                          <option key={entity.entity_id} value={entity.entity_id}>
-                            {entity.name}
-                          </option>
-                        ))}
-                    </select>
-                  )}
-
-                  {/* The firmware ships the valid icon names, so this can only
-                      ever produce something it is able to resolve. */}
-                  {option.type === "icon" && (
-                    <select
-                      value={selectedWidget.options[option.key] || ""}
-                      onChange={(event) => setOption(selected, option.key, event.target.value)}
-                    >
-                      <option value="">— default —</option>
-                      {(option.values || []).map((name) => (
-                        <option key={name} value={name}>
-                          {option.filter ? name.slice(option.filter.length) : name}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-
-                  {option.type !== "entity" && option.type !== "icon" && (
-                    <input
-                      value={selectedWidget.options[option.key] || ""}
-                      onChange={(event) => setOption(selected, option.key, event.target.value)}
-                      placeholder={option.filter || ""}
-                    />
-                  )}
-                </label>
-              ))}
-              {(selectedType?.options || []).length === 0 && (
-                <p className="hint">This widget has no options.</p>
-              )}
-              <button className="danger" onClick={() => removeWidget(selected)}>
-                Remove widget
-              </button>
-            </>
-          )}
-        </aside>
+        <Inspector
+          widget={selected}
+          manifest={manifest}
+          entities={entities}
+          onSetOption={setOption}
+          onRemove={removeWidget}
+          onClose={() => setSelectedId(null)}
+        />
       </div>
     </div>
   );

@@ -8,6 +8,7 @@ firmware's echo on config/current can be matched against it.
 import json
 import logging
 import os
+import uuid
 from typing import Any
 
 from settings import DATA_DIR
@@ -16,9 +17,11 @@ log = logging.getLogger(__name__)
 
 LAYOUT_PATH = os.path.join(DATA_DIR, "layout.json")
 
+# Cell size of the grid positions used before they became pixels
+LEGACY_CELL = 80
+
 EMPTY_LAYOUT: dict[str, Any] = {
     "version": 0,
-    "grid": {"cols": 16, "rows": 9, "cell": 80},
     "pages": [{"id": "main", "widgets": []}],
 }
 
@@ -26,12 +29,32 @@ EMPTY_LAYOUT: dict[str, Any] = {
 def load() -> dict[str, Any]:
     try:
         with open(LAYOUT_PATH, "r", encoding="utf-8") as handle:
-            return json.load(handle)
+            return _migrate(json.load(handle))
     except FileNotFoundError:
         return json.loads(json.dumps(EMPTY_LAYOUT))
     except (json.JSONDecodeError, OSError) as error:
         log.warning("Could not read the stored layout (%s), starting empty", error)
         return json.loads(json.dumps(EMPTY_LAYOUT))
+
+
+def _migrate(layout: dict[str, Any]) -> dict[str, Any]:
+    """Bring an older layout up to date: stable ids, and pixel positions.
+
+    Widgets used to be identified by their array index, which is why deleting one
+    disturbed the others, and positioned in 80px grid cells.
+    """
+    for page in layout.get("pages", []):
+        for widget in page.get("widgets", []):
+            if not widget.get("id"):
+                widget["id"] = uuid.uuid4().hex
+            if "x" not in widget:
+                widget["x"] = int(widget.pop("col", 0)) * LEGACY_CELL
+            if "y" not in widget:
+                widget["y"] = int(widget.pop("row", 0)) * LEGACY_CELL
+            widget.pop("col", None)
+            widget.pop("row", None)
+    layout.pop("grid", None)
+    return layout
 
 
 def save(layout: dict[str, Any]) -> None:

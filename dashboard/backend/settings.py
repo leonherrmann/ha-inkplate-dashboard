@@ -30,6 +30,7 @@ class Topics:
         self.config_set = f"{self.root}/config/set"
         self.config_current = f"{self.root}/config/current"
         self.status = f"{self.root}/status"
+        self.stats = f"{self.root}/stats"
         self.command = f"{self.root}/command"
 
     def state(self, entity_id: str, attribute: str | None = None) -> str:
