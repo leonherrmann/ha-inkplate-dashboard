@@ -53,6 +53,14 @@ In a second terminal, the editor with hot reload (it proxies `/api` to port 8099
 cd dashboard/frontend && npm install && npm run dev
 ```
 
+> **After changing the frontend, rebuild and commit the output.** The add-on image is
+> Python-only and ships `dashboard/frontend/dist` straight from the repository, so an
+> unbuilt change will not reach Home Assistant:
+>
+> ```bash
+> cd dashboard/frontend && npm run build && git add dist
+> ```
+
 To point it at a real Home Assistant for the bridge and entity pickers, also set
 `SUPERVISOR_TOKEN` to a long-lived access token and
 `HA_REST_URL=http://homeassistant.local:8123/api`,

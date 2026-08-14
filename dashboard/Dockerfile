@@ -1,18 +1,8 @@
 ARG BUILD_FROM
-
-# ---- frontend build -------------------------------------------------------
-# The editor is a Vite/React app; only the built assets end up in the runtime
-# image, so node never ships to the device running Home Assistant.
-FROM node:20-alpine AS frontend
-WORKDIR /build
-COPY frontend/package.json frontend/package-lock.json* ./
-RUN npm install
-COPY frontend/ ./
-RUN npm run build
-
-# ---- runtime --------------------------------------------------------------
 FROM $BUILD_FROM
 
+# The editor is built ahead of time and committed as frontend/dist, so the image
+# stays Python-only and installs quickly on Raspberry Pi class hardware.
 COPY backend/requirements.txt /tmp/requirements.txt
 RUN \
     apk add --no-cache python3 py3-pip && \
@@ -23,7 +13,7 @@ RUN chmod a+x /run.sh
 
 WORKDIR /app
 COPY backend/ /app/
-COPY --from=frontend /build/dist /app/static
+COPY frontend/dist /app/static
 
 EXPOSE 8099
 

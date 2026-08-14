@@ -4,5 +4,8 @@ __pycache__/
 *.pyc
 node_modules/
 dashboard/backend/static/
-dashboard/frontend/dist/
 .venv/
+
+# dashboard/frontend/dist is deliberately committed: the add-on image is
+# Python-only so it installs fast on Raspberry Pi class hardware. Run
+# `npm run build` in dashboard/frontend before committing frontend changes.
