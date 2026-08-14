@@ -1,0 +1,4 @@
+# https://developers.home-assistant.io/docs/add-ons/repository#repository-configuration
+name: Inkplate Dashboard add-on repository
+url: 'https://github.com/leonherrmann/ha-inkplate-dashboard'
+maintainer: Leon Herrmann <herrmann.leon@t-online.de>

@@ -1,0 +1,58 @@
+"""Persistence for the layout being edited.
+
+The layout on disk is the *draft*: it changes on every edit in the browser. Only
+a push sends it to the device, and the version is bumped at that point so the
+firmware's echo on config/current can be matched against it.
+"""
+
+import json
+import logging
+import os
+from typing import Any
+
+from settings import DATA_DIR
+
+log = logging.getLogger(__name__)
+
+LAYOUT_PATH = os.path.join(DATA_DIR, "layout.json")
+
+EMPTY_LAYOUT: dict[str, Any] = {
+    "version": 0,
+    "grid": {"cols": 16, "rows": 9, "cell": 80},
+    "pages": [{"id": "main", "widgets": []}],
+}
+
+
+def load() -> dict[str, Any]:
+    try:
+        with open(LAYOUT_PATH, "r", encoding="utf-8") as handle:
+            return json.load(handle)
+    except FileNotFoundError:
+        return json.loads(json.dumps(EMPTY_LAYOUT))
+    except (json.JSONDecodeError, OSError) as error:
+        log.warning("Could not read the stored layout (%s), starting empty", error)
+        return json.loads(json.dumps(EMPTY_LAYOUT))
+
+
+def save(layout: dict[str, Any]) -> None:
+    os.makedirs(DATA_DIR, exist_ok=True)
+    with open(LAYOUT_PATH, "w", encoding="utf-8") as handle:
+        json.dump(layout, handle, indent=2)
+
+
+def entity_ids(layout: dict[str, Any]) -> set[str]:
+    """Every entity the layout refers to, so the bridge knows what to follow.
+
+    Any option whose value looks like an entity id counts; the manifest marks
+    them as type "entity", but matching on the domain.object shape keeps this
+    independent of whether the manifest happens to be available.
+    """
+    found: set[str] = set()
+    for page in layout.get("pages", []):
+        for widget in page.get("widgets", []):
+            for value in (widget.get("options") or {}).values():
+                if isinstance(value, str) and value.count(".") == 1 and " " not in value:
+                    domain, _, object_id = value.partition(".")
+                    if domain and object_id:
+                        found.add(value)
+    return found
