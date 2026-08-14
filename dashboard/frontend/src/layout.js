@@ -9,6 +9,14 @@ export const SNAP_STEPS = [
 
 export const DEFAULT_SNAP = 20;
 
+// "fit" shows the whole panel; the numbers are absolute scales that scroll when
+// they exceed the viewport, which is how you place things precisely on a phone.
+export const ZOOM_LEVELS = [
+  { label: "Fit", value: "fit" },
+  { label: "50%", value: 0.5 },
+  { label: "100%", value: 1 },
+];
+
 export function snap(value, step) {
   return Math.round(value / step) * step;
 }

@@ -290,6 +290,10 @@ select[size] {
   letter-spacing: 0.2em;
 }
 
+.toolbar-gap {
+  margin-left: 12px;
+}
+
 .chip {
   display: flex;
   align-items: baseline;
@@ -317,6 +321,12 @@ select[size] {
   grid-template-columns: 190px minmax(0, 1fr) 300px;
   gap: 16px;
   align-items: start;
+}
+
+/* Grid and flex children default to min-width:auto, which lets the fixed-size
+   panel push its column wider than the viewport. */
+.workspace > * {
+  min-width: 0;
 }
 
 .palette,
@@ -358,8 +368,20 @@ select[size] {
 
 /* ---------- panel ---------- */
 
+/* This is the element whose width the scaler measures, so it must never be
+   inflated by its own contents -- otherwise the oversized panel widens it, the
+   measurement comes back as 1280, and the scale never shrinks. */
 .panel-wrapper {
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* Scrolls when the chosen zoom is larger than the space available */
+.panel-viewport {
+  max-width: 100%;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .panel-scaler {
@@ -376,14 +398,15 @@ select[size] {
   background-color: var(--paper);
   background-image: linear-gradient(to right, rgba(20, 17, 15, 0.11) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(20, 17, 15, 0.11) 1px, transparent 1px);
-  /* dnd-kit needs the browser to not claim the gesture first */
-  touch-action: none;
 }
 
+/* Deliberately no touch-action: none here. The TouchSensor activates on a press
+   delay and suppresses scrolling itself once a drag starts, so leaving
+   touch-action alone keeps the page scrollable by swiping over the panel --
+   which otherwise traps the whole screen on a phone. */
 .widget {
   position: absolute;
   cursor: grab;
-  touch-action: none;
   /* No transition on transform: it would lag the drag */
 }
 

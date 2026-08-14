@@ -61,8 +61,20 @@ function DraggableWidget({ widget, size, selected, onSelect, scale }) {
   );
 }
 
-export default function Panel({ panel, widgets, manifest, selectedId, onSelect, onMove, snapStep }) {
-  const [wrapperRef, scale] = useScale(panel.width);
+export default function Panel({
+  panel,
+  widgets,
+  manifest,
+  selectedId,
+  onSelect,
+  onMove,
+  snapStep,
+  zoom,
+}) {
+  const [wrapperRef, fitScale] = useScale(panel.width);
+  // "fit" shows the whole panel; a fixed zoom scrolls, which is the only way to
+  // place things accurately on a phone where fit is around 28%.
+  const scale = zoom === "fit" ? fitScale : zoom;
 
   // A drag only starts once the pointer has travelled far enough (or, on touch,
   // after a short press). Below that threshold the gesture stays a click, which
@@ -82,36 +94,38 @@ export default function Panel({ panel, widgets, manifest, selectedId, onSelect, 
 
   return (
     <div className="panel-wrapper" ref={wrapperRef}>
-      <div
-        className="panel-scaler"
-        style={{ width: panel.width * scale, height: panel.height * scale }}
-      >
-        <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-          <div
-            className="panel"
-            style={{
-              width: panel.width,
-              height: panel.height,
-              transform: `scale(${scale})`,
-              backgroundSize: `${snapStep}px ${snapStep}px`,
-            }}
-            onPointerDown={(event) => {
-              // Clicking the bare panel clears the selection
-              if (event.target === event.currentTarget) onSelect(null);
-            }}
-          >
-            {widgets.map((widget) => (
-              <DraggableWidget
-                key={widget.id}
-                widget={widget}
-                size={widgetSize(manifest, widget)}
-                selected={widget.id === selectedId}
-                onSelect={onSelect}
-                scale={scale}
-              />
-            ))}
-          </div>
-        </DndContext>
+      <div className="panel-viewport">
+        <div
+          className="panel-scaler"
+          style={{ width: panel.width * scale, height: panel.height * scale }}
+        >
+          <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+            <div
+              className="panel"
+              style={{
+                width: panel.width,
+                height: panel.height,
+                transform: `scale(${scale})`,
+                backgroundSize: `${snapStep}px ${snapStep}px`,
+              }}
+              onPointerDown={(event) => {
+                // Clicking the bare panel clears the selection
+                if (event.target === event.currentTarget) onSelect(null);
+              }}
+            >
+              {widgets.map((widget) => (
+                <DraggableWidget
+                  key={widget.id}
+                  widget={widget}
+                  size={widgetSize(manifest, widget)}
+                  selected={widget.id === selectedId}
+                  onSelect={onSelect}
+                  scale={scale}
+                />
+              ))}
+            </div>
+          </DndContext>
+        </div>
       </div>
     </div>
   );

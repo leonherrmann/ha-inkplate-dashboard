@@ -4,7 +4,7 @@ import DeviceStats from "./DeviceStats.jsx";
 import Inspector from "./Inspector.jsx";
 import Panel from "./Panel.jsx";
 import * as api from "./api.js";
-import { DEFAULT_SNAP, SNAP_STEPS, newId } from "./layout.js";
+import { DEFAULT_SNAP, SNAP_STEPS, ZOOM_LEVELS, newId } from "./layout.js";
 
 function useStatus() {
   const [status, setStatus] = useState(null);
@@ -40,6 +40,7 @@ export default function App() {
   const [entities, setEntities] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [snapStep, setSnapStep] = useState(DEFAULT_SNAP);
+  const [zoom, setZoom] = useState("fit");
   const [message, setMessage] = useState(null);
 
   const manifest = status?.manifest;
@@ -163,6 +164,17 @@ export default function App() {
             <small>{step}px</small>
           </button>
         ))}
+
+        <span className="toolbar-label toolbar-gap">Zoom</span>
+        {ZOOM_LEVELS.map(({ label, value }) => (
+          <button
+            key={label}
+            className={value === zoom ? "chip active" : "chip"}
+            onClick={() => setZoom(value)}
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
       <div className="workspace">
@@ -189,6 +201,7 @@ export default function App() {
             onSelect={setSelectedId}
             onMove={moveWidget}
             snapStep={snapStep}
+            zoom={zoom}
           />
         </main>
 
