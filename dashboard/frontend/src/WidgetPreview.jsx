@@ -40,6 +40,48 @@ function ClimatePreview({ options }) {
   );
 }
 
+function BatteryPreview() {
+  return (
+    <div className="pv-battery">
+      <div className="pv-battery-cell">
+        <div className="pv-battery-fill" />
+      </div>
+      <div className="pv-battery-nub" />
+      <span className="pv-battery-text">72%</span>
+    </div>
+  );
+}
+
+const DAYS = ["MON", "TUE", "WED", "THU", "FRI"];
+
+function WeatherPreview() {
+  return (
+    <Frame className="pv-weather">
+      {DAYS.map((day, index) => (
+        <div className={index === 0 ? "pv-weather-day big" : "pv-weather-day"} key={day}>
+          <span className="pv-weather-name">{day}</span>
+          <span className="pv-weather-icon" />
+          <span className="pv-weather-temp">{18 - index}°</span>
+        </div>
+      ))}
+    </Frame>
+  );
+}
+
+// The source PNGs are vendored under public/photos, so the preview shows the
+// real picture rather than a grey box.
+function ImagePreview({ options }) {
+  const name = options.image;
+  if (!name) {
+    return (
+      <Frame className="pv-placeholder">
+        <span>pick an image</span>
+      </Frame>
+    );
+  }
+  return <img className="pv-image" src={`photos/${name}.png`} alt={name} />;
+}
+
 function Placeholder({ type }) {
   return (
     <Frame className="pv-placeholder">
@@ -51,6 +93,9 @@ function Placeholder({ type }) {
 const previews = {
   clock: ClockPreview,
   climate: ClimatePreview,
+  battery: BatteryPreview,
+  weather: WeatherPreview,
+  image: ImagePreview,
 };
 
 export default function WidgetPreview({ type, options, size }) {

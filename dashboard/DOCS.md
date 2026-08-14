@@ -66,10 +66,31 @@ To point it at a real Home Assistant for the bridge and entity pickers, also set
 `HA_REST_URL=http://homeassistant.local:8123/api`,
 `HA_WS_URL=ws://homeassistant.local:8123/api/websocket`.
 
-## Adding a widget
+## Widgets
+
+| Widget | Needs Home Assistant? |
+|---|---|
+| Clock | No — the device syncs its own time over NTP |
+| Battery | No — reads the on-board battery directly |
+| Image | No — draws a picture flashed into the firmware |
+| Climate | Yes — temperature, humidity and radiator entities |
+| Weather | Yes — a `weather.` entity, forecast fetched by this add-on |
+
+### Adding one
 
 Widgets are defined in the firmware, not here. Register the type in the firmware's
 `WidgetRegistry` and it appears in the palette automatically on the next boot. Only the
 preview is this repository's concern: add a component to
 `dashboard/frontend/src/WidgetPreview.jsx`. Until you do, the widget still works and is
 placeable — it just renders as a labelled placeholder in the editor.
+
+### Images
+
+The image widget draws pictures compiled into the firmware from
+`images/photos/` in the firmware repository. To add one, drop a PNG in that folder, run
+`python3 iconConvert.py`, and reflash; it appears in the picker as `photos_<name>`. For
+the editor to show a thumbnail rather than a grey box, copy the PNG to
+`dashboard/frontend/public/photos/photos_<name>.png` here as well.
+
+Uploading images to the device at runtime, and storing them on an SD card, are not
+supported yet.

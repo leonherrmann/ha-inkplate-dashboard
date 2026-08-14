@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.3.0
+
+- Image, battery and weather widgets appear in the palette, with previews. Image
+  widgets show the real picture and size themselves to it.
+- Weather forecasts are bridged from Home Assistant by calling
+  `weather.get_forecasts`, since the forecast attribute was removed in 2024.4.
+- Entity picker offers weather entities for the new widget.
+
+## 0.2.1
+
+- Fix the panel overflowing the screen on mobile, and stop it trapping page
+  scrolling. Adds a Fit / 50% / 100% zoom for precise placement on a phone.
+
 ## 0.2.0
 
 - Tap a widget to select it. Selection no longer requires dragging first, and widgets

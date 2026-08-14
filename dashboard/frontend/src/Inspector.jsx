@@ -1,5 +1,5 @@
 import EntityPicker from "./EntityPicker.jsx";
-import { widgetType } from "./layout.js";
+import { widgetSize, widgetType } from "./layout.js";
 
 function Option({ option, value, entities, onChange }) {
   if (option.type === "entity") {
@@ -30,6 +30,22 @@ function Option({ option, value, entities, onChange }) {
     );
   }
 
+  // Image values carry their pixel size, which is also the widget's footprint
+  if (option.type === "image") {
+    return (
+      <select value={value || ""} onChange={(event) => onChange(event.target.value)}>
+        <option value="">— none —</option>
+        {(option.values || []).map((image) => (
+          <option key={image.name} value={image.name}>
+            {(option.filter && image.name.startsWith(option.filter)
+              ? image.name.slice(option.filter.length)
+              : image.name) + ` (${image.width}×${image.height})`}
+          </option>
+        ))}
+      </select>
+    );
+  }
+
   return (
     <input
       value={value || ""}
@@ -51,6 +67,7 @@ export default function Inspector({ widget, manifest, entities, onSetOption, onR
 
   const type = widgetType(manifest, widget);
   const options = type?.options || [];
+  const size = widgetSize(manifest, widget);
 
   return (
     <aside className="inspector open">
@@ -62,7 +79,7 @@ export default function Inspector({ widget, manifest, entities, onSetOption, onR
       </div>
 
       <div className="inspector-meta">
-        {widget.x}, {widget.y} · {type?.width}×{type?.height}
+        {widget.x}, {widget.y} · {size.width}×{size.height}
       </div>
 
       {options.map((option) => (

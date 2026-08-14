@@ -35,9 +35,24 @@ export function placeWidget(widget, delta, step, size, panel) {
 }
 
 // A widget's drawn size comes from the manifest, since the firmware owns it.
+// Some types size themselves from an option instead -- an image widget is as
+// big as the picture chosen -- which the manifest flags with size_from.
 export function widgetSize(manifest, widget) {
   const type = manifest?.widgets?.find((candidate) => candidate.type === widget.type);
-  return { width: type?.width || 160, height: type?.height || 120 };
+  if (!type) return { width: 160, height: 120 };
+
+  if (type.size_from) {
+    const option = type.options?.find((candidate) => candidate.key === type.size_from);
+    const chosen = widget.options?.[type.size_from];
+    const value = option?.values?.find((candidate) => candidate.name === chosen);
+    if (value?.width) {
+      return { width: value.width, height: value.height };
+    }
+    // Nothing picked yet: a visible placeholder to drag around
+    return { width: 240, height: 160 };
+  }
+
+  return { width: type.width || 160, height: type.height || 120 };
 }
 
 export function widgetType(manifest, widget) {

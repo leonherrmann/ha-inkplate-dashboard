@@ -14,6 +14,7 @@ import store
 from ha_bridge import bridge
 from mqtt import link
 from registry import registry
+from weather import weather
 from settings import HA_REST_URL, LOG_LEVEL, STATIC_DIR, SUPERVISOR_TOKEN, DEVICE_ID
 
 logging.basicConfig(level=LOG_LEVEL, format="%(levelname)s %(name)s: %(message)s")
@@ -24,10 +25,14 @@ log = logging.getLogger("inkplate")
 async def lifespan(app: FastAPI):
     link.start()
     bridge.start()
+    weather.start()
     # Follow whatever the stored layout already references, so a restart of the
     # add-on keeps feeding the device without waiting for a push.
-    bridge.follow(store.entity_ids(store.load()))
+    entities = store.entity_ids(store.load())
+    bridge.follow(entities)
+    weather.follow(entities)
     yield
+    await weather.stop()
     await bridge.stop()
     link.stop()
 
@@ -81,7 +86,9 @@ async def push_layout() -> dict[str, Any]:
 
     link.publish_layout(layout)
     # The device only needs the entities this layout actually names
-    bridge.follow(store.entity_ids(layout))
+    entities = store.entity_ids(layout)
+    bridge.follow(entities)
+    weather.follow(entities)
 
     return {"ok": True, "version": layout["version"]}
 
