@@ -211,7 +211,7 @@ export default function App() {
               {(selectedType?.options || []).map((option) => (
                 <label key={option.key}>
                   {option.label}
-                  {option.type === "entity" ? (
+                  {option.type === "entity" && (
                     <select
                       value={selectedWidget.options[option.key] || ""}
                       onChange={(event) => setOption(selected, option.key, event.target.value)}
@@ -225,7 +225,25 @@ export default function App() {
                           </option>
                         ))}
                     </select>
-                  ) : (
+                  )}
+
+                  {/* The firmware ships the valid icon names, so this can only
+                      ever produce something it is able to resolve. */}
+                  {option.type === "icon" && (
+                    <select
+                      value={selectedWidget.options[option.key] || ""}
+                      onChange={(event) => setOption(selected, option.key, event.target.value)}
+                    >
+                      <option value="">— default —</option>
+                      {(option.values || []).map((name) => (
+                        <option key={name} value={name}>
+                          {option.filter ? name.slice(option.filter.length) : name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+
+                  {option.type !== "entity" && option.type !== "icon" && (
                     <input
                       value={selectedWidget.options[option.key] || ""}
                       onChange={(event) => setOption(selected, option.key, event.target.value)}

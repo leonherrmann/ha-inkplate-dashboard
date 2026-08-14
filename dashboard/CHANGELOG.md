@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.1
+
+- Icon options are picked from a dropdown of the names the firmware reports it has,
+  instead of a free-text box. A name the device could not resolve used to crash it.
+
 ## 0.1.0
 
 First version. Grid editor for the Inkplate 5 dashboard:
