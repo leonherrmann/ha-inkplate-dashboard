@@ -668,6 +668,66 @@ select[size] {
   margin-bottom: 6px;
 }
 
+/* ---------- sleep settings ---------- */
+
+.sleep-settings {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: var(--rule) solid var(--ink);
+}
+
+.sleep-settings h2 {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  margin: 0 0 12px;
+  font-weight: 800;
+}
+
+.switch {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  margin-bottom: 12px;
+}
+
+.switch input {
+  width: 22px;
+  height: 22px;
+  min-height: 0;
+  accent-color: var(--red);
+  flex: 0 0 auto;
+  padding: 0;
+}
+
+.sleep-times {
+  display: flex;
+  gap: 8px;
+}
+
+.sleep-times label {
+  flex: 1;
+}
+
+.sleep-settings label > span {
+  display: block;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  margin-bottom: 4px;
+}
+
+.sleep-settings label {
+  display: block;
+  margin-bottom: 12px;
+}
+
 /* ---------- entity picker ---------- */
 
 .entity-trigger {

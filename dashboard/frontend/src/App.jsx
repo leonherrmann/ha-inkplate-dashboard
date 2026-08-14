@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import DeviceStats from "./DeviceStats.jsx";
 import Inspector from "./Inspector.jsx";
 import Panel from "./Panel.jsx";
+import SleepSettings from "./SleepSettings.jsx";
 import * as api from "./api.js";
 import { DEFAULT_SNAP, SNAP_STEPS, ZOOM_LEVELS, newId } from "./layout.js";
 
@@ -74,6 +75,12 @@ export default function App() {
     },
     [persist]
   );
+
+  const setSleep = (next) => {
+    const layoutNext = structuredClone(layout);
+    layoutNext.sleep = next;
+    persist(layoutNext);
+  };
 
   const addWidget = (type) => {
     const widget = { id: newId(), type: type.type, x: 0, y: 0, options: {} };
@@ -185,11 +192,13 @@ export default function App() {
               <button key={type.type} onClick={() => addWidget(type)}>
                 <span>{type.label}</span>
                 <small>
-                  {type.width}×{type.height}
+                  {type.size_from ? "varies" : `${type.width}×${type.height}`}
                 </small>
               </button>
             ))}
           </div>
+
+          <SleepSettings sleep={layout.sleep} onChange={setSleep} />
         </aside>
 
         <main>

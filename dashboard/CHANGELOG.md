@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.0
+
+- Night sleep: set a window and the device deep-sleeps through it to save battery.
+  The e-ink keeps showing the dashboard while asleep. Choose whether it sleeps
+  right through or wakes periodically to refresh the clock and collect pushes.
+
 ## 0.4.0
 
 - Entity selection is a modal with area tabs, a domain filter and search, instead

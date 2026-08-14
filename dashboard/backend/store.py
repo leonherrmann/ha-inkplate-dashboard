@@ -20,8 +20,18 @@ LAYOUT_PATH = os.path.join(DATA_DIR, "layout.json")
 # Cell size of the grid positions used before they became pixels
 LEGACY_CELL = 80
 
+DEFAULT_SLEEP: dict[str, Any] = {
+    "enabled": False,
+    "start": "23:00",
+    "end": "06:00",
+    # 0 sleeps straight through; anything else wakes that often to refresh the
+    # clock and collect whatever was pushed while asleep
+    "wake_minutes": 30,
+}
+
 EMPTY_LAYOUT: dict[str, Any] = {
     "version": 0,
+    "sleep": dict(DEFAULT_SLEEP),
     "pages": [{"id": "main", "widgets": []}],
 }
 
@@ -54,6 +64,7 @@ def _migrate(layout: dict[str, Any]) -> dict[str, Any]:
             widget.pop("col", None)
             widget.pop("row", None)
     layout.pop("grid", None)
+    layout.setdefault("sleep", dict(DEFAULT_SLEEP))
     return layout
 
 
