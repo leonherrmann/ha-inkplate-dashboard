@@ -25,6 +25,7 @@ class Registry:
     def __init__(self) -> None:
         self._areas: dict[str, str] = {}
         self._fetched_at: float = 0.0
+        self.time_zone: str | None = None
 
     async def entities(self, states: list[dict[str, Any]]) -> list[dict[str, str]]:
         """Entities from `states`, annotated with domain and area name."""
@@ -70,11 +71,17 @@ class Registry:
                 devices = await self._command(socket, 2, "config/device_registry/list")
                 entities = await self._command(socket, 3, "config/entity_registry/list")
 
-        area_names = {area["area_id"]: area["name"] for area in areas}
-        device_areas = {device["id"]: device.get("area_id") for device in devices}
+                # Picked up here rather than in its own connection, since the
+                # device needs Home Assistant's timezone to show the right time
+                config = await self._command(socket, 4, "get_config")
+                if isinstance(config, dict):
+                    self.time_zone = config.get("time_zone")
+
+        area_names = {area["area_id"]: area["name"] for area in areas or []}
+        device_areas = {device["id"]: device.get("area_id") for device in devices or []}
 
         mapping: dict[str, str] = {}
-        for entry in entities:
+        for entry in entities or []:
             # An entity's own area_id wins; otherwise it inherits its device's
             area_id = entry.get("area_id") or device_areas.get(entry.get("device_id"))
             if area_id:
@@ -84,14 +91,15 @@ class Registry:
         return mapping
 
     @staticmethod
-    async def _command(socket: aiohttp.ClientWebSocketResponse, msg_id: int, kind: str) -> list[dict[str, Any]]:
+    async def _command(socket: aiohttp.ClientWebSocketResponse, msg_id: int, kind: str) -> Any:
+        """Result of a websocket command; a list for the registries, a dict for get_config."""
         await socket.send_json({"id": msg_id, "type": kind})
         while True:
             message = await socket.receive_json()
             if message.get("id") == msg_id and message.get("type") == "result":
                 if not message.get("success", False):
                     raise RuntimeError(f"{kind} failed: {message.get('error')}")
-                return message.get("result") or []
+                return message.get("result")
 
 
 registry = Registry()

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.0
+
+- Entity selection is a modal with area tabs, a domain filter and search, instead
+  of one long list.
+- The device is told Home Assistant's timezone on every push, so the clock follows
+  daylight saving without being configured twice.
+
 ## 0.3.1
 
 - Widget previews now match the real widget size exactly. The weather widget was

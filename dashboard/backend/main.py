@@ -13,6 +13,7 @@ from fastapi.staticfiles import StaticFiles
 import store
 from ha_bridge import bridge
 from mqtt import link
+import timezone
 from registry import registry
 from weather import weather
 from settings import HA_REST_URL, LOG_LEVEL, STATIC_DIR, SUPERVISOR_TOKEN, DEVICE_ID
@@ -82,6 +83,11 @@ async def put_layout(layout: dict[str, Any]) -> dict[str, Any]:
 async def push_layout() -> dict[str, Any]:
     layout = store.load()
     layout["version"] = int(layout.get("version", 0)) + 1
+
+    # The device has no tzdata, so it is told Home Assistant's zone as a POSIX
+    # string. Sent with every push so a DST rule change cannot leave it stale.
+    layout["timezone"] = timezone.to_posix(registry.time_zone)
+
     store.save(layout)
 
     link.publish_layout(layout)
