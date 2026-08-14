@@ -54,17 +54,19 @@ function BatteryPreview() {
 
 const DAYS = ["MON", "TUE", "WED", "THU", "FRI"];
 
+// The real widget is a solid black rounded box with white content, and the
+// first day is drawn larger with no weekday label above it.
 function WeatherPreview() {
   return (
-    <Frame className="pv-weather">
+    <div className="pv-weather">
       {DAYS.map((day, index) => (
         <div className={index === 0 ? "pv-weather-day big" : "pv-weather-day"} key={day}>
-          <span className="pv-weather-name">{day}</span>
+          {index !== 0 && <span className="pv-weather-name">{day}</span>}
           <span className="pv-weather-icon" />
           <span className="pv-weather-temp">{18 - index}°</span>
         </div>
       ))}
-    </Frame>
+    </div>
   );
 }
 

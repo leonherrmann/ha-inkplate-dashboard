@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.1
+
+- Widget previews now match the real widget size exactly. The weather widget was
+  previewed a third too large, and previews no longer bleed outside their footprint.
+- The weather preview is black with white content, like the device draws it.
+
 ## 0.3.0
 
 - Image, battery and weather widgets appear in the palette, with previews. Image
