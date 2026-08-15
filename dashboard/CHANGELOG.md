@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.8.0
+
+- Pages. Design several, keep them in a library, and put a selection on a rotating
+  queue that the device cycles itself. Each page can sit out of the queue or hold
+  the screen for longer than the default.
+- Three tabs — Design, Queue and Device — so no single screen carries everything.
+- The layout version number is gone from the interface; it just says whether the
+  device is in sync.
+
 ## 0.7.0
 
 - Charging indicator: a bolt on the battery when the voltage is climbing, worked out

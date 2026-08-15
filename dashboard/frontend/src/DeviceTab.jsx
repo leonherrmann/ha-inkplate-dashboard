@@ -8,16 +8,10 @@ import { Battery, formatAge, formatUptime, signalLabel } from "./DeviceStats.jsx
 // Everything about the device rather than the layout: health, when it was last
 // heard from, and the night sleep schedule. Night sleep used to sit in the
 // widget palette, which it has nothing to do with.
-export default function DeviceModal({ status, lastSeenAge, sleep, onSleepChange, onRefresh, onClose }) {
+export default function DeviceTab({ status, lastSeenAge, sleep, onSleepChange, onRefresh }) {
   const [samples, setSamples] = useState(null);
 
-  useEffect(() => {
-    const onKey = (event) => event.key === "Escape" && onClose();
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
-
-  // Only fetched when the panel opens; it is not needed to edit a layout
+  // Only fetched when this tab is opened; it is not needed to edit a layout
   useEffect(() => {
     api.getHistory().then((data) => setSamples(data.samples)).catch(() => setSamples([]));
   }, []);
@@ -26,16 +20,8 @@ export default function DeviceModal({ status, lastSeenAge, sleep, onSleepChange,
   const charging = status?.charging;
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal device-modal" onClick={(event) => event.stopPropagation()}>
-        <div className="modal-head">
-          <h2>Device</h2>
-          <button className="icon-button" onClick={onClose} aria-label="Close">
-            ×
-          </button>
-        </div>
-
-        <div className="modal-body">
+    <div className="tab-panel">
+      <div className="card">
           <section className="group">
             <h3>Connection</h3>
             <div className="facts">
@@ -109,32 +95,12 @@ export default function DeviceModal({ status, lastSeenAge, sleep, onSleepChange,
             </div>
           </section>
 
-          <section className="group">
-            <h3>Layout</h3>
-            <div className="facts">
-              <div className="fact">
-                <b>v{status?.applied?.version ?? "—"}</b>
-                <small>on device</small>
-              </div>
-              <div className="fact">
-                <b>v{status?.draft_version ?? 0}</b>
-                <small>draft here</small>
-              </div>
-            </div>
-            {status?.applied && status.draft_version > status.applied.version && (
-              <p className="hint">Unpushed changes. Press Push to send them.</p>
-            )}
-          </section>
+        <SleepSettings sleep={sleep} onChange={onSleepChange} />
 
-          <SleepSettings sleep={sleep} onChange={onSleepChange} />
-
-          <section className="group">
-            <button onClick={onRefresh}>Force a full refresh</button>
-            <p className="hint">
-              Redraws the whole panel, clearing any e-ink ghosting.
-            </p>
-          </section>
-        </div>
+        <section className="group">
+          <button onClick={onRefresh}>Force a full refresh</button>
+          <p className="hint">Redraws the whole panel, clearing any e-ink ghosting.</p>
+        </section>
       </div>
     </div>
   );

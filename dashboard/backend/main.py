@@ -53,6 +53,7 @@ async def get_status() -> dict[str, Any]:
         "applied": link.applied,
         "stats": link.stats,
         "charging": link.charging,
+        "current_page": link.current_page,
         "last_seen": link.last_seen,
         "server_time": time.time(),
         "draft_version": layout.get("version", 0),
@@ -113,6 +114,13 @@ async def push_layout() -> dict[str, Any]:
 @app.post("/api/refresh")
 async def refresh_device() -> dict[str, Any]:
     link.publish_command("refresh")
+    return {"ok": True}
+
+
+@app.post("/api/page/{page_id}")
+async def show_page(page_id: str) -> dict[str, Any]:
+    """Put a specific page up now. The device still rotates on from it."""
+    link.publish_command("page", page=page_id)
     return {"ok": True}
 
 

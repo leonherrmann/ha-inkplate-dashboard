@@ -40,6 +40,8 @@ class Topics:
         # Worked out by the add-on from the voltage trend, published back so an
         # on-device widget can draw it
         self.charging = f"{self.root}/charging"
+        # The page the device is currently showing
+        self.page = f"{self.root}/page"
 
     def state(self, entity_id: str, attribute: str | None = None) -> str:
         if attribute:

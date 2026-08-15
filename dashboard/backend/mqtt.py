@@ -37,6 +37,7 @@ class DeviceLink:
         self.online: bool = False
         # None while there is not yet enough history to tell
         self.charging: bool | None = None
+        self.current_page: str | None = None
         # Unix time of the last message from the device. Retained messages
         # replay on connect, so this starts as "when we first heard it" rather
         # than being truly live -- close enough to answer "is it still there".
@@ -78,6 +79,7 @@ class DeviceLink:
                 (topics.config_current, 0),
                 (topics.status, 0),
                 (topics.stats, 0),
+                (topics.page, 0),
             ]
         )
 
@@ -96,6 +98,8 @@ class DeviceLink:
         elif message.topic == topics.config_current:
             self.applied = self._parse(payload, "applied config")
             log.info("Device reports applied layout: %s", self.applied)
+        elif message.topic == topics.page:
+            self.current_page = payload.strip()
         elif message.topic == topics.stats:
             self.stats = self._parse(payload, "stats")
             if self.stats:
@@ -127,8 +131,8 @@ class DeviceLink:
     def publish_state(self, entity_id: str, value: str, attribute: str | None = None) -> None:
         self._publish(topics.state(entity_id, attribute), value, retain=True)
 
-    def publish_command(self, action: str) -> None:
-        self._publish(topics.command, json.dumps({"action": action}), retain=False)
+    def publish_command(self, action: str, **extra: Any) -> None:
+        self._publish(topics.command, json.dumps({"action": action, **extra}), retain=False)
 
     def publish_charging(self, charging: bool | None) -> None:
         """Charging is worked out here, so the device is told the answer.

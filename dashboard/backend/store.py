@@ -29,10 +29,16 @@ DEFAULT_SLEEP: dict[str, Any] = {
     "wake_minutes": 30,
 }
 
+DEFAULT_ROTATION: dict[str, Any] = {
+    "enabled": False,
+    "default_dwell_seconds": 60,
+}
+
 EMPTY_LAYOUT: dict[str, Any] = {
     "version": 0,
     "sleep": dict(DEFAULT_SLEEP),
-    "pages": [{"id": "main", "widgets": []}],
+    "rotation": dict(DEFAULT_ROTATION),
+    "pages": [{"id": "main", "name": "Main", "queued": True, "dwell_seconds": 0, "widgets": []}],
 }
 
 
@@ -53,7 +59,15 @@ def _migrate(layout: dict[str, Any]) -> dict[str, Any]:
     Widgets used to be identified by their array index, which is why deleting one
     disturbed the others, and positioned in 80px grid cells.
     """
-    for page in layout.get("pages", []):
+    for index, page in enumerate(layout.get("pages", [])):
+        # Pages predate having an identity of their own. The id is what rotation
+        # and any Home Assistant automation refer to, so backfill it.
+        if not page.get("id"):
+            page["id"] = f"page{index}"
+        page.setdefault("name", str(page["id"]).replace("_", " ").title())
+        page.setdefault("queued", True)
+        page.setdefault("dwell_seconds", 0)
+
         for widget in page.get("widgets", []):
             if not widget.get("id"):
                 widget["id"] = uuid.uuid4().hex
@@ -65,6 +79,7 @@ def _migrate(layout: dict[str, Any]) -> dict[str, Any]:
             widget.pop("row", None)
     layout.pop("grid", None)
     layout.setdefault("sleep", dict(DEFAULT_SLEEP))
+    layout.setdefault("rotation", dict(DEFAULT_ROTATION))
     return layout
 
 

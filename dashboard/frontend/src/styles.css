@@ -336,6 +336,228 @@ header {
   margin: 20px;
 }
 
+/* ---------- tabs ---------- */
+
+/* Three places to be, so no one screen carries everything: designing a page,
+   arranging the rotation, and the device itself. */
+.main-tabs {
+  margin-bottom: var(--gap);
+  border-bottom: var(--rule) solid var(--ink);
+  padding-bottom: 0;
+  gap: 8px;
+}
+
+.main-tabs .tab {
+  border-bottom: none;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  padding: 12px 22px;
+  min-height: 44px;
+  margin-bottom: -3px;
+  box-shadow: none;
+  border-width: var(--rule);
+}
+
+.main-tabs .tab.active {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.tab-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  max-width: 780px;
+}
+
+.card {
+  background: var(--paper);
+  border: var(--rule) solid var(--ink);
+  box-shadow: var(--shadow);
+  padding: 18px;
+}
+
+.card > h2 {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  margin: 0 0 14px;
+  font-weight: 800;
+}
+
+/* Which page is being edited: navigation, so it stays a thin strip */
+.page-tabs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  margin-bottom: 12px;
+  padding-bottom: 4px;
+}
+
+.page-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  min-height: 40px;
+  white-space: nowrap;
+  box-shadow: none;
+  border-width: 2px;
+  text-transform: none;
+  letter-spacing: 0.02em;
+  font-size: 13px;
+}
+
+.page-tab.active {
+  background: var(--yellow);
+}
+
+.page-tab.add {
+  font-size: 20px;
+  padding: 8px 16px;
+}
+
+.page-tab small {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  opacity: 0.55;
+}
+
+/* Marks the page actually on the device right now */
+.page-tab-live {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--red);
+  flex: 0 0 auto;
+}
+
+/* ---------- queue ---------- */
+
+.queue-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.queue-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 2px solid var(--ink);
+  padding: 10px 12px;
+  flex-wrap: wrap;
+}
+
+.queue-row.paused {
+  opacity: 0.55;
+  background: var(--grey);
+}
+
+.queue-order {
+  display: flex;
+  flex-direction: column;
+}
+
+.queue-order .icon-button {
+  width: 26px;
+  min-height: 22px;
+  font-size: 14px;
+}
+
+.queue-main {
+  flex: 1 1 160px;
+  min-width: 0;
+}
+
+.queue-name {
+  font-weight: 800;
+  border: none;
+  border-bottom: 2px solid var(--ink);
+  padding: 4px 0;
+  min-height: 0;
+  background: transparent;
+}
+
+.queue-meta {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  opacity: 0.6;
+  margin-top: 2px;
+}
+
+.queue-dwell {
+  flex: 0 0 auto;
+  width: 110px;
+  margin: 0;
+}
+
+.queue-dwell > span {
+  display: block;
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 2px;
+}
+
+.queue-toggle {
+  margin: 0;
+  flex: 0 0 auto;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.queue-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.queue-actions button {
+  padding: 8px 14px;
+  min-height: 38px;
+  font-size: 11px;
+  box-shadow: none;
+  border-width: 2px;
+}
+
+button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+button:disabled:active {
+  transform: none;
+}
+
+/* ---------- sync state ---------- */
+
+.sync {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  padding: 6px 12px;
+  border: 2px solid var(--ink);
+  white-space: nowrap;
+}
+
+.sync.ok {
+  background: var(--paper);
+}
+
+.sync.pending {
+  background: var(--yellow);
+}
+
 /* ---------- workspace ---------- */
 
 /* Source order is canvas first so it leads on a phone; areas put the palette
