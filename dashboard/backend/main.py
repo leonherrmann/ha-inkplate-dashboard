@@ -13,6 +13,7 @@ from fastapi.staticfiles import StaticFiles
 
 import store
 from ha_bridge import bridge
+from history import history
 from mqtt import link
 import timezone
 from registry import registry
@@ -51,11 +52,18 @@ async def get_status() -> dict[str, Any]:
         "manifest": link.manifest,
         "applied": link.applied,
         "stats": link.stats,
+        "charging": link.charging,
         "last_seen": link.last_seen,
         "server_time": time.time(),
         "draft_version": layout.get("version", 0),
         "bridge_enabled": bool(SUPERVISOR_TOKEN),
     }
+
+
+@app.get("/api/history")
+async def get_history() -> dict[str, Any]:
+    """Voltage and availability samples for the Device panel's sparkline."""
+    return {"samples": history.samples()}
 
 
 @app.get("/api/manifest")

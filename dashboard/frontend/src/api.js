@@ -12,6 +12,7 @@ async function request(path, options) {
 }
 
 export const getStatus = () => request("status");
+export const getHistory = () => request("history");
 export const getLayout = () => request("layout");
 export const getEntities = () => request("entities");
 

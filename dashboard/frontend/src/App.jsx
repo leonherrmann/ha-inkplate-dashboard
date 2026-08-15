@@ -148,6 +148,7 @@ export default function App() {
         <DeviceSummary
           online={status?.online}
           stats={status?.stats}
+          charging={status?.charging}
           lastSeenAge={lastSeenAge}
           onOpen={() => setDeviceOpen(true)}
         />

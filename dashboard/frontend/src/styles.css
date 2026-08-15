@@ -261,6 +261,63 @@ header {
   margin-left: 5px;
 }
 
+.battery-shell {
+  position: relative;
+}
+
+.battery.charging .battery-fill {
+  background: var(--blue);
+}
+
+/* A bolt over the cell, in the Bauhaus vocabulary: a hard zigzag, no gradient */
+.battery-bolt {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 8px;
+  height: 14px;
+  background: var(--yellow);
+  border: 1px solid var(--ink);
+  clip-path: polygon(55% 0, 10% 55%, 45% 55%, 40% 100%, 90% 42%, 52% 42%);
+}
+
+/* ---------- sparkline ---------- */
+
+.sparkline {
+  margin-top: 12px;
+}
+
+.sparkline svg {
+  width: 100%;
+  height: 60px;
+  display: block;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+}
+
+.spark-line {
+  fill: none;
+  stroke: var(--red);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+  stroke-linejoin: round;
+}
+
+/* Where the device was not reporting */
+.spark-gap {
+  fill: rgba(20, 17, 15, 0.1);
+}
+
+.sparkline-scale {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  opacity: 0.6;
+  margin-top: 4px;
+}
+
 /* ---------- banners ---------- */
 
 .banner {

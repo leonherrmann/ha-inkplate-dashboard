@@ -13,6 +13,7 @@ from typing import Any, Callable
 
 import paho.mqtt.client as mqtt
 
+from history import history
 from settings import (
     MQTT_HOST,
     MQTT_PASSWORD,
@@ -34,6 +35,8 @@ class DeviceLink:
         self.applied: dict[str, Any] | None = None
         self.stats: dict[str, Any] | None = None
         self.online: bool = False
+        # None while there is not yet enough history to tell
+        self.charging: bool | None = None
         # Unix time of the last message from the device. Retained messages
         # replay on connect, so this starts as "when we first heard it" rather
         # than being truly live -- close enough to answer "is it still there".
@@ -95,6 +98,13 @@ class DeviceLink:
             log.info("Device reports applied layout: %s", self.applied)
         elif message.topic == topics.stats:
             self.stats = self._parse(payload, "stats")
+            if self.stats:
+                # Order matters: the trend is judged against what was already
+                # known, before this reading joins the history. The other way
+                # round, a lone sample gets compared against itself.
+                self.charging = history.charging(self.stats.get("voltage"))
+                history.record(self.stats, self.online)
+                self.publish_charging(self.charging)
 
         if self.on_change:
             self.on_change()
@@ -119,6 +129,16 @@ class DeviceLink:
 
     def publish_command(self, action: str) -> None:
         self._publish(topics.command, json.dumps({"action": action}), retain=False)
+
+    def publish_charging(self, charging: bool | None) -> None:
+        """Charging is worked out here, so the device is told the answer.
+
+        Retained, so an on-device widget shows the right thing the moment it
+        subscribes rather than after the next change.
+        """
+        if charging is None:
+            return
+        self._publish(topics.charging, "on" if charging else "off", retain=True)
 
     def _publish(self, topic: str, payload: str, retain: bool) -> None:
         if not self._client:

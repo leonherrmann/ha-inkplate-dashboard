@@ -30,11 +30,15 @@ export function signalLabel(rssi) {
   return "poor";
 }
 
-export function Battery({ percentage }) {
+export function Battery({ percentage, charging }) {
   return (
-    <span className="battery" title={`${percentage}%`}>
+    <span
+      className={charging ? "battery charging" : "battery"}
+      title={charging ? `${percentage}%, charging` : `${percentage}%`}
+    >
       <span className="battery-shell">
         <span className="battery-fill" style={{ width: `${percentage}%` }} />
+        {charging && <span className="battery-bolt" aria-label="charging" />}
       </span>
       <span className="battery-cap" />
       <b>{percentage}%</b>
@@ -43,12 +47,12 @@ export function Battery({ percentage }) {
 }
 
 // Compact header summary: is it there, how full is it, when did we last hear it
-export default function DeviceSummary({ online, stats, lastSeenAge, onOpen }) {
+export default function DeviceSummary({ online, stats, charging, lastSeenAge, onOpen }) {
   return (
     <button className="device-summary" onClick={onOpen}>
       <span className={online ? "dot online" : "dot offline"} />
       <span className="device-summary-state">{online ? "ONLINE" : "OFFLINE"}</span>
-      {stats && <Battery percentage={stats.battery ?? 0} />}
+      {stats && <Battery percentage={stats.battery ?? 0} charging={charging} />}
       <span className="device-summary-seen">{formatAge(lastSeenAge)}</span>
     </button>
   );

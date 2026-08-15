@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.7.0
+
+- Charging indicator: a bolt on the battery when the voltage is climbing, worked out
+  by the add-on and published back so an on-device widget can show it too.
+- Battery history sparkline in the Device panel, seven days at 15-minute resolution,
+  shaded where the device was not reporting.
+
 ## 0.6.0
 
 - Reorganised around what things are for. Night sleep and device health moved out
