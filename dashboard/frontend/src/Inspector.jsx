@@ -55,7 +55,15 @@ function Option({ option, value, entities, onChange }) {
   );
 }
 
-export default function Inspector({ widget, manifest, entities, onSetOption, onRemove, onClose }) {
+export default function Inspector({
+  widget,
+  manifest,
+  entities,
+  onSetOption,
+  onSetSize,
+  onRemove,
+  onClose,
+}) {
   if (!widget) {
     return (
       <aside className="inspector">
@@ -81,6 +89,29 @@ export default function Inspector({ widget, manifest, entities, onSetOption, onR
       <div className="inspector-meta">
         {widget.x}, {widget.y} · {size.width}×{size.height}
       </div>
+
+      {/* Only for widgets that offer more than one; the specials have none */}
+      {type?.sizes?.length > 1 && (
+        <label>
+          <span>Size</span>
+          <div className="size-picker">
+            {type.sizes.map((option) => (
+              <button
+                key={option.id}
+                className={
+                  (widget.size || type.sizes[0].id) === option.id ? "chip active" : "chip"
+                }
+                onClick={() => onSetSize(widget.id, option.id)}
+              >
+                {option.label}
+                <small>
+                  {option.cols}×{option.rows}
+                </small>
+              </button>
+            ))}
+          </div>
+        </label>
+      )}
 
       {options.map((option) => (
         <label key={option.key}>

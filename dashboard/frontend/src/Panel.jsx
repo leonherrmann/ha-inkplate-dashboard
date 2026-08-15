@@ -73,7 +73,8 @@ export default function Panel({
   selectedId,
   onSelect,
   onMove,
-  snapStep,
+  snapMode,
+  grid,
   zoom,
 }) {
   const [rulerRef, available] = useAvailableWidth();
@@ -97,8 +98,21 @@ export default function Panel({
     const widget = widgets.find((candidate) => candidate.id === event.active.id);
     if (!widget) return;
     const delta = { x: event.delta.x / scale, y: event.delta.y / scale };
-    onMove(widget.id, placeWidget(widget, delta, snapStep, widgetSize(manifest, widget), panel));
+    onMove(
+      widget.id,
+      placeWidget(widget, delta, snapMode, grid, widgetSize(manifest, widget), panel)
+    );
   };
+
+  // In grid mode the backdrop shows the actual cells, so it is obvious where a
+  // widget will land; the finer modes just get a plain rule grid.
+  const backdrop =
+    snapMode === "grid"
+      ? {
+          backgroundSize: `${grid.unit_w + grid.gap}px ${grid.unit_h + grid.gap}px`,
+          backgroundPosition: `${grid.gap}px ${grid.gap}px`,
+        }
+      : { backgroundSize: `${snapMode === "fine" ? 20 : 10}px ${snapMode === "fine" ? 20 : 10}px` };
 
   return (
     <div className="panel-outer">
@@ -116,12 +130,12 @@ export default function Panel({
         >
           <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
             <div
-              className="panel"
+              className={snapMode === "grid" ? "panel cells" : "panel"}
               style={{
                 width: panel.width,
                 height: panel.height,
                 transform: `scale(${scale})`,
-                backgroundSize: `${snapStep}px ${snapStep}px`,
+                ...backdrop,
               }}
               onPointerDown={(event) => {
                 if (event.target === event.currentTarget) onSelect(null);

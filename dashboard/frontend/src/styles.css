@@ -718,6 +718,24 @@ main {
 /* Deliberately no touch-action: none. The TouchSensor activates on a press
    delay and suppresses scrolling itself once a drag starts, so leaving this
    alone keeps the page scrollable by swiping over the panel. */
+/* In grid mode the backdrop shows the real cells, so where a widget will land
+   is obvious before you drop it. */
+.panel.cells {
+  background-image: linear-gradient(to right, rgba(230, 57, 70, 0.22) 2px, transparent 2px),
+    linear-gradient(to bottom, rgba(230, 57, 70, 0.22) 2px, transparent 2px);
+}
+
+.size-picker {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.size-picker .chip {
+  flex: 1 1 auto;
+  justify-content: center;
+}
+
 .widget {
   position: absolute;
   cursor: grab;

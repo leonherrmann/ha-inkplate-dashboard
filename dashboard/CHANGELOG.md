@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.9.0
+
+- Snapping to the widget grid the firmware actually uses, so a dragged widget lands
+  exactly where it will be drawn. The canvas shows the real cells while in Grid mode.
+- Widgets that come in several sizes get a size picker; changing size re-places the
+  widget so it stays on the grid and on the panel.
+
 ## 0.8.0
 
 - Pages. Design several, keep them in a library, and put a selection on a rotating

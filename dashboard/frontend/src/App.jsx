@@ -7,7 +7,15 @@ import Panel from "./Panel.jsx";
 import PageTabs from "./PageTabs.jsx";
 import QueueTab from "./QueueTab.jsx";
 import * as api from "./api.js";
-import { DEFAULT_SNAP, SNAP_STEPS, ZOOM_LEVELS, newId } from "./layout.js";
+import {
+  DEFAULT_SNAP,
+  FALLBACK_GRID,
+  SNAP_MODES,
+  ZOOM_LEVELS,
+  newId,
+  placeWidget,
+  widgetSize,
+} from "./layout.js";
 
 const TABS = [
   { id: "design", label: "Design" },
@@ -50,12 +58,14 @@ export default function App() {
   const [tab, setTab] = useState("design");
   const [activePageId, setActivePageId] = useState(null);
   const [selectedId, setSelectedId] = useState(null);
-  const [snapStep, setSnapStep] = useState(DEFAULT_SNAP);
+  const [snapMode, setSnapMode] = useState(DEFAULT_SNAP);
   const [zoom, setZoom] = useState("fit");
   const [message, setMessage] = useState(null);
 
   const manifest = status?.manifest;
   const panel = manifest?.display || { width: 1280, height: 720 };
+  // The firmware owns the grid and publishes it; this is only the fallback
+  const grid = manifest?.grid || FALLBACK_GRID;
 
   const pages = layout?.pages || [];
   const activePage = pages.find((page) => page.id === activePageId) || pages[0] || null;
@@ -105,7 +115,16 @@ export default function App() {
   );
 
   const addWidget = (type) => {
-    const widget = { id: newId(), type: type.type, x: 0, y: 0, options: {} };
+    // Lands on the first cell rather than the very corner, so a new widget is
+    // already grid-aligned and inside the edge gap.
+    const widget = {
+      id: newId(),
+      type: type.type,
+      x: grid.gap,
+      y: grid.gap,
+      options: {},
+      ...(type.sizes?.length ? { size: type.sizes[0].id } : {}),
+    };
     updateWidgets((current) => [...current, widget]);
     setSelectedId(widget.id);
   };
@@ -125,6 +144,17 @@ export default function App() {
       current.map((widget) =>
         widget.id === id ? { ...widget, options: { ...widget.options, [key]: value } } : widget
       )
+    );
+
+  // Changing size changes the footprint, so the widget is re-placed to keep it
+  // on the panel and, in grid mode, still on a cell.
+  const setSize = (id, sizeId) =>
+    updateWidgets((current) =>
+      current.map((widget) => {
+        if (widget.id !== id) return widget;
+        const resized = { ...widget, size: sizeId };
+        return { ...resized, ...placeWidget(resized, { x: 0, y: 0 }, snapMode, grid, widgetSize(manifest, resized), panel) };
+      })
     );
 
   const addPage = () => {
@@ -228,14 +258,14 @@ export default function App() {
               <div className="toolbar">
                 <div className="toolbar-group">
                   <span className="toolbar-label">Snap</span>
-                  {SNAP_STEPS.map(({ label, step }) => (
+                  {SNAP_MODES.map(({ id, label, hint }) => (
                     <button
-                      key={label}
-                      className={step === snapStep ? "chip active" : "chip"}
-                      onClick={() => setSnapStep(step)}
+                      key={id}
+                      className={id === snapMode ? "chip active" : "chip"}
+                      onClick={() => setSnapMode(id)}
                     >
                       {label}
-                      <small>{step}px</small>
+                      <small>{hint}</small>
                     </button>
                   ))}
                 </div>
@@ -261,7 +291,8 @@ export default function App() {
                 selectedId={selectedId}
                 onSelect={setSelectedId}
                 onMove={moveWidget}
-                snapStep={snapStep}
+                snapMode={snapMode}
+                grid={grid}
                 zoom={zoom}
               />
             </main>
@@ -283,6 +314,7 @@ export default function App() {
               manifest={manifest}
               entities={entities}
               onSetOption={setOption}
+              onSetSize={setSize}
               onRemove={removeWidget}
               onClose={() => setSelectedId(null)}
             />
