@@ -6,8 +6,8 @@ export default function SleepSettings({ sleep, onChange }) {
   const set = (key, next) => onChange({ ...value, [key]: next });
 
   return (
-    <aside className="sleep-settings">
-      <h2>Night sleep</h2>
+    <section className="group">
+      <h3>Night sleep</h3>
 
       <label className="switch">
         <input
@@ -15,13 +15,13 @@ export default function SleepSettings({ sleep, onChange }) {
           checked={Boolean(value.enabled)}
           onChange={(event) => set("enabled", event.target.checked)}
         />
-        <span>Sleep at night</span>
+        <span>Sleep through the night to save battery</span>
       </label>
 
       {value.enabled && (
         <>
-          <div className="sleep-times">
-            <label>
+          <div className="field-row">
+            <label className="field">
               <span>From</span>
               <input
                 type="time"
@@ -29,7 +29,7 @@ export default function SleepSettings({ sleep, onChange }) {
                 onChange={(event) => set("start", event.target.value)}
               />
             </label>
-            <label>
+            <label className="field">
               <span>Until</span>
               <input
                 type="time"
@@ -39,7 +39,7 @@ export default function SleepSettings({ sleep, onChange }) {
             </label>
           </div>
 
-          <label>
+          <label className="field">
             <span>Wake to refresh</span>
             <select
               value={String(value.wake_minutes ?? 30)}
@@ -54,12 +54,12 @@ export default function SleepSettings({ sleep, onChange }) {
           </label>
 
           <p className="hint">
-            {value.wake_minutes === 0
+            {Number(value.wake_minutes) === 0
               ? "The clock will show the time it went to sleep until morning, and a push will not arrive until then."
               : "Each wake takes about 20 seconds, enough to refresh the clock and collect anything pushed while asleep."}
           </p>
         </>
       )}
-    </aside>
+    </section>
   );
 }

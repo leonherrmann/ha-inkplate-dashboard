@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.6.0
+
+- Reorganised around what things are for. Night sleep and device health moved out
+  of the widget palette into a Device panel opened from the header; view controls
+  sit with the canvas they act on.
+- Shows when the device was last heard from, and it now announces a planned sleep
+  so a quiet night does not look like a fault.
+- The canvas no longer overflows on a phone, and the time inputs stay in their box.
+
 ## 0.5.0
 
 - Night sleep: set a window and the device deep-sleeps through it to save battery.

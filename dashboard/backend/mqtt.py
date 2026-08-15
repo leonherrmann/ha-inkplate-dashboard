@@ -8,6 +8,7 @@ layout it last applied.
 import json
 import logging
 import threading
+import time
 from typing import Any, Callable
 
 import paho.mqtt.client as mqtt
@@ -33,6 +34,10 @@ class DeviceLink:
         self.applied: dict[str, Any] | None = None
         self.stats: dict[str, Any] | None = None
         self.online: bool = False
+        # Unix time of the last message from the device. Retained messages
+        # replay on connect, so this starts as "when we first heard it" rather
+        # than being truly live -- close enough to answer "is it still there".
+        self.last_seen: float | None = None
 
         self.on_change: Callable[[], None] | None = None
 
@@ -75,6 +80,7 @@ class DeviceLink:
 
     def _on_message(self, client: mqtt.Client, userdata, message: mqtt.MQTTMessage) -> None:
         payload = message.payload.decode("utf-8", errors="replace")
+        self.last_seen = time.time()
 
         if message.topic == topics.status:
             self.online = payload.strip() == "online"

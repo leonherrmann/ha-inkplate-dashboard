@@ -2,6 +2,7 @@
 
 import logging
 import os
+import time
 from contextlib import asynccontextmanager
 from typing import Any
 
@@ -50,6 +51,8 @@ async def get_status() -> dict[str, Any]:
         "manifest": link.manifest,
         "applied": link.applied,
         "stats": link.stats,
+        "last_seen": link.last_seen,
+        "server_time": time.time(),
         "draft_version": layout.get("version", 0),
         "bridge_enabled": bool(SUPERVISOR_TOKEN),
     }

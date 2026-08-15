@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import {
   DndContext,
   MouseSensor,
@@ -11,26 +11,31 @@ import {
 import WidgetPreview from "./WidgetPreview.jsx";
 import { placeWidget, widgetSize } from "./layout.js";
 
-// The panel is a fixed 1280x720 surface. Rather than lay it out responsively,
-// it is drawn at full size and scaled to whatever width is available, so what
-// you see is always proportionally the real thing.
-function useScale(panelWidth) {
+// Measured from a zero-height, full-width ruler. Measuring the panel's own
+// container is what caused the mobile overflow: the fixed 1280px panel widened
+// that container, so the measurement came back as 1280 and the scale never
+// shrank. A ruler with no height cannot be inflated by anything.
+function useAvailableWidth() {
   const ref = useRef(null);
-  const [scale, setScale] = useState(1);
+  const [width, setWidth] = useState(0);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const element = ref.current;
     if (!element) return undefined;
 
-    const observer = new ResizeObserver(([entry]) => {
-      const available = entry.contentRect.width;
-      setScale(Math.min(1, available / panelWidth));
-    });
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, [panelWidth]);
+    const update = () => setWidth(element.getBoundingClientRect().width);
+    update();
 
-  return [ref, scale];
+    const observer = new ResizeObserver(update);
+    observer.observe(element);
+    window.addEventListener("resize", update);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", update);
+    };
+  }, []);
+
+  return [ref, width];
 }
 
 function DraggableWidget({ widget, size, selected, onSelect, scale }) {
@@ -38,7 +43,7 @@ function DraggableWidget({ widget, size, selected, onSelect, scale }) {
     id: widget.id,
   });
 
-  // Pointer deltas are in screen pixels; the panel is scaled, so convert back
+  // Pointer deltas are screen pixels; the panel is scaled, so convert back
   const offset = transform ? { x: transform.x / scale, y: transform.y / scale } : { x: 0, y: 0 };
 
   return (
@@ -71,15 +76,18 @@ export default function Panel({
   snapStep,
   zoom,
 }) {
-  const [wrapperRef, fitScale] = useScale(panel.width);
-  // "fit" shows the whole panel; a fixed zoom scrolls, which is the only way to
-  // place things accurately on a phone where fit is around 28%.
-  const scale = zoom === "fit" ? fitScale : zoom;
+  const [rulerRef, available] = useAvailableWidth();
 
-  // A drag only starts once the pointer has travelled far enough (or, on touch,
-  // after a short press). Below that threshold the gesture stays a click, which
-  // is what makes tap-to-select work without dragging first, and lets a swipe
-  // scroll the page on a phone instead of dragging a widget.
+  // Leave room for the offset shadow, which sits outside the scaler's box
+  const SHADOW = 6;
+  const fitScale =
+    available > 0 ? Math.min(1, Math.max(0, available - SHADOW) / panel.width) : 1;
+  const scale = zoom === "fit" ? fitScale : zoom;
+  const fits = scale <= fitScale;
+
+  // A drag only starts past a movement threshold, or after a short press on
+  // touch. Below that the gesture stays a click, which is what makes
+  // tap-to-select work, and lets a swipe scroll the page on a phone.
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 4 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } })
@@ -93,11 +101,18 @@ export default function Panel({
   };
 
   return (
-    <div className="panel-wrapper" ref={wrapperRef}>
-      <div className="panel-viewport">
+    <div className="panel-outer">
+      <div className="ruler" ref={rulerRef} aria-hidden="true" />
+
+      {/* Clipped when it fits so it can never spill; scrollable when zoomed in */}
+      <div className={fits ? "panel-viewport" : "panel-viewport scrollable"}>
         <div
           className="panel-scaler"
-          style={{ width: panel.width * scale, height: panel.height * scale }}
+          style={{
+            width: Math.round(panel.width * scale),
+            height: Math.round(panel.height * scale),
+            visibility: available > 0 ? "visible" : "hidden",
+          }}
         >
           <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
             <div
@@ -109,7 +124,6 @@ export default function Panel({
                 backgroundSize: `${snapStep}px ${snapStep}px`,
               }}
               onPointerDown={(event) => {
-                // Clicking the bare panel clears the selection
                 if (event.target === event.currentTarget) onSelect(null);
               }}
             >
