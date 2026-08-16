@@ -2,3 +2,6 @@ fastapi==0.115.6
 uvicorn==0.34.0
 paho-mqtt==1.6.1
 aiohttp==3.11.11
+# Multipart form parsing, for image uploads
+python-multipart==0.0.20
+# Pillow is installed via apk (py3-pillow), see Dockerfile

@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.10.0
+
+- Upload images. A new Images tab converts a picture to the 1-bit form the panel
+  draws and serves it to the device, which caches it on its SD card.
+- Two kinds, because they want opposite treatment. **Pixel accurate** keeps the
+  image at its own size and only thresholds it, for art drawn to match the UI.
+  **Photo** crops to fill a grid size you choose and dithers it.
+- The image widget's picker now lists uploaded images alongside the icons built
+  into the firmware, with a preview of exactly what the panel will show.
+- Images are served on port **8098**, mapped straight to the host: the editor is
+  behind Home Assistant's authenticated ingress and the Inkplate cannot log in.
+  Set `image_base_url` to `http://<your-ha-ip>:8098` if the address the add-on
+  works out for itself is wrong.
+
 ## 0.9.0
 
 - Snapping to the widget grid the firmware actually uses, so a dragged widget lands

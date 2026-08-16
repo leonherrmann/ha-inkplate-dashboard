@@ -26,3 +26,22 @@ export const saveLayout = (layout) =>
 export const pushLayout = () => request("push", { method: "POST" });
 export const refreshDevice = () => request("refresh", { method: "POST" });
 export const showPage = (id) => request(`page/${encodeURIComponent(id)}`, { method: "POST" });
+
+export const getImages = () => request("images");
+
+// The boundary is left to the browser, so no Content-Type header here
+export const uploadImage = ({ file, name, mode, width, height }) => {
+  const form = new FormData();
+  form.append("file", file);
+  form.append("name", name || "");
+  form.append("mode", mode);
+  form.append("width", String(width || 0));
+  form.append("height", String(height || 0));
+  return request("images", { method: "POST", body: form });
+};
+
+export const deleteImage = (name) =>
+  request(`images/${encodeURIComponent(name)}`, { method: "DELETE" });
+
+// What the panel will actually show, dithering and all
+export const imagePreviewUrl = (name) => `${base}/images/${encodeURIComponent(name)}/preview.png`;

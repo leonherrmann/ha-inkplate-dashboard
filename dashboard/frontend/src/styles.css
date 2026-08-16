@@ -1338,3 +1338,66 @@ main {
     max-height: 92vh;
   }
 }
+
+/* --- images tab --------------------------------------------------------- */
+
+.images-tab {
+  display: grid;
+  gap: var(--gap);
+  padding: var(--gap);
+  align-content: start;
+}
+
+.upload label {
+  display: grid;
+  gap: 6px;
+  margin-bottom: var(--gap);
+}
+
+.upload input[type="file"] {
+  padding: 8px;
+}
+
+.image-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--gap);
+}
+
+.image-item {
+  margin: 0;
+  display: grid;
+  gap: 8px;
+  border: var(--rule) solid var(--ink);
+  box-shadow: var(--shadow);
+  background: var(--paper);
+  padding: 10px;
+}
+
+/* Nearest-neighbour: these are 1-bit bitmaps, and smoothing them in the browser
+   would show something the panel cannot produce. */
+.image-item img {
+  width: 100%;
+  height: auto;
+  image-rendering: pixelated;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+}
+
+.image-item figcaption {
+  display: grid;
+  gap: 2px;
+}
+
+.image-item figcaption small {
+  opacity: 0.7;
+}
+
+.option-preview {
+  margin-top: 8px;
+  width: 100%;
+  height: auto;
+  image-rendering: pixelated;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+}

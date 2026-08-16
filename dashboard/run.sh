@@ -4,10 +4,14 @@
 # ==============================================================================
 
 export PORT=8099
+# Plain HTTP for the device: ingress is authenticated and the Inkplate
+# cannot log in, so image blobs are served here instead.
+export DEVICE_PORT=8098
 export DATA_DIR=/data
 export STATIC_DIR=/app/static
 export DEVICE_ID="$(bashio::config 'device_id')"
 export LOG_LEVEL="$(bashio::config 'log_level')"
+export IMAGE_BASE_URL="$(bashio::config 'image_base_url')"
 
 # ------------------------------------------------------------------------------
 # MQTT: manual options win, otherwise use the broker Home Assistant provides.
@@ -29,4 +33,7 @@ else
 fi
 
 bashio::log.info "Starting Inkplate Dashboard for device '${DEVICE_ID}'"
+bashio::log.info "Serving image blobs to the device on port ${DEVICE_PORT}"
+python3 -m uvicorn device_api:app --host 0.0.0.0 --port "${DEVICE_PORT}" &
+
 exec python3 -m uvicorn main:app --host 0.0.0.0 --port "${PORT}"

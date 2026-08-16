@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import DeviceSummary from "./DeviceStats.jsx";
 import DeviceTab from "./DeviceTab.jsx";
+import ImagesTab from "./ImagesTab.jsx";
 import Inspector from "./Inspector.jsx";
 import Panel from "./Panel.jsx";
 import PageTabs from "./PageTabs.jsx";
@@ -20,6 +21,7 @@ import {
 const TABS = [
   { id: "design", label: "Design" },
   { id: "queue", label: "Queue" },
+  { id: "images", label: "Images" },
   { id: "device", label: "Device" },
 ];
 
@@ -55,6 +57,7 @@ export default function App() {
   const { status, error: statusError } = useStatus();
   const [layout, setLayout] = useState(null);
   const [entities, setEntities] = useState([]);
+  const [uploads, setUploads] = useState([]);
   const [tab, setTab] = useState("design");
   const [activePageId, setActivePageId] = useState(null);
   const [selectedId, setSelectedId] = useState(null);
@@ -87,6 +90,8 @@ export default function App() {
   useEffect(() => {
     api.getLayout().then(setLayout).catch((problem) => setMessage(problem.message));
     api.getEntities().then(setEntities).catch(() => setEntities([]));
+    // Named in the image widget's picker alongside the built-in icons
+    api.getImages().then((data) => setUploads(data.images || [])).catch(() => setUploads([]));
   }, []);
 
   const persist = useCallback(async (next) => {
@@ -313,6 +318,7 @@ export default function App() {
               widget={selected}
               manifest={manifest}
               entities={entities}
+              uploads={uploads}
               onSetOption={setOption}
               onSetSize={setSize}
               onRemove={removeWidget}
@@ -330,6 +336,17 @@ export default function App() {
           onShowPage={(id) =>
             api.showPage(id).then(() => setMessage(`Showing ${id} on the device`))
           }
+        />
+      )}
+
+      {tab === "images" && (
+        <ImagesTab
+          grid={grid}
+          panel={panel}
+          onMessage={(text) => {
+            setMessage(text);
+            api.getImages().then((data) => setUploads(data.images || [])).catch(() => {});
+          }}
         />
       )}
 

@@ -1,7 +1,8 @@
 import EntityPicker from "./EntityPicker.jsx";
+import { imagePreviewUrl } from "./api.js";
 import { widgetSize, widgetType } from "./layout.js";
 
-function Option({ option, value, entities, onChange }) {
+function Option({ option, value, entities, uploads, onChange }) {
   if (option.type === "entity") {
     return (
       <EntityPicker
@@ -30,19 +31,40 @@ function Option({ option, value, entities, onChange }) {
     );
   }
 
-  // Image values carry their pixel size, which is also the widget's footprint
+  // Image values carry their pixel size, which is also the widget's footprint.
+  // Two sources: images uploaded to the add-on, and the ones compiled into the
+  // firmware, which the manifest lists.
   if (option.type === "image") {
+    const builtIn = option.values || [];
     return (
-      <select value={value || ""} onChange={(event) => onChange(event.target.value)}>
-        <option value="">— none —</option>
-        {(option.values || []).map((image) => (
-          <option key={image.name} value={image.name}>
-            {(option.filter && image.name.startsWith(option.filter)
-              ? image.name.slice(option.filter.length)
-              : image.name) + ` (${image.width}×${image.height})`}
-          </option>
-        ))}
-      </select>
+      <>
+        <select value={value || ""} onChange={(event) => onChange(event.target.value)}>
+          <option value="">— none —</option>
+          {uploads?.length > 0 && (
+            <optgroup label="Uploaded">
+              {uploads.map((image) => (
+                <option key={image.name} value={image.name}>
+                  {`${image.name} (${image.width}×${image.height})`}
+                </option>
+              ))}
+            </optgroup>
+          )}
+          {builtIn.length > 0 && (
+            <optgroup label="Built in">
+              {builtIn.map((image) => (
+                <option key={image.name} value={image.name}>
+                  {(option.filter && image.name.startsWith(option.filter)
+                    ? image.name.slice(option.filter.length)
+                    : image.name) + ` (${image.width}×${image.height})`}
+                </option>
+              ))}
+            </optgroup>
+          )}
+        </select>
+        {uploads?.some((image) => image.name === value) && (
+          <img className="option-preview" src={imagePreviewUrl(value)} alt={value} />
+        )}
+      </>
     );
   }
 
@@ -59,6 +81,7 @@ export default function Inspector({
   widget,
   manifest,
   entities,
+  uploads,
   onSetOption,
   onSetSize,
   onRemove,
@@ -120,6 +143,7 @@ export default function Inspector({
             option={option}
             value={widget.options?.[option.key]}
             entities={entities}
+            uploads={uploads}
             onChange={(next) => onSetOption(widget.id, option.key, next)}
           />
         </label>

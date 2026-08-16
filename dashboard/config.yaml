@@ -1,6 +1,6 @@
 # https://developers.home-assistant.io/docs/add-ons/configuration#add-on-config
 name: Inkplate Dashboard
-version: "0.9.0"
+version: "0.10.0"
 slug: inkplate_dashboard
 description: Edit the layout of an Inkplate 5 e-ink dashboard and push it over MQTT
 url: "https://github.com/leonherrmann/ha-inkplate-dashboard"
@@ -18,10 +18,16 @@ services:
 homeassistant_api: true
 ingress: true
 ingress_port: 8099
+# The device fetches uploaded images over plain HTTP; it cannot use ingress
+ports:
+  8098/tcp: 8098
+ports_description:
+  8098/tcp: Image downloads for the Inkplate (no authentication)
 panel_icon: mdi:view-dashboard-edit
 options:
   device_id: inkplate5v2
   log_level: info
+  image_base_url: ""
   mqtt_host: ""
   mqtt_port: 1883
   mqtt_user: ""
@@ -29,6 +35,7 @@ options:
 schema:
   device_id: str
   log_level: list(debug|info|warning|error)
+  image_base_url: str?
   mqtt_host: str?
   mqtt_port: port
   mqtt_user: str?

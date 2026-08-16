@@ -19,6 +19,16 @@ STATIC_DIR = os.environ.get("STATIC_DIR", "./static")
 PORT = int(os.environ.get("PORT", "8099"))
 LOG_LEVEL = os.environ.get("LOG_LEVEL", "info").upper()
 
+# The editor is served through Home Assistant's ingress, which is authenticated
+# -- the device cannot use it. Image blobs are served on this second, plain port
+# instead, mapped straight to the host in config.yaml.
+DEVICE_PORT = int(os.environ.get("DEVICE_PORT", "8098"))
+
+# What the device should prefix image URLs with. Left empty, the add-on asks the
+# Supervisor for the host's address and works it out; set it when that guesses
+# wrong, e.g. with multiple interfaces or a reverse proxy.
+IMAGE_BASE_URL = os.environ.get("IMAGE_BASE_URL", "").strip()
+
 # Present when running as a real add-on; absent when developing on a laptop, in
 # which case the state bridge stays off and you can still edit and push layouts.
 SUPERVISOR_TOKEN = os.environ.get("SUPERVISOR_TOKEN")
@@ -42,6 +52,9 @@ class Topics:
         self.charging = f"{self.root}/charging"
         # The page the device is currently showing
         self.page = f"{self.root}/page"
+        # Retained list of uploaded images and where to fetch them, so a
+        # rebooting device knows what to pull without asking
+        self.images_manifest = f"{self.root}/images/manifest"
 
     def state(self, entity_id: str, attribute: str | None = None) -> str:
         if attribute:

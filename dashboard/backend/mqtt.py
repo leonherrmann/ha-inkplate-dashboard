@@ -134,6 +134,15 @@ class DeviceLink:
     def publish_command(self, action: str, **extra: Any) -> None:
         self._publish(topics.command, json.dumps({"action": action, **extra}), retain=False)
 
+    def publish_images(self, manifest: dict[str, Any]) -> None:
+        """Tell the device which images exist and where to fetch them.
+
+        Retained: a device that reboots, or that was asleep when an image was
+        uploaded, picks this up on connect and syncs without being asked.
+        """
+        self._publish(topics.images_manifest, json.dumps(manifest), retain=True)
+        log.info("Published an image manifest listing %d images", len(manifest.get("images", [])))
+
     def publish_charging(self, charging: bool | None) -> None:
         """Charging is worked out here, so the device is told the answer.
 
