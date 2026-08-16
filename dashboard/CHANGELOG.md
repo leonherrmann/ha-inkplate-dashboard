@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.10.1
+
+- Work out the address to give the device by itself. 0.10.0 asked the Supervisor
+  for the host's address without declaring `hassio_api`, so the call was refused
+  and `image_base_url` always had to be set by hand.
+- Say which address the device is using, rather than only complaining when there
+  is not one.
+
 ## 0.10.0
 
 - Upload images. A new Images tab converts a picture to the 1-bit form the panel

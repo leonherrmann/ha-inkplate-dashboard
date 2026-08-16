@@ -1,6 +1,6 @@
 # https://developers.home-assistant.io/docs/add-ons/configuration#add-on-config
 name: Inkplate Dashboard
-version: "0.10.0"
+version: "0.10.1"
 slug: inkplate_dashboard
 description: Edit the layout of an Inkplate 5 e-ink dashboard and push it over MQTT
 url: "https://github.com/leonherrmann/ha-inkplate-dashboard"
@@ -16,6 +16,10 @@ services:
   - mqtt:want
 # Needed for the state bridge: reading entity states over the Supervisor proxy
 homeassistant_api: true
+# Needed to ask the Supervisor for the host's own address, which is what the
+# device is told to fetch images from. Without it that call is refused and
+# image_base_url has to be set by hand.
+hassio_api: true
 ingress: true
 ingress_port: 8099
 # The device fetches uploaded images over plain HTTP; it cannot use ingress

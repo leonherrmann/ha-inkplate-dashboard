@@ -102,12 +102,20 @@ export default function ImagesTab({ grid, panel, onMessage }) {
 
   return (
     <div className="images-tab">
-      {!baseUrl && (
+      {baseUrl ? (
+        // Worth stating even when it works: it is the one piece of this that
+        // depends on your network rather than on the add-on.
+        <p className="hint">
+          The panel downloads images from <code>{baseUrl}</code>.
+        </p>
+      ) : (
         <div className="banner">
-          The device has no address to fetch images from. Set the{" "}
-          <code>image_base_url</code> add-on option to{" "}
-          <code>http://&lt;your-home-assistant-ip&gt;:8098</code>. Uploads still work; the
-          panel just will not be able to download them.
+          <strong>The panel cannot download images yet.</strong> The add-on could not
+          work out your Home Assistant address by itself. Open this add-on's{" "}
+          <em>Configuration</em> tab and set <code>image_base_url</code> to the same
+          address you use to reach Home Assistant, with port 8098 — for example{" "}
+          <code>http://192.168.1.50:8098</code> — then restart the add-on. Uploading
+          and previewing work regardless; only the download to the panel is affected.
         </div>
       )}
 
