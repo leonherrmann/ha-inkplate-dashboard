@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.13.2
+
+- Watch releases in a private repo. Set `github_token` to a fine-grained token
+  with read access to the firmware repo's contents; without one GitHub answers
+  404 and the add-on cannot tell "no releases" from "not allowed to look".
+- Serve the held firmware reliably. The device-facing server runs as its own
+  process and was trusting a copy of the state it read at startup, so a release
+  downloaded while it was running looked absent.
+
 ## 0.13.1
 
 - Drop the four bundled preview photos. They stood in for images compiled into
