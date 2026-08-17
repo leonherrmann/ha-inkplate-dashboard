@@ -15,6 +15,7 @@ import os
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 
+import firmware
 import images
 
 log = logging.getLogger("inkplate.device")
@@ -36,6 +37,14 @@ async def get_image(name: str) -> FileResponse:
         raise HTTPException(status_code=404, detail="No such image")
 
     return FileResponse(path, media_type="application/octet-stream")
+
+
+@app.get("/firmware.bin")
+async def get_firmware() -> FileResponse:
+    """The release binary, re-served in plain HTTP because the device has no TLS."""
+    if not firmware.store.have_binary():
+        raise HTTPException(status_code=404, detail="No firmware held")
+    return FileResponse(firmware.store.binary_path, media_type="application/octet-stream")
 
 
 @app.get("/health")

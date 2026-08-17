@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.13.0
+
+- Over-the-air firmware updates. Set `firmware_repo` to `owner/repo` and the
+  add-on watches its releases, holds the binary and offers it to the panel from
+  the Device tab. The panel checks the hash before installing, and the
+  bootloader restores the previous build if the new one cannot boot.
+- The add-on fetches from GitHub on the panel's behalf: releases are HTTPS and
+  the firmware has no TLS stack, deliberately.
+- Needs firmware with the update support, on the `min_spiffs` partition scheme.
+
 ## 0.12.0
 
 - Support for the firmware's new text widget: a multi-line text box, and pickers

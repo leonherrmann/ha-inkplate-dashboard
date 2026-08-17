@@ -12,6 +12,7 @@ export STATIC_DIR=/app/static
 export DEVICE_ID="$(bashio::config 'device_id')"
 export LOG_LEVEL="$(bashio::config 'log_level')"
 export IMAGE_BASE_URL="$(bashio::config 'image_base_url')"
+export FIRMWARE_REPO="$(bashio::config 'firmware_repo')"
 
 # ------------------------------------------------------------------------------
 # MQTT: manual options win, otherwise use the broker Home Assistant provides.

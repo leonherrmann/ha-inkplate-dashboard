@@ -29,6 +29,10 @@ export const showPage = (id) => request(`page/${encodeURIComponent(id)}`, { meth
 
 export const getImages = () => request("images");
 
+export const getFirmware = () => request("firmware");
+export const checkFirmware = () => request("firmware/check", { method: "POST" });
+export const updateFirmware = () => request("firmware/update", { method: "POST" });
+
 // The boundary is left to the browser, so no Content-Type header here
 export const uploadImage = ({ file, name, mode, width, height }) => {
   const form = new FormData();

@@ -10,16 +10,39 @@ import { Battery, formatAge, formatUptime, signalLabel } from "./DeviceStats.jsx
 // widget palette, which it has nothing to do with.
 export default function DeviceTab({ status, lastSeenAge, sleep, onSleepChange, onRefresh }) {
   const [samples, setSamples] = useState(null);
+  const [firmware, setFirmware] = useState(null);
+  const [busy, setBusy] = useState("");
 
   // Only fetched when this tab is opened; it is not needed to edit a layout
   useEffect(() => {
     api.getHistory().then((data) => setSamples(data.samples)).catch(() => setSamples([]));
+    loadFirmware();
   }, []);
+
+  const loadFirmware = () =>
+    api.getFirmware().then(setFirmware).catch(() => setFirmware(null));
+
+  const runFirmware = async (what, action) => {
+    setBusy(what);
+    try {
+      await action();
+      await loadFirmware();
+    } catch (problem) {
+      setFirmware((current) => ({ ...(current || {}), uiError: problem.message }));
+    } finally {
+      setBusy("");
+    }
+  };
 
   const stats = status?.stats;
   const charging = status?.charging;
   const images = stats?.images;
   const cachedAll = images?.known > 0 && images.cached === images.known;
+  // The device reports what it is running; anything else on offer is newer by
+  // definition, because the add-on only ever holds the latest release.
+  const canUpdate =
+    Boolean(firmware?.held?.version) &&
+    firmware.held.version !== firmware?.device?.running;
 
   return (
     <div className="tab-panel">
@@ -158,6 +181,63 @@ export default function DeviceTab({ status, lastSeenAge, sleep, onSleepChange, o
                 <small>free heap</small>
               </div>
             </div>
+          </section>
+
+          <section className="group">
+            <h3>Firmware</h3>
+            {!firmware?.repo ? (
+              <p className="hint">
+                Over-the-air updates are off. Set the <code>firmware_repo</code> add-on
+                option to <code>owner/repo</code> and the add-on will watch its releases.
+              </p>
+            ) : (
+              <>
+                <div className="facts">
+                  <div className="fact">
+                    <b>{firmware.device?.running || "—"}</b>
+                    <small>running on the panel</small>
+                  </div>
+                  <div className="fact">
+                    <b className={canUpdate ? "ok" : undefined}>
+                      {firmware.held?.version || "none"}
+                    </b>
+                    <small>latest release held</small>
+                  </div>
+                </div>
+
+                {firmware.held?.error && <p className="hint bad">{firmware.held.error}</p>}
+                {firmware.device?.error && (
+                  <p className="hint bad">Device: {firmware.device.error}</p>
+                )}
+                {firmware.uiError && <p className="hint bad">{firmware.uiError}</p>}
+
+                {firmware.held?.version && !firmware.servable && (
+                  <p className="hint bad">
+                    The device has no address to fetch from, so it cannot install this.
+                    Set <code>image_base_url</code> in the add-on options.
+                  </p>
+                )}
+
+                <div className="group-actions">
+                  <button disabled={busy !== ""} onClick={() => runFirmware("check", api.checkFirmware)}>
+                    {busy === "check" ? "Checking…" : "Check for a release"}
+                  </button>
+                  <button
+                    className={canUpdate ? "primary" : undefined}
+                    disabled={!canUpdate || !firmware.servable || busy !== ""}
+                    onClick={() => runFirmware("update", api.updateFirmware)}
+                  >
+                    {busy === "update" ? "Sent…" : "Install on the panel"}
+                  </button>
+                </div>
+
+                <p className="hint">
+                  {canUpdate
+                    ? "The panel downloads it, checks the hash and restarts. If the new build cannot boot, the bootloader puts the old one back."
+                    : "The panel is running the newest release held here."}
+                </p>
+              </>
+            )}
           </section>
 
         <SleepSettings sleep={sleep} onChange={onSleepChange} />

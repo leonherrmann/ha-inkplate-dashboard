@@ -29,6 +29,11 @@ DEVICE_PORT = int(os.environ.get("DEVICE_PORT", "8098"))
 # wrong, e.g. with multiple interfaces or a reverse proxy.
 IMAGE_BASE_URL = os.environ.get("IMAGE_BASE_URL", "").strip()
 
+# Releases of the firmware repo are watched here rather than by the device: they
+# are served over HTTPS, and the device has no TLS stack by design.
+FIRMWARE_REPO = os.environ.get("FIRMWARE_REPO", "").strip()
+FIRMWARE_POLL_HOURS = float(os.environ.get("FIRMWARE_POLL_HOURS", "6"))
+
 # Present when running as a real add-on; absent when developing on a laptop, in
 # which case the state bridge stays off and you can still edit and push layouts.
 SUPERVISOR_TOKEN = os.environ.get("SUPERVISOR_TOKEN")
@@ -55,6 +60,8 @@ class Topics:
         # Retained list of uploaded images and where to fetch them, so a
         # rebooting device knows what to pull without asking
         self.images_manifest = f"{self.root}/images/manifest"
+        # What build is on offer and where to fetch it
+        self.firmware_manifest = f"{self.root}/firmware/manifest"
 
     def state(self, entity_id: str, attribute: str | None = None) -> str:
         if attribute:

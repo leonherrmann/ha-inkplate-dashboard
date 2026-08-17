@@ -143,6 +143,12 @@ class DeviceLink:
         self._publish(topics.images_manifest, json.dumps(manifest), retain=True)
         log.info("Published an image manifest listing %d images", len(manifest.get("images", [])))
 
+    def publish_firmware(self, manifest: dict[str, Any]) -> None:
+        """Retained, so a device that was asleep sees the offer when it wakes."""
+        self._publish(topics.firmware_manifest, json.dumps(manifest), retain=True)
+        if manifest:
+            log.info("Offering firmware %s", manifest.get("version"))
+
     def publish_charging(self, charging: bool | None) -> None:
         """Charging is worked out here, so the device is told the answer.
 

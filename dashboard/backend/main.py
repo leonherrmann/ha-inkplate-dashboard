@@ -11,6 +11,7 @@ from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+import firmware
 import images
 import store
 from ha_bridge import bridge
@@ -21,6 +22,7 @@ from registry import registry
 from weather import weather
 from settings import (
     DEVICE_PORT,
+    FIRMWARE_REPO,
     HA_REST_URL,
     IMAGE_BASE_URL,
     LOG_LEVEL,
@@ -66,6 +68,12 @@ async def image_base_url() -> str:
     return f"http://{host}:{DEVICE_PORT}" if host else ""
 
 
+async def publish_firmware() -> None:
+    """Tell the device what build is on offer, and where to fetch it."""
+    base = await image_base_url()
+    link.publish_firmware(firmware.store.manifest(base))
+
+
 async def publish_images() -> None:
     """Republish the image manifest. Called whenever the set changes."""
     base = await image_base_url()
@@ -91,7 +99,10 @@ async def lifespan(app: FastAPI):
     # The device may have booted while the add-on was down, so re-advertise what
     # is available rather than waiting for the next upload.
     await publish_images()
+    firmware.store.start(publish_firmware)
+    await publish_firmware()
     yield
+    await firmware.store.stop()
     await weather.stop()
     await bridge.stop()
     link.stop()
@@ -236,6 +247,43 @@ async def get_image_preview(name: str) -> FileResponse:
     if not os.path.isfile(path):
         raise HTTPException(status_code=404, detail="No such image")
     return FileResponse(path, media_type="image/png")
+
+
+@app.get("/api/firmware")
+async def get_firmware() -> dict[str, Any]:
+    """What is held here, and what the device says it is running."""
+    reported = (link.stats or {}).get("firmware") or {}
+    return {
+        "repo": FIRMWARE_REPO,
+        "held": firmware.store.state,
+        "device": reported,
+        "servable": bool(firmware.store.have_binary() and await image_base_url()),
+    }
+
+
+@app.post("/api/firmware/check")
+async def check_firmware() -> dict[str, Any]:
+    """Ask GitHub now rather than waiting for the next poll."""
+    if not FIRMWARE_REPO:
+        raise HTTPException(status_code=400, detail="No firmware repo configured")
+    try:
+        changed = await firmware.store.check()
+    except Exception as error:
+        raise HTTPException(status_code=502, detail=f"Could not reach GitHub: {error}")
+    if changed:
+        await publish_firmware()
+    return {"ok": True, "changed": changed, "held": firmware.store.state}
+
+
+@app.post("/api/firmware/update")
+async def update_firmware() -> dict[str, Any]:
+    """Tell the device to fetch and install what is on offer."""
+    if not firmware.store.have_binary():
+        raise HTTPException(status_code=400, detail="No firmware held to install")
+    # Republished first, so the device is certainly holding the current offer
+    await publish_firmware()
+    link.publish_command("update")
+    return {"ok": True, "version": firmware.store.state.get("version")}
 
 
 @app.get("/api/entities")
