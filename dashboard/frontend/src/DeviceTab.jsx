@@ -128,10 +128,13 @@ export default function DeviceTab({ status, lastSeenAge, sleep, onSleepChange, o
                     of connecting.
                   </p>
                 )}
-                {cachedAll && images.loaded === 0 && (
+                {/* Only a guess, so it says so: nothing loaded is equally what a
+                    page with no image on it looks like. */}
+                {cachedAll && images.loaded === 0 && !images.error && (
                   <p className="hint">
-                    All downloaded. None are loaded because the page being shown does not
-                    use one.
+                    All downloaded, none loaded. Expected if the page on screen has no
+                    image on it; otherwise the device could not read one back off the
+                    card.
                   </p>
                 )}
               </>

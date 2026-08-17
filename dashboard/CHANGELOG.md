@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.10.3
+
+- Stop claiming the page has no image on it when the device in fact failed to
+  read one back off its card.
+
 ## 0.10.2
 
 - The Device tab now reports on images: whether the panel has an SD card it can
