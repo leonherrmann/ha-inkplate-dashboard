@@ -7,6 +7,7 @@
 // renders as a labelled block.
 
 import { imagePreviewUrl } from "./api.js";
+import { fontPixels } from "./layout.js";
 
 function Frame({ children, className = "" }) {
   // The e-ink widgets are a white box with a hard black offset shadow
@@ -89,6 +90,32 @@ function ImagePreview({ options, uploads }) {
   return <img className="pv-image" src={source} alt={name} />;
 }
 
+// Confined text wraps in the browser the same way it does on the panel, which
+// is close enough to judge whether it fits.
+function TextPreview({ options, sizeId }) {
+  const weight = options.font?.includes("extrabold") ? 800 : 700;
+  const align = options.align === "centre" ? "center" : options.align || "left";
+  // An automatic widget is as wide as its text, so wrapping it here would only
+  // reflect an estimate being short. A boxed one wraps like the panel does.
+  const confined = sizeId && sizeId !== "auto";
+
+  return (
+    <div
+      className="pv-text"
+      style={{
+        fontSize: `${fontPixels(options.font)}px`,
+        lineHeight: 1.35,
+        fontWeight: weight,
+        textAlign: align,
+        whiteSpace: confined ? "pre-wrap" : "pre",
+        overflow: confined ? "hidden" : "visible",
+      }}
+    >
+      {options.text || "text"}
+    </div>
+  );
+}
+
 function Placeholder({ type }) {
   return (
     <Frame className="pv-placeholder">
@@ -103,14 +130,15 @@ const previews = {
   battery: BatteryPreview,
   weather: WeatherPreview,
   image: ImagePreview,
+  text: TextPreview,
 };
 
-export default function WidgetPreview({ type, options, size, uploads }) {
+export default function WidgetPreview({ type, options, size, uploads, sizeId }) {
   const Preview = previews[type];
   return (
     <div className="pv" style={{ width: size?.width, height: size?.height }}>
       {Preview ? (
-        <Preview options={options || {}} uploads={uploads} />
+        <Preview options={options || {}} uploads={uploads} sizeId={sizeId} />
       ) : (
         <Placeholder type={type} />
       )}

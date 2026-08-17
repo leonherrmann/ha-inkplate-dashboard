@@ -309,7 +309,11 @@ export default function App() {
                 {(manifest?.widgets || []).map((type) => (
                   <button key={type.type} onClick={() => addWidget(type)}>
                     <span>{type.label}</span>
-                    <small>{type.size_from ? "varies" : `${type.width}×${type.height}`}</small>
+                    <small>
+                      {type.size_from || !type.width
+                        ? "varies"
+                        : `${type.width}×${type.height}`}
+                    </small>
                   </button>
                 ))}
               </div>

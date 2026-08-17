@@ -71,12 +71,54 @@ export function widgetVariant(type, widget) {
   return type.sizes.find((size) => size.id === widget.size) || type.sizes[0];
 }
 
+// Only used for auto-sized text, where the firmware measures the real thing and
+// the editor cannot. Measured rather than counted: character counts are wildly
+// wrong for anything proportional, and clipping a heading to its first word is
+// worse than being a few percent out.
+let measuringContext = null;
+
+export function fontPixels(fontName) {
+  const points = Number((fontName || "nunito_bold_24").match(/(\d+)$/)?.[1] || 24);
+  return Math.round(points * 1.34);
+}
+
+function estimateTextSize(widget) {
+  const text = widget.options?.text || "";
+  const pixels = fontPixels(widget.options?.font);
+  const weight = widget.options?.font?.includes("extrabold") ? 800 : 700;
+  const lines = text.split("\n");
+
+  let longest = 0;
+  if (typeof document !== "undefined") {
+    if (!measuringContext) measuringContext = document.createElement("canvas").getContext("2d");
+    // Nunito is not loaded in the browser, so this is the editor's own family at
+    // the same size -- close in proportion, not identical.
+    measuringContext.font = `${weight} ${pixels}px ${getComputedStyle(document.body).fontFamily}`;
+    for (const line of lines) {
+      longest = Math.max(longest, measuringContext.measureText(line).width);
+    }
+  } else {
+    longest = lines.reduce((most, line) => Math.max(most, line.length), 0) * pixels * 0.55;
+  }
+
+  return {
+    width: Math.max(40, Math.round(longest)),
+    height: Math.max(pixels, Math.round(lines.length * pixels * 1.35)),
+  };
+}
+
 export function widgetSize(manifest, widget, uploads) {
   const type = manifest?.widgets?.find((candidate) => candidate.type === widget.type);
   if (!type) return { width: 160, height: 120 };
 
   const variant = widgetVariant(type, widget);
   if (variant) {
+    // A variant of 0 means the widget measures its own content, which only the
+    // firmware can do properly. Estimate from the text so there is something of
+    // roughly the right shape to drag around.
+    if (!variant.width || !variant.height) {
+      return estimateTextSize(widget);
+    }
     return { width: variant.width, height: variant.height };
   }
 

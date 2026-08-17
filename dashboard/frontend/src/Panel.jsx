@@ -61,7 +61,7 @@ function DraggableWidget({ widget, size, selected, onSelect, scale, uploads }) {
       {...listeners}
       {...attributes}
     >
-      <WidgetPreview type={widget.type} options={widget.options} size={size} uploads={uploads} />
+      <WidgetPreview type={widget.type} options={widget.options} size={size} uploads={uploads} sizeId={widget.size} />
     </div>
   );
 }

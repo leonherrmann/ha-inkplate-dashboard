@@ -14,6 +14,33 @@ function Option({ option, value, entities, uploads, onChange }) {
     );
   }
 
+  // The firmware ships the values it accepts, so this cannot produce one it
+  // would reject.
+  if (option.type === "choice") {
+    return (
+      <select value={value || ""} onChange={(event) => onChange(event.target.value)}>
+        <option value="">— default —</option>
+        {(option.values || []).map((choice) => (
+          <option key={choice} value={choice}>
+            {choice.replace(/_/g, " ")}
+          </option>
+        ))}
+      </select>
+    );
+  }
+
+  // Newlines are meaningful to the text widget, so it needs a real textarea
+  if (option.type === "text") {
+    return (
+      <textarea
+        rows={3}
+        value={value || ""}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={option.filter || ""}
+      />
+    );
+  }
+
   // The firmware ships the icon names it can resolve, so this cannot produce
   // something it will fail to draw.
   if (option.type === "icon") {
@@ -127,9 +154,12 @@ export default function Inspector({
                 onClick={() => onSetSize(widget.id, option.id)}
               >
                 {option.label}
-                <small>
-                  {option.cols}×{option.rows}
-                </small>
+                {/* A self-sizing variant has no cell count worth showing */}
+                {option.cols > 0 && option.rows > 0 && (
+                  <small>
+                    {option.cols}×{option.rows}
+                  </small>
+                )}
               </button>
             ))}
           </div>

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.12.0
+
+- Support for the firmware's new text widget: a multi-line text box, and pickers
+  for font and alignment driven by what the firmware says it accepts.
+- Text sizes itself on the canvas when set to fit its content, and wraps in the
+  preview the way the panel wraps it when confined to a box.
+
 ## 0.11.0
 
 - Each image says whether the panel has it: **on device** once it is on the SD
