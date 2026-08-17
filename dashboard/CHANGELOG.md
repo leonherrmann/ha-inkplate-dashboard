@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.13.1
+
+- Drop the four bundled preview photos. They stood in for images compiled into
+  the firmware, which have been removed to reclaim 359KB of its flash; photos now
+  live on the device's SD card and preview from the converted upload instead.
+
 ## 0.13.0
 
 - Over-the-air firmware updates. Set `firmware_repo` to `owner/repo` and the
