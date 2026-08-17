@@ -34,6 +34,10 @@ IMAGE_BASE_URL = os.environ.get("IMAGE_BASE_URL", "").strip()
 FIRMWARE_REPO = os.environ.get("FIRMWARE_REPO", "").strip()
 FIRMWARE_POLL_HOURS = float(os.environ.get("FIRMWARE_POLL_HOURS", "6"))
 
+# Only needed for a private repo, where the releases API answers 404 without
+# one. A fine-grained token with read access to that repo's contents is enough.
+FIRMWARE_TOKEN = os.environ.get("FIRMWARE_TOKEN", "").strip()
+
 # Present when running as a real add-on; absent when developing on a laptop, in
 # which case the state bridge stays off and you can still edit and push layouts.
 SUPERVISOR_TOKEN = os.environ.get("SUPERVISOR_TOKEN")

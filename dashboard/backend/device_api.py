@@ -42,9 +42,13 @@ async def get_image(name: str) -> FileResponse:
 @app.get("/firmware.bin")
 async def get_firmware() -> FileResponse:
     """The release binary, re-served in plain HTTP because the device has no TLS."""
-    if not firmware.store.have_binary():
+    # The file, not the store's cached state: this runs in its own process, so
+    # its copy of that state is whatever it was at startup and goes stale the
+    # moment the editor downloads a release.
+    path = firmware.store.binary_path
+    if not os.path.isfile(path):
         raise HTTPException(status_code=404, detail="No firmware held")
-    return FileResponse(firmware.store.binary_path, media_type="application/octet-stream")
+    return FileResponse(path, media_type="application/octet-stream")
 
 
 @app.get("/health")

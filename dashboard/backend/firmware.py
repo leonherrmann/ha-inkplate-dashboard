@@ -18,7 +18,7 @@ from typing import Any
 
 import aiohttp
 
-from settings import DATA_DIR, FIRMWARE_REPO, FIRMWARE_POLL_HOURS
+from settings import DATA_DIR, FIRMWARE_REPO, FIRMWARE_POLL_HOURS, FIRMWARE_TOKEN
 
 log = logging.getLogger(__name__)
 
@@ -88,11 +88,18 @@ class FirmwareStore:
 
         url = f"https://api.github.com/repos/{FIRMWARE_REPO}/releases/latest"
         headers = {"Accept": "application/vnd.github+json", "User-Agent": "inkplate-dashboard"}
+        if FIRMWARE_TOKEN:
+            headers["Authorization"] = f"Bearer {FIRMWARE_TOKEN}"
 
         async with aiohttp.ClientSession(headers=headers) as session:
             async with session.get(url, timeout=20) as response:
                 if response.status == 404:
-                    self.state["error"] = f"{FIRMWARE_REPO} has no releases yet"
+                    # A private repo answers 404 rather than 403, so the two are
+                    # indistinguishable from here -- say both.
+                    self.state["error"] = (
+                        f"{FIRMWARE_REPO} has no releases, or it is private and "
+                        f"needs a github_token"
+                    )
                     self._save()
                     return False
                 response.raise_for_status()
@@ -117,9 +124,7 @@ class FirmwareStore:
                 return False  # already held
 
             log.info("Downloading firmware %s (%s)", version, asset["name"])
-            async with session.get(asset["browser_download_url"], timeout=180) as response:
-                response.raise_for_status()
-                payload = await response.read()
+            payload = await self._download_asset(session, asset)
 
         os.makedirs(FIRMWARE_DIR, exist_ok=True)
         with open(self.binary_path, "wb") as handle:
@@ -138,6 +143,36 @@ class FirmwareStore:
         self._save()
         log.info("Holding firmware %s, %d bytes", version, len(payload))
         return True
+
+    @staticmethod
+    async def _download_asset(session: aiohttp.ClientSession, asset: dict[str, Any]) -> bytes:
+        """Fetch a release asset, private repo or not.
+
+        browser_download_url only works for a public repo. For a private one the
+        bytes come from the asset API with Accept: octet-stream, which redirects
+        to storage -- and the Authorization header must not follow, or the
+        storage host rejects it. So the redirect is taken manually.
+        """
+        if not FIRMWARE_TOKEN:
+            async with session.get(asset["browser_download_url"], timeout=180) as response:
+                response.raise_for_status()
+                return await response.read()
+
+        async with session.get(
+            asset["url"],
+            headers={"Accept": "application/octet-stream"},
+            allow_redirects=False,
+            timeout=180,
+        ) as response:
+            if response.status in (301, 302, 307):
+                location = response.headers["Location"]
+                # A separate session, so no Authorization header goes with it
+                async with aiohttp.ClientSession() as plain:
+                    async with plain.get(location, timeout=180) as redirected:
+                        redirected.raise_for_status()
+                        return await redirected.read()
+            response.raise_for_status()
+            return await response.read()
 
     def manifest(self, base_url: str) -> dict[str, Any]:
         """What the device needs to decide whether to update, and where from."""
