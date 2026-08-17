@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.10.2
+
+- The Device tab now reports on images: whether the panel has an SD card it can
+  write to, how many images it has downloaded, and how many are loaded for the
+  page on screen. Needs the matching firmware; older devices show nothing there.
+
 ## 0.10.1
 
 - Work out the address to give the device by itself. 0.10.0 asked the Supervisor

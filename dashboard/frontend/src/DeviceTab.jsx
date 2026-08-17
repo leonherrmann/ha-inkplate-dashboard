@@ -18,6 +18,8 @@ export default function DeviceTab({ status, lastSeenAge, sleep, onSleepChange, o
 
   const stats = status?.stats;
   const charging = status?.charging;
+  const images = stats?.images;
+  const cachedAll = images?.known > 0 && images.cached === images.known;
 
   return (
     <div className="tab-panel">
@@ -77,6 +79,66 @@ export default function DeviceTab({ status, lastSeenAge, sleep, onSleepChange, o
               <p className="hint">
                 Charging is inferred from the voltage rising. A full battery still on the
                 cable levels off, so it reads as on battery.
+              </p>
+            )}
+          </section>
+
+          {/* The panel cannot report on itself, so this is the only place a
+              failed download or a missing card is visible. */}
+          <section className="group">
+            <h3>Images</h3>
+            {images ? (
+              <>
+                <div className="facts">
+                  <div className="fact">
+                    <b className={images.card ? "ok" : "bad"}>
+                      {images.card ? "Present" : "Missing"}
+                    </b>
+                    <small>sd card</small>
+                  </div>
+                  <div className="fact">
+                    <b className={cachedAll ? "ok" : undefined}>
+                      {images.cached ?? 0} / {images.known ?? 0}
+                    </b>
+                    <small>on the card</small>
+                  </div>
+                  <div className="fact">
+                    <b>{images.loaded ?? 0}</b>
+                    <small>in memory now</small>
+                  </div>
+                </div>
+
+                {images.error && <p className="hint bad">{images.error}</p>}
+
+                {!images.card && (
+                  <p className="hint">
+                    Uploaded images are cached on the device's SD card. Without one the
+                    panel can show icons built into the firmware, but not uploads.
+                  </p>
+                )}
+                {images.card && images.known === 0 && (
+                  <p className="hint">
+                    The device has not been told about any images yet. It picks that up
+                    from the add-on when it connects.
+                  </p>
+                )}
+                {images.card && images.known > 0 && !cachedAll && !images.error && (
+                  <p className="hint">
+                    Downloading. The device fetches on its next loop, within a few seconds
+                    of connecting.
+                  </p>
+                )}
+                {cachedAll && images.loaded === 0 && (
+                  <p className="hint">
+                    All downloaded. None are loaded because the page being shown does not
+                    use one.
+                  </p>
+                )}
+              </>
+            ) : (
+              <p className="hint">
+                No report yet. Devices running a firmware older than the image support do
+                not send one.
               </p>
             )}
           </section>
