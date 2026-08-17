@@ -1401,3 +1401,31 @@ main {
   border: 2px solid var(--ink);
   background: var(--paper);
 }
+
+/* Whether the panel has actually fetched an image yet */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  justify-self: start;
+  padding: 3px 8px;
+  border: 2px solid var(--ink);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.badge svg {
+  width: 13px;
+  height: 13px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.badge.ok { background: var(--ink); color: var(--paper); }
+.badge.waiting { background: var(--yellow); }
+.badge.unknown { background: var(--grey); opacity: 0.75; }

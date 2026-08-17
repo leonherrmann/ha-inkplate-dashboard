@@ -31,9 +31,47 @@ function prettyBytes(bytes) {
   return bytes >= 1024 ? `${Math.round(bytes / 1024)} KB` : `${bytes} B`;
 }
 
+const DownloadedIcon = () => (
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M12 3v10m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
+  </svg>
+);
+
+const PendingIcon = () => (
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M7 18a4 4 0 0 1 .5-8 6 6 0 0 1 11.4 2A3.5 3.5 0 0 1 18 18z" />
+  </svg>
+);
+
+// Three states, not two: the device might not be reporting at all, which is
+// different from it reporting that it has nothing.
+function DeviceBadge({ name, have, reports }) {
+  if (!reports) {
+    return (
+      <span className="badge unknown" title="The device has not reported yet">
+        <PendingIcon /> unknown
+      </span>
+    );
+  }
+  if (have.includes(name)) {
+    return (
+      <span className="badge ok" title="On the device's SD card">
+        <DownloadedIcon /> on device
+      </span>
+    );
+  }
+  return (
+    <span className="badge waiting" title="Uploaded, not yet fetched by the device">
+      <PendingIcon /> not yet
+    </span>
+  );
+}
+
 export default function ImagesTab({ grid, panel, onMessage }) {
   const [images, setImages] = useState([]);
   const [baseUrl, setBaseUrl] = useState("");
+  const [onDevice, setOnDevice] = useState([]);
+  const [deviceReports, setDeviceReports] = useState(false);
   const [file, setFile] = useState(null);
   const [name, setName] = useState("");
   const [mode, setMode] = useState("photo");
@@ -49,11 +87,17 @@ export default function ImagesTab({ grid, panel, onMessage }) {
       .then((data) => {
         setImages(data.images || []);
         setBaseUrl(data.base_url || "");
+        setOnDevice(data.device?.have || []);
+        setDeviceReports(Boolean(data.device_reports));
       })
       .catch((problem) => onMessage(problem.message));
 
   useEffect(() => {
     reload();
+    // The device reports on its own timer, so a freshly uploaded image turns
+    // from "not yet" to "on device" a minute or so later without a page reload.
+    const timer = setInterval(reload, 10000);
+    return () => clearInterval(timer);
   }, []);
 
   const target = useMemo(
@@ -228,6 +272,7 @@ export default function ImagesTab({ grid, panel, onMessage }) {
                 <small>
                   {image.mode} · {image.width}×{image.height} · {prettyBytes(image.bytes)}
                 </small>
+                <DeviceBadge name={image.name} have={onDevice} reports={deviceReports} />
               </figcaption>
               <button className="danger" onClick={() => remove(image)}>
                 Delete

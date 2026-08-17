@@ -38,7 +38,7 @@ function useAvailableWidth() {
   return [ref, width];
 }
 
-function DraggableWidget({ widget, size, selected, onSelect, scale }) {
+function DraggableWidget({ widget, size, selected, onSelect, scale, uploads }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: widget.id,
   });
@@ -61,7 +61,7 @@ function DraggableWidget({ widget, size, selected, onSelect, scale }) {
       {...listeners}
       {...attributes}
     >
-      <WidgetPreview type={widget.type} options={widget.options} size={size} />
+      <WidgetPreview type={widget.type} options={widget.options} size={size} uploads={uploads} />
     </div>
   );
 }
@@ -70,6 +70,7 @@ export default function Panel({
   panel,
   widgets,
   manifest,
+  uploads,
   selectedId,
   onSelect,
   onMove,
@@ -100,7 +101,7 @@ export default function Panel({
     const delta = { x: event.delta.x / scale, y: event.delta.y / scale };
     onMove(
       widget.id,
-      placeWidget(widget, delta, snapMode, grid, widgetSize(manifest, widget), panel)
+      placeWidget(widget, delta, snapMode, grid, widgetSize(manifest, widget, uploads), panel)
     );
   };
 
@@ -145,10 +146,11 @@ export default function Panel({
                 <DraggableWidget
                   key={widget.id}
                   widget={widget}
-                  size={widgetSize(manifest, widget)}
+                  size={widgetSize(manifest, widget, uploads)}
                   selected={widget.id === selectedId}
                   onSelect={onSelect}
                   scale={scale}
+                  uploads={uploads}
                 />
               ))}
             </div>

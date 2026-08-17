@@ -183,8 +183,20 @@ async def show_page(page_id: str) -> dict[str, Any]:
 
 @app.get("/api/images")
 async def get_images() -> dict[str, Any]:
-    """What has been uploaded, plus whether the device can actually reach it."""
-    return {"images": images.listing(), "base_url": await image_base_url()}
+    """What has been uploaded, plus what the device reports having of it.
+
+    The device names the images on its card in its stats, so each one can be
+    marked rather than showing only a total.
+    """
+    reported = (link.stats or {}).get("images") or {}
+    return {
+        "images": images.listing(),
+        "base_url": await image_base_url(),
+        "device": reported,
+        # Absent on firmware older than the image support, which is different
+        # from a device that has nothing
+        "device_reports": bool(reported),
+    }
 
 
 @app.post("/api/images")

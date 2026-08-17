@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.11.0
+
+- Each image says whether the panel has it: **on device** once it is on the SD
+  card, **not yet** while it is still only here. The device reports on its own
+  timer, so a new upload flips over within a minute.
+- Image widgets on the canvas show the actual picture, dithered as the panel will
+  draw it, at the right size instead of a fixed placeholder box.
+- Deleting an image now deletes it from the device too, rather than leaving it on
+  the card forever. Needs the matching firmware.
+
 ## 0.10.3
 
 - Stop claiming the page has no image on it when the device in fact failed to

@@ -71,7 +71,7 @@ export function widgetVariant(type, widget) {
   return type.sizes.find((size) => size.id === widget.size) || type.sizes[0];
 }
 
-export function widgetSize(manifest, widget) {
+export function widgetSize(manifest, widget, uploads) {
   const type = manifest?.widgets?.find((candidate) => candidate.type === widget.type);
   if (!type) return { width: 160, height: 120 };
 
@@ -83,6 +83,12 @@ export function widgetSize(manifest, widget) {
   if (type.size_from) {
     const option = type.options?.find((candidate) => candidate.key === type.size_from);
     const chosen = widget.options?.[type.size_from];
+    // Uploaded images are not in the manifest -- the firmware only lists what is
+    // compiled into it -- so look there first, then fall back to the built-ins.
+    const uploaded = uploads?.find((candidate) => candidate.name === chosen);
+    if (uploaded?.width) {
+      return { width: uploaded.width, height: uploaded.height };
+    }
     const value = option?.values?.find((candidate) => candidate.name === chosen);
     if (value?.width) {
       return { width: value.width, height: value.height };

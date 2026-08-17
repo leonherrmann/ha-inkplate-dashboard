@@ -158,7 +158,7 @@ export default function App() {
       current.map((widget) => {
         if (widget.id !== id) return widget;
         const resized = { ...widget, size: sizeId };
-        return { ...resized, ...placeWidget(resized, { x: 0, y: 0 }, snapMode, grid, widgetSize(manifest, resized), panel) };
+        return { ...resized, ...placeWidget(resized, { x: 0, y: 0 }, snapMode, grid, widgetSize(manifest, resized, uploads), panel) };
       })
     );
 
@@ -293,6 +293,7 @@ export default function App() {
                 panel={panel}
                 widgets={widgets}
                 manifest={manifest}
+                uploads={uploads}
                 selectedId={selectedId}
                 onSelect={setSelectedId}
                 onMove={moveWidget}

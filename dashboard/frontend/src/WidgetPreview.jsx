@@ -6,6 +6,8 @@
 // A widget type with no preview here still works and is still placeable; it just
 // renders as a labelled block.
 
+import { imagePreviewUrl } from "./api.js";
+
 function Frame({ children, className = "" }) {
   // The e-ink widgets are a white box with a hard black offset shadow
   return <div className={`pv-frame ${className}`}>{children}</div>;
@@ -70,9 +72,9 @@ function WeatherPreview() {
   );
 }
 
-// The source PNGs are vendored under public/photos, so the preview shows the
-// real picture rather than a grey box.
-function ImagePreview({ options }) {
+// An uploaded image is shown as the converted 1-bit version, which is what the
+// panel will actually draw; the built-ins are vendored under public/photos.
+function ImagePreview({ options, uploads }) {
   const name = options.image;
   if (!name) {
     return (
@@ -81,7 +83,10 @@ function ImagePreview({ options }) {
       </Frame>
     );
   }
-  return <img className="pv-image" src={`photos/${name}.png`} alt={name} />;
+
+  const uploaded = uploads?.some((image) => image.name === name);
+  const source = uploaded ? imagePreviewUrl(name) : `photos/${name}.png`;
+  return <img className="pv-image" src={source} alt={name} />;
 }
 
 function Placeholder({ type }) {
@@ -100,11 +105,15 @@ const previews = {
   image: ImagePreview,
 };
 
-export default function WidgetPreview({ type, options, size }) {
+export default function WidgetPreview({ type, options, size, uploads }) {
   const Preview = previews[type];
   return (
     <div className="pv" style={{ width: size?.width, height: size?.height }}>
-      {Preview ? <Preview options={options || {}} /> : <Placeholder type={type} />}
+      {Preview ? (
+        <Preview options={options || {}} uploads={uploads} />
+      ) : (
+        <Placeholder type={type} />
+      )}
     </div>
   );
 }
