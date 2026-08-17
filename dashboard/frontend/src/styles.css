@@ -1453,3 +1453,14 @@ main {
   flex-wrap: wrap;
   margin-top: 10px;
 }
+
+.custom-size {
+  display: flex;
+  gap: var(--gap);
+  margin-top: 10px;
+}
+
+.custom-size label {
+  flex: 1;
+  margin-bottom: 0;
+}

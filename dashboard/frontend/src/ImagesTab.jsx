@@ -77,7 +77,9 @@ export default function ImagesTab({ grid, panel, onMessage }) {
   const [mode, setMode] = useState("photo");
   const [cols, setCols] = useState(2);
   const [rows, setRows] = useState(1);
-  const [fullScreen, setFullScreen] = useState(false);
+  const [sizeMode, setSizeMode] = useState("grid"); // grid | full | custom
+  const [customWidth, setCustomWidth] = useState(400);
+  const [customHeight, setCustomHeight] = useState(300);
   const [busy, setBusy] = useState(false);
   const fileInput = useRef(null);
 
@@ -100,10 +102,17 @@ export default function ImagesTab({ grid, panel, onMessage }) {
     return () => clearInterval(timer);
   }, []);
 
-  const target = useMemo(
-    () => (fullScreen ? { width: panel.width, height: panel.height } : cellSize(grid, cols, rows)),
-    [fullScreen, panel, grid, cols, rows]
-  );
+  const target = useMemo(() => {
+    if (sizeMode === "full") return { width: panel.width, height: panel.height };
+    if (sizeMode === "custom") {
+      // Clamped to the panel, which is what the backend enforces anyway
+      return {
+        width: Math.min(Math.max(1, customWidth || 0), panel.width),
+        height: Math.min(Math.max(1, customHeight || 0), panel.height),
+      };
+    }
+    return cellSize(grid, cols, rows);
+  }, [sizeMode, panel, grid, cols, rows, customWidth, customHeight]);
 
   const pick = (chosen) => {
     setFile(chosen);
@@ -209,9 +218,9 @@ export default function ImagesTab({ grid, panel, onMessage }) {
               {Array.from({ length: grid.cols }, (_, index) => index + 1).map((candidate) => (
                 <button
                   key={`c${candidate}`}
-                  className={!fullScreen && cols === candidate ? "chip active" : "chip"}
+                  className={sizeMode === "grid" && cols === candidate ? "chip active" : "chip"}
                   onClick={() => {
-                    setFullScreen(false);
+                    setSizeMode("grid");
                     setCols(candidate);
                   }}
                 >
@@ -223,9 +232,9 @@ export default function ImagesTab({ grid, panel, onMessage }) {
               {Array.from({ length: grid.rows }, (_, index) => index + 1).map((candidate) => (
                 <button
                   key={`r${candidate}`}
-                  className={!fullScreen && rows === candidate ? "chip active" : "chip"}
+                  className={sizeMode === "grid" && rows === candidate ? "chip active" : "chip"}
                   onClick={() => {
-                    setFullScreen(false);
+                    setSizeMode("grid");
                     setRows(candidate);
                   }}
                 >
@@ -233,12 +242,39 @@ export default function ImagesTab({ grid, panel, onMessage }) {
                 </button>
               ))}
               <button
-                className={fullScreen ? "chip active" : "chip"}
-                onClick={() => setFullScreen(true)}
+                className={sizeMode === "full" ? "chip active" : "chip"}
+                onClick={() => setSizeMode("full")}
               >
                 Full screen
               </button>
+              <button
+                className={sizeMode === "custom" ? "chip active" : "chip"}
+                onClick={() => setSizeMode("custom")}
+              >
+                Custom
+              </button>
             </div>
+            {/* The API has always taken any size; only this form was limited
+                to the grid presets. */}
+            {sizeMode === "custom" && (
+              <div className="custom-size">
+                <label>
+                  <span>Width</span>
+                  <input
+                    type="number" min="1" max={panel.width} value={customWidth}
+                    onChange={(event) => setCustomWidth(Number(event.target.value))}
+                  />
+                </label>
+                <label>
+                  <span>Height</span>
+                  <input
+                    type="number" min="1" max={panel.height} value={customHeight}
+                    onChange={(event) => setCustomHeight(Number(event.target.value))}
+                  />
+                </label>
+              </div>
+            )}
+
             <p className="hint">
               {target.width}×{target.height} px. Anything that does not fit this shape is
               cropped from the centre.
