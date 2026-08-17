@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.14.0
+
+- Upload a photo at any size, not just the grid presets. Pick Custom and give a
+  width and height.
+
 ## 0.13.3
 
 - Say in the log which options were actually picked up, so "I set it and nothing
