@@ -11,9 +11,29 @@ export DATA_DIR=/data
 export STATIC_DIR=/app/static
 export DEVICE_ID="$(bashio::config 'device_id')"
 export LOG_LEVEL="$(bashio::config 'log_level')"
-export IMAGE_BASE_URL="$(bashio::config 'image_base_url')"
-export FIRMWARE_REPO="$(bashio::config 'firmware_repo')"
-export FIRMWARE_TOKEN="$(bashio::config 'github_token')"
+# has_value rather than reading straight through: bashio hands back the literal
+# string "null" for an option that was never given a value, which is truthy and
+# would be taken for a real setting.
+if bashio::config.has_value 'image_base_url'; then
+    export IMAGE_BASE_URL="$(bashio::config 'image_base_url')"
+    bashio::log.info "Device will fetch images from ${IMAGE_BASE_URL}"
+else
+    bashio::log.info "No image_base_url set; asking the Supervisor for this host's address"
+fi
+
+if bashio::config.has_value 'firmware_repo'; then
+    export FIRMWARE_REPO="$(bashio::config 'firmware_repo')"
+    bashio::log.info "Watching ${FIRMWARE_REPO} for firmware releases"
+else
+    bashio::log.info "No firmware_repo set; over-the-air updates are off"
+fi
+
+if bashio::config.has_value 'github_token'; then
+    export FIRMWARE_TOKEN="$(bashio::config 'github_token')"
+    bashio::log.info "Using a GitHub token for the firmware repo"
+else
+    bashio::log.info "No github_token set; only a public firmware repo will be visible"
+fi
 
 # ------------------------------------------------------------------------------
 # MQTT: manual options win, otherwise use the broker Home Assistant provides.

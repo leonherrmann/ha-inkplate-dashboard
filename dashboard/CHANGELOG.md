@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.13.3
+
+- Say in the log which options were actually picked up, so "I set it and nothing
+  happened" can be answered by looking rather than guessing.
+- Read the optional settings with `has_value`. Read straight through, bashio
+  hands back the string "null" for an option never given a value, which would
+  have been taken for a real setting.
+
 ## 0.13.2
 
 - Watch releases in a private repo. Set `github_token` to a fine-grained token
