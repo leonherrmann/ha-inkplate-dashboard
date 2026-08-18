@@ -7,6 +7,7 @@ import Inspector from "./Inspector.jsx";
 import Panel from "./Panel.jsx";
 import PageTabs from "./PageTabs.jsx";
 import QueueTab from "./QueueTab.jsx";
+import ThemeToggle from "./ThemeToggle.jsx";
 import * as api from "./api.js";
 import {
   DEFAULT_SNAP,
@@ -211,6 +212,7 @@ export default function App() {
         />
 
         <div className="actions">
+          <ThemeToggle />
           <span className={synced ? "sync ok" : "sync pending"}>
             {synced ? "In sync" : "Not sent yet"}
           </span>

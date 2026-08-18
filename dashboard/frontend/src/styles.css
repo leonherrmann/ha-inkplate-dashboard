@@ -7,6 +7,8 @@
    anything about the device itself lives in the device modal. */
 
 :root {
+  color-scheme: light;
+
   --ink: #14110f;
   --red: #e63946;
   --blue: #1d3557;
@@ -14,12 +16,55 @@
   --paper: #ffffff;
   --grey: #f2efe9;
 
+  /* Ink at low strength: hairlines between list rows, the sparkline's gaps, and
+     the scrim behind a modal. Written out per theme rather than mixed from
+     --ink, because in the dark theme these have to darken, not lighten. */
+  --ink-line: rgba(20, 17, 15, 0.18);
+  --ink-faint: rgba(20, 17, 15, 0.1);
+  --scrim: rgba(20, 17, 15, 0.6);
+
+  /* The hard offset shadow gets its own colour. Inverting the interface must
+     not invert this into a bright block behind every card on the page. */
+  --shadow-ink: var(--ink);
+
+  /* What goes on top of a solid block of colour. The three accents keep their
+     values in both themes — a Bauhaus yellow that dims is not the yellow — so
+     what sits on them is fixed too, and only --on-ink flips with the theme. */
+  --on-ink: #ffffff;
+  --on-accent: #ffffff;
+  --on-yellow: #14110f;
+
   --rule: 3px;
-  --shadow: 6px 6px 0 var(--ink);
-  --shadow-sm: 4px 4px 0 var(--ink);
+  --shadow: 6px 6px 0 var(--shadow-ink);
+  --shadow-sm: 4px 4px 0 var(--shadow-ink);
 
   --gap: 16px;
   --font: "Helvetica Neue", Helvetica, Arial, system-ui, sans-serif;
+}
+
+/* Paper and ground swap ends: the page becomes the darkest thing, cards sit
+   above it, and the ink drawing every rule becomes the light colour. The rules,
+   the blocks and the offset shadows are all still there, just the other way up.
+
+   Only the two real themes live here. "Follow the system" is resolved to one of
+   them in theme.js and written to <html data-theme>, so this block does not
+   have to be repeated behind a prefers-color-scheme query. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --ink: #ece7dd;
+  --paper: #241f1b;
+  --grey: #17140f;
+  /* Lifted off the navy, which as a solid block is invisible on this ground */
+  --blue: #3d6ea8;
+
+  --ink-line: rgba(236, 231, 221, 0.22);
+  --ink-faint: rgba(236, 231, 221, 0.12);
+  --scrim: rgba(0, 0, 0, 0.72);
+
+  --shadow-ink: #000000;
+
+  --on-ink: #17140f;
 }
 
 * {
@@ -64,7 +109,7 @@ button:active {
 
 button.primary {
   background: var(--red);
-  color: var(--paper);
+  color: var(--on-accent);
 }
 
 button.nudge {
@@ -84,7 +129,7 @@ button.nudge {
 
 button.danger {
   background: var(--ink);
-  color: var(--paper);
+  color: var(--on-ink);
   width: 100%;
   margin-top: 20px;
 }
@@ -142,6 +187,7 @@ header {
   align-items: center;
   gap: 12px;
   background: var(--yellow);
+  color: var(--on-yellow);
   border: var(--rule) solid var(--ink);
   box-shadow: var(--shadow);
   padding: 10px 16px;
@@ -226,6 +272,25 @@ header {
   margin-left: auto;
 }
 
+/* ---------- theme ---------- */
+
+.theme-toggle {
+  align-items: center;
+  gap: 8px;
+}
+
+/* A disc split down the middle: the brand mark's circle cut the other way, and
+   the one shape that says "light or dark" without needing a sun or a moon. The
+   halves are the current theme's own two colours, so it inverts with it. */
+.theme-mark {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  background: linear-gradient(to right, var(--ink) 50%, var(--paper) 50%);
+  flex: 0 0 auto;
+}
+
 /* ---------- battery ---------- */
 
 .battery {
@@ -305,7 +370,7 @@ header {
 
 /* Where the device was not reporting */
 .spark-gap {
-  fill: rgba(20, 17, 15, 0.1);
+  fill: var(--ink-faint);
 }
 
 .sparkline-scale {
@@ -323,6 +388,7 @@ header {
 .banner {
   border: var(--rule) solid var(--ink);
   background: var(--yellow);
+  color: var(--on-yellow);
   box-shadow: var(--shadow-sm);
   padding: 14px 18px;
   margin-bottom: var(--gap);
@@ -332,7 +398,7 @@ header {
 
 .banner.error {
   background: var(--red);
-  color: var(--paper);
+  color: var(--on-accent);
   margin: 20px;
 }
 
@@ -361,7 +427,7 @@ header {
 
 .main-tabs .tab.active {
   background: var(--ink);
-  color: var(--paper);
+  color: var(--on-ink);
 }
 
 .tab-panel {
@@ -411,6 +477,7 @@ header {
 
 .page-tab.active {
   background: var(--yellow);
+  color: var(--on-yellow);
 }
 
 .page-tab.add {
@@ -556,6 +623,7 @@ button:disabled:active {
 
 .sync.pending {
   background: var(--yellow);
+  color: var(--on-yellow);
 }
 
 /* ---------- workspace ---------- */
@@ -617,6 +685,7 @@ main {
   gap: 8px;
   width: 100%;
   background: var(--yellow);
+  color: var(--on-yellow);
 }
 
 .palette button small {
@@ -671,7 +740,7 @@ main {
 
 .chip.active {
   background: var(--blue);
-  color: var(--paper);
+  color: var(--on-accent);
 }
 
 /* ---------- canvas ---------- */
@@ -699,17 +768,30 @@ main {
   -webkit-overflow-scrolling: touch;
 }
 
+/* The frame is editor chrome and follows the theme; what it holds does not, so
+   the backdrop behind the panel is the device's paper, not the interface's. */
 .panel-scaler {
   border: var(--rule) solid var(--ink);
   box-shadow: var(--shadow);
-  background: var(--paper);
+  background: #ffffff;
   overflow: hidden;
 }
 
-/* Drawn at a true 1280x720 then scaled, so proportions stay exact */
+/* Drawn at a true 1280x720 then scaled, so proportions stay exact.
+
+   This is a picture of a physical screen: black marks on white paper, whichever
+   theme the editor is in. The panel cannot invert, so neither does its preview —
+   a dark-mode canvas would show a layout the device will never draw. Resetting
+   the tokens here rather than overriding each rule means every .pv-* preview
+   inside stays device-accurate without knowing the theme exists. */
 .panel {
+  --ink: #14110f;
+  --paper: #ffffff;
+  --grey: #f2efe9;
+
   position: relative;
   transform-origin: top left;
+  color: var(--ink);
   background-color: var(--paper);
   background-image: linear-gradient(to right, rgba(20, 17, 15, 0.11) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(20, 17, 15, 0.11) 1px, transparent 1px);
@@ -1017,7 +1099,7 @@ main {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(20, 17, 15, 0.6);
+  background: var(--scrim);
   z-index: 100;
   display: flex;
   align-items: center;
@@ -1182,12 +1264,12 @@ main {
 
 .tab.active {
   background: var(--red);
-  color: var(--paper);
+  color: var(--on-accent);
 }
 
 .tabs.domains .chip.active {
   background: var(--blue);
-  color: var(--paper);
+  color: var(--on-accent);
 }
 
 .modal-list {
@@ -1204,7 +1286,7 @@ main {
   gap: 2px;
   width: 100%;
   border: none;
-  border-bottom: 1px solid rgba(20, 17, 15, 0.18);
+  border-bottom: 1px solid var(--ink-line);
   box-shadow: none;
   text-transform: none;
   letter-spacing: 0;
@@ -1218,6 +1300,7 @@ main {
 
 .entity-row.active {
   background: var(--yellow);
+  color: var(--on-yellow);
 }
 
 .entity-row-name {
@@ -1278,6 +1361,11 @@ main {
     flex: 1;
   }
 
+  /* Push is the action worth the width; the theme chip keeps its own */
+  .actions .theme-toggle {
+    flex: 0 0 auto;
+  }
+
   /* Canvas leads, then the palette; the inspector becomes a sheet */
   .workspace {
     grid-template-columns: minmax(0, 1fr);
@@ -1319,7 +1407,7 @@ main {
     z-index: 50;
     max-height: 70vh;
     overflow-y: auto;
-    box-shadow: 0 -6px 0 var(--ink);
+    box-shadow: 0 -6px 0 var(--shadow-ink);
     border-bottom: none;
     display: none;
   }
@@ -1375,13 +1463,14 @@ main {
 }
 
 /* Nearest-neighbour: these are 1-bit bitmaps, and smoothing them in the browser
-   would show something the panel cannot produce. */
+   would show something the panel cannot produce. White behind them for the same
+   reason the canvas stays white — this is the device's paper, not the theme's. */
 .image-item img {
   width: 100%;
   height: auto;
   image-rendering: pixelated;
   border: 2px solid var(--ink);
-  background: var(--paper);
+  background: #ffffff;
 }
 
 .image-item figcaption {
@@ -1399,7 +1488,7 @@ main {
   height: auto;
   image-rendering: pixelated;
   border: 2px solid var(--ink);
-  background: var(--paper);
+  background: #ffffff;
 }
 
 /* Whether the panel has actually fetched an image yet */
@@ -1426,8 +1515,8 @@ main {
   stroke-linejoin: round;
 }
 
-.badge.ok { background: var(--ink); color: var(--paper); }
-.badge.waiting { background: var(--yellow); }
+.badge.ok { background: var(--ink); color: var(--on-ink); }
+.badge.waiting { background: var(--yellow); color: var(--on-yellow); }
 .badge.unknown { background: var(--grey); opacity: 0.75; }
 
 /* Static text on the canvas. white-space: pre-wrap keeps the newlines that the

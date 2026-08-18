@@ -4,6 +4,30 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Inkplate Dashboard</title>
+    <!--
+      Before the first paint, not in React: the body's background comes from CSS
+      the moment it loads, so setting this from a module would show a white flash
+      on the way into the dark theme. It also has to happen outside the app,
+      because App.jsx returns early while loading and when the backend cannot be
+      reached, and neither of those screens mounts the toggle.
+
+      Deliberately dumb, and the storage key is the one thing duplicated from
+      theme.js, which owns everything else about the theme.
+    -->
+    <script>
+      (() => {
+        let mode = null;
+        try {
+          mode = localStorage.getItem("inkplate-dashboard-theme");
+        } catch {
+          // Storage refused; fall through to following the system
+        }
+        const dark =
+          mode === "dark" ||
+          (mode !== "light" && matchMedia("(prefers-color-scheme: dark)").matches);
+        document.documentElement.dataset.theme = dark ? "dark" : "light";
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

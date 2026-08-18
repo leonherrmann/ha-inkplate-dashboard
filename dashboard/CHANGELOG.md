@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.15.0
+
+- Dark mode for the editor. It follows the system by default, which is what Home
+  Assistant's own automatic theme does, so the add-on no longer sits as a bright
+  panel inside a dark HA. The chip in the header cycles Auto, Light and Dark, and
+  the choice is remembered in the browser.
+- The canvas keeps drawing black on white in both themes. It is a picture of a
+  screen that cannot invert, so a dark preview would show a layout the device
+  will never draw.
+
 ## 0.14.0
 
 - Upload a photo at any size, not just the grid presets. Pick Custom and give a

@@ -31,6 +31,10 @@ No reflash and no device restart — the firmware rebuilds its screen in place.
   names and republishes them to `<device_id>/state/<entity_id>`, plus each scalar attribute
   under `<device_id>/state/<entity_id>/<attribute>`. Widgets that need an attribute rather
   than a state, like the climate widget's target temperature, read the latter.
+- **The theme** follows your system by default. The chip in the header cycles Auto, Light
+  and Dark, and the choice is kept in the browser, so it is per-browser rather than per
+  add-on. The canvas stays black on white either way: it shows what the panel will draw,
+  and the panel has no dark mode.
 
 Everything is published retained, so a device that reboots or receives a new layout renders
 real values immediately rather than waiting for the next change.
