@@ -14,6 +14,8 @@ import {
   FALLBACK_GRID,
   SNAP_MODES,
   ZOOM_LEVELS,
+  defaultPosition,
+  isReachable,
   newId,
   placeWidget,
   widgetSize,
@@ -125,14 +127,55 @@ export default function App() {
     [layout, persist, activePage]
   );
 
+  // A widget can end up beyond the panel edge -- an option can grow it, since an
+  // image widget is the size of the picture chosen, and layouts arrive from
+  // elsewhere. .panel-viewport clips anything outside, so a stranded widget is
+  // invisible and cannot be selected, dragged or deleted: the editor offers no
+  // way back. Anything unreachable is returned to the first cell.
+  //
+  // Waits for the manifest, because widget sizes come from it and guessing at
+  // them would move widgets that were never stranded. Rescued positions are on
+  // the panel by construction, so this cannot run a second time on its own
+  // output.
+  useEffect(() => {
+    if (!layout || !manifest) return;
+
+    // Counted before anything is copied: the status poll re-runs this
+    // constantly, and cloning the layout each time to discover nothing is wrong
+    // would be pure waste.
+    const stranded = (page) =>
+      (page.widgets || []).filter(
+        (widget) => !isReachable(widget, widgetSize(manifest, widget, uploads), panel)
+      ).length;
+
+    const rescued = (layout.pages || []).reduce((total, page) => total + stranded(page), 0);
+    if (rescued === 0) return;
+
+    const home = defaultPosition(grid);
+    const next = structuredClone(layout);
+    for (const page of next.pages || []) {
+      for (const widget of page.widgets || []) {
+        if (isReachable(widget, widgetSize(manifest, widget, uploads), panel)) continue;
+        widget.x = home.x;
+        widget.y = home.y;
+      }
+    }
+
+    setMessage(
+      rescued === 1
+        ? "A widget was off the panel and has been moved back to the top left."
+        : `${rescued} widgets were off the panel and have been moved back to the top left.`
+    );
+    persist(next);
+  }, [layout, manifest, uploads, panel.width, panel.height, grid.gap, persist]);
+
   const addWidget = (type) => {
     // Lands on the first cell rather than the very corner, so a new widget is
     // already grid-aligned and inside the edge gap.
     const widget = {
       id: newId(),
       type: type.type,
-      x: grid.gap,
-      y: grid.gap,
+      ...defaultPosition(grid),
       options: {},
       ...(type.sizes?.length ? { size: type.sizes[0].id } : {}),
     };

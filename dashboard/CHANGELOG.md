@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.15.3
+
+- A widget dragged into a corner could end up off the panel entirely. Grid mode
+  snapped the edge limit to the *nearest* cell, which is often the one past it,
+  so the last legal position could be beyond the panel. The wifi widget landed
+  at 1280,720 — completely outside — and the battery fell off the bottom. The
+  limit now always rounds down to the last cell that fits.
+- Widgets that are already off the panel are moved back to the top left when the
+  editor loads. The panel clips anything outside it, so a stranded widget could
+  not be selected, dragged or deleted, and there was no way to get it back.
+  Widgets that merely overhang an edge are left alone — they are still
+  draggable, so that is the user's business.
+
 ## 0.15.2
 
 - The entity picker closes in Safari. 0.15.1 only fixed it in Chrome. The

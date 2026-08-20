@@ -44,6 +44,19 @@ export function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
 }
 
+// Largest cell origin that still leaves room for a widget of this span. Snapping
+// the limit with snapValue() rounds to the *nearest* cell, which is frequently
+// the one past the limit -- that is how a drag into a corner could put a widget
+// beyond the panel edge, where the viewport clips it and nothing can reach it
+// again. The upper bound has to round down, never up.
+function lastCellThatFits(limit, axis, grid) {
+  const pitch = gridPitch(grid, axis);
+  const origin = grid.gap + Math.floor((limit - grid.gap) / pitch) * pitch;
+  // A widget too big for even the first cell still starts at the gap; it will
+  // overhang, but there is nowhere better to put it.
+  return Math.max(grid.gap, origin);
+}
+
 // Where a widget ends up after a drag: raw pixel delta, snapped, then kept on
 // the panel so nothing can be dragged out of sight. In grid mode the clamp is
 // also snapped, so being pushed back from an edge still lands on a cell.
@@ -52,7 +65,7 @@ export function placeWidget(widget, delta, mode, grid, size, panel) {
     const snapped = snapValue(value, axis, mode, grid);
     const limit = Math.max(0, extent - span);
     return mode === "grid"
-      ? clamp(snapped, grid.gap, snapValue(limit, axis, mode, grid))
+      ? clamp(snapped, grid.gap, lastCellThatFits(limit, axis, grid))
       : clamp(snapped, 0, limit);
   };
 
@@ -60,6 +73,32 @@ export function placeWidget(widget, delta, mode, grid, size, panel) {
     x: place(widget.x + delta.x, "x", panel.width, size.width),
     y: place(widget.y + delta.y, "y", panel.height, size.height),
   };
+}
+
+// Enough of a widget to be worth aiming a cursor at. Below this it is treated as
+// stranded rather than merely overhanging.
+const GRABBABLE = 24;
+
+// Whether enough of the widget is on the panel to select and drag it. A widget
+// fully outside is clipped away by .panel-viewport, so it cannot be selected,
+// moved or deleted -- the editor offers no way of getting it back, which is why
+// anything stranded has to be rescued rather than left for the user to fix.
+//
+// Widgets are allowed to overhang: an edge poking past the panel is the user's
+// business and still draggable. Only the unreachable ones are rescued.
+export function isReachable(widget, size, panel) {
+  const visibleWidth = Math.min(widget.x + size.width, panel.width) - Math.max(widget.x, 0);
+  const visibleHeight = Math.min(widget.y + size.height, panel.height) - Math.max(widget.y, 0);
+  return (
+    visibleWidth >= Math.min(GRABBABLE, size.width) &&
+    visibleHeight >= Math.min(GRABBABLE, size.height)
+  );
+}
+
+// Where a rescued widget lands, and where a new one starts: the first cell,
+// grid-aligned and inside the edge gap rather than jammed into the corner.
+export function defaultPosition(grid) {
+  return { x: grid.gap, y: grid.gap };
 }
 
 // A widget's drawn size comes from the manifest, since the firmware owns it.
