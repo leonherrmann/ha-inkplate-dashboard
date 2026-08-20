@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.15.2
+
+- The entity picker closes in Safari. 0.15.1 only fixed it in Chrome. The
+  inspector wraps each option in a `<label>`, and Safari treats a click anywhere
+  inside a label as a label activation, forwarding a synthetic click to the
+  first labelable descendant inside it — which is the button that opens the
+  picker. Choosing an entity closed the modal and instantly reopened it, so it
+  looked as though nothing happened, while the entity had in fact been set. The
+  modal is now rendered in a portal on `document.body`, outside the label
+  entirely.
+
 ## 0.15.1
 
 - Picking an entity closes the picker. It had been leaving the modal open after

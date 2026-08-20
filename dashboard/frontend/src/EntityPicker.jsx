@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 
 // Picking an entity out of a flat list of several hundred was the slowest part
 // of building a dashboard, so selection happens in a modal: search, area tabs,
@@ -53,7 +54,18 @@ function Modal({ entities, value, domain, onPick, onClose }) {
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [allowed, area, domainFilter, query]);
 
-  return (
+  // Rendered into document.body rather than where it sits in the tree. The
+  // Inspector wraps every option in a <label>, and Safari treats a click
+  // anywhere inside a label as a label activation, forwarding a synthetic click
+  // to the first labelable descendant -- here the trigger button that opens
+  // this modal. Picking an entity therefore closed the modal and immediately
+  // reopened it, so it appeared never to close at all while the choice was in
+  // fact applied. The spec says label activation should do nothing for clicks
+  // on interactive content inside it, and Chromium obeys that, which is why
+  // this only ever showed up in Safari. A portal puts the modal outside the
+  // label entirely, which also keeps it clear of any overflow or stacking
+  // context the inspector might introduce later.
+  return createPortal(
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal" onClick={(event) => event.stopPropagation()}>
         <div className="modal-head">
@@ -138,7 +150,8 @@ function Modal({ entities, value, domain, onPick, onClose }) {
           {matching.length} of {allowed.length}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
