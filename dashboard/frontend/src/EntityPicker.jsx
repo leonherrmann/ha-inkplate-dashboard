@@ -175,8 +175,12 @@ export default function EntityPicker({ entities, value, domain, onChange }) {
           domain={domain}
           onClose={() => setOpen(false)}
           onPick={(next) => {
-            onChange(next);
+            // Closed before the change is applied, not after. Anything that
+            // throws inside onChange used to leave the modal open with Escape
+            // as the only way out, which read as "picking an entity does
+            // nothing" -- the choice had in fact been made.
             setOpen(false);
+            onChange(next);
           }}
         />
       )}

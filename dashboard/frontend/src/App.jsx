@@ -104,20 +104,25 @@ export default function App() {
     }
   }, []);
 
-  // Widget edits always apply to the page being edited
+  // Widget edits always apply to the page being edited.
+  //
+  // This used to do its work inside a setLayout updater, which also called
+  // persist() -- so a state updater performed a network save and, through
+  // persist, called setLayout again while React was still computing the first
+  // one. React requires updaters to be pure and to return a value, not to
+  // schedule more work; the effects of breaking that are timing-dependent and
+  // surface as edits that appear not to take. The next layout is now built
+  // first, then handed to persist, which is the only thing that sets it.
   const updateWidgets = useCallback(
     (updater) => {
-      setLayout((current) => {
-        if (!current) return current;
-        const next = structuredClone(current);
-        const page = next.pages.find((candidate) => candidate.id === activePage?.id);
-        if (!page) return current;
-        page.widgets = updater(page.widgets || []);
-        persist(next);
-        return next;
-      });
+      if (!layout) return;
+      const next = structuredClone(layout);
+      const page = next.pages.find((candidate) => candidate.id === activePage?.id);
+      if (!page) return;
+      page.widgets = updater(page.widgets || []);
+      persist(next);
     },
-    [persist, activePage]
+    [layout, persist, activePage]
   );
 
   const addWidget = (type) => {

@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.15.1
+
+- Picking an entity closes the picker. It had been leaving the modal open after
+  a choice was made, so the only way out was Escape and it looked as though the
+  selection had not registered. The modal now closes before the change is
+  applied, so nothing downstream can leave it stuck open again.
+- Fixed the widget edit path underneath it. Every option change did its work
+  inside a React state updater that also saved to the backend and set state
+  again from within itself. Updaters have to be pure; breaking that makes edits
+  land or not land depending on timing.
+
 ## 0.15.0
 
 - Dark mode for the editor. It follows the system by default, which is what Home
