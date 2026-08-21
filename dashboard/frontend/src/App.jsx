@@ -28,6 +28,52 @@ const TABS = [
   { id: "device", label: "Device" },
 ];
 
+// What the panel is showing versus what is in the editor, in words the reader
+// can act on. The version numbers behind it stay internal; they are noise on
+// screen. The distinctions are the point: waiting on a sleeping panel and
+// having forgotten to press Push call for opposite responses, and neither is
+// the same as the add-on genuinely not knowing.
+function syncState(status) {
+  if (!status) {
+    return { tone: "unknown", label: "Unknown", detail: "Waiting for the add-on." };
+  }
+  if (!status.draft_pushed) {
+    return {
+      tone: "pending",
+      label: "Changes not pushed",
+      detail: "Edits are saved here but have not been sent to the device.",
+      // The only state pressing Push actually resolves
+      nudge: true,
+    };
+  }
+
+  const applied = status.applied;
+  if (!applied) {
+    return {
+      tone: "unknown",
+      label: "Unknown",
+      detail: "The device has not reported which layout it is showing.",
+    };
+  }
+  if (applied.ok === false) {
+    return {
+      tone: "bad",
+      label: "Device refused it",
+      detail: applied.error || "The device could not build the layout it was sent.",
+    };
+  }
+  // Sent, but the panel has not confirmed that version. Normal for a device in
+  // its night sleep, which collects the push when it next wakes.
+  if (applied.version !== status.pushed_version) {
+    return {
+      tone: "pending",
+      label: "Awaiting device",
+      detail: "The layout was sent; the device has not confirmed it yet.",
+    };
+  }
+  return { tone: "ok", label: "In sync", detail: "The panel is showing this layout." };
+}
+
 function useStatus() {
   const [status, setStatus] = useState(null);
   const [error, setError] = useState(null);
@@ -85,10 +131,7 @@ export default function App() {
       ? Math.max(0, status.server_time - status.last_seen)
       : null;
 
-  // What the device is showing versus what is in the editor. The version
-  // numbers behind this stay internal; they are noise on screen.
-  const synced =
-    status?.applied && status.draft_version === status.applied.version && status.applied.ok !== false;
+  const sync = syncState(status);
 
   useEffect(() => {
     api.getLayout().then(setLayout).catch((problem) => setMessage(problem.message));
@@ -227,8 +270,14 @@ export default function App() {
 
   const push = async () => {
     try {
-      await api.pushLayout();
-      setMessage("Sent to the device");
+      // ok:false is a broker that could not be reached. Not an HTTP failure, so
+      // it arrives here rather than in the catch, and it is very much not a push.
+      const result = await api.pushLayout();
+      setMessage(
+        result?.ok === false
+          ? "Could not reach the MQTT broker, so nothing was sent."
+          : "Sent to the device"
+      );
     } catch (problem) {
       setMessage(problem.message);
     }
@@ -261,10 +310,12 @@ export default function App() {
 
         <div className="actions">
           <ThemeToggle />
-          <span className={synced ? "sync ok" : "sync pending"}>
-            {synced ? "In sync" : "Not sent yet"}
+          <span className={`sync ${sync.tone}`} title={sync.detail}>
+            {sync.label}
           </span>
-          <button className={synced ? "primary" : "primary nudge"} onClick={push}>
+          {/* Nudged only when pressing Push is what would help. Waiting on a
+              sleeping device is not something the button can hurry. */}
+          <button className={sync.nudge ? "primary nudge" : "primary"} onClick={push}>
             Push
           </button>
         </div>

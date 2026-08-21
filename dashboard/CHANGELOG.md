@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.16.0
+
+- The sync indicator tells the truth. It had two states and could only compare
+  version numbers, which editing does not change — only a push does — so a
+  layout full of unsent edits still read "In sync". The add-on now records a
+  fingerprint of what it last sent, and the indicator distinguishes:
+  **Changes not pushed** (saved here, not sent), **Awaiting device** (sent, and
+  the panel has not confirmed it — the normal state while it is in its night
+  sleep), **Device refused it** (it arrived and the firmware could not build it,
+  with the reason on hover), **In sync**, and **Unknown** when the device has
+  never said what it is showing. Push is highlighted only for the one state
+  pressing it resolves.
+- A push that could not reach the MQTT broker says so instead of reporting
+  "Sent to the device", and is no longer recorded as having been sent.
+- Upgrading does not need a push to settle the new indicator: with no record of
+  its own yet, the add-on takes the version the device reports as evidence of
+  what went out.
+
 ## 0.15.3
 
 - A widget dragged into a corner could end up off the panel entirely. Grid mode

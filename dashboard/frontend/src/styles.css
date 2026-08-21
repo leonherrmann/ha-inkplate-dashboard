@@ -626,6 +626,19 @@ button:disabled:active {
   color: var(--on-yellow);
 }
 
+.sync.bad {
+  background: var(--red);
+  color: var(--on-accent);
+}
+
+/* Not knowing is not a warning. Held back rather than given a colour, so it
+   reads as an absence of information and not as a fourth thing to worry about. */
+.sync.unknown {
+  background: var(--paper);
+  border-style: dashed;
+  opacity: 0.6;
+}
+
 /* ---------- workspace ---------- */
 
 /* Source order is canvas first so it leads on a phone; areas put the palette

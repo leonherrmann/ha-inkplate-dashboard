@@ -123,10 +123,16 @@ class DeviceLink:
 
     # -- publishing --------------------------------------------------------
 
-    def publish_layout(self, layout: dict[str, Any]) -> None:
-        """Push a layout. Retained, so a rebooting device picks it straight up."""
-        self._publish(topics.config_set, json.dumps(layout), retain=True)
+    def publish_layout(self, layout: dict[str, Any]) -> bool:
+        """Push a layout. Retained, so a rebooting device picks it straight up.
+
+        Returns whether it reached the broker at all, which is the difference
+        between the editor waiting on a device and the editor waiting on itself.
+        """
+        if not self._publish(topics.config_set, json.dumps(layout), retain=True):
+            return False
         log.info("Pushed layout version %s", layout.get("version"))
+        return True
 
     def publish_state(self, entity_id: str, value: str, attribute: str | None = None) -> None:
         self._publish(topics.state(entity_id, attribute), value, retain=True)
@@ -159,12 +165,13 @@ class DeviceLink:
             return
         self._publish(topics.charging, "on" if charging else "off", retain=True)
 
-    def _publish(self, topic: str, payload: str, retain: bool) -> None:
+    def _publish(self, topic: str, payload: str, retain: bool) -> bool:
         if not self._client:
             log.warning("Not connected to MQTT, dropping a publish to %s", topic)
-            return
+            return False
         with self._lock:
             self._client.publish(topic, payload, retain=retain)
+        return True
 
 
 link = DeviceLink()

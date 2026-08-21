@@ -111,9 +111,31 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Inkplate Dashboard", lifespan=lifespan)
 
 
+def _push_state(layout: dict[str, Any]) -> tuple[bool, int | None]:
+    """Whether the draft still matches what went out, and which version that was.
+
+    Answered here rather than in the browser so the digest is never recomputed,
+    or reimplemented, on the other side of the wire.
+    """
+    last = store.pushed()
+    if last:
+        return last.get("digest") == store.fingerprint(layout), last.get("version")
+
+    # No record kept: either nothing has ever been pushed from this install, or
+    # it predates the record being kept at all. The device's own echo is the
+    # evidence that settles it -- a panel reporting this very version was sent
+    # it, whether or not anything wrote that down at the time.
+    applied = link.applied or {}
+    version = layout.get("version", 0)
+    if applied.get("version") == version and applied.get("ok") is not False:
+        return True, version
+    return False, None
+
+
 @app.get("/api/status")
 async def get_status() -> dict[str, Any]:
     layout = store.load()
+    draft_pushed, pushed_version = _push_state(layout)
     return {
         "device_id": DEVICE_ID,
         "online": link.online,
@@ -125,6 +147,8 @@ async def get_status() -> dict[str, Any]:
         "last_seen": link.last_seen,
         "server_time": time.time(),
         "draft_version": layout.get("version", 0),
+        "pushed_version": pushed_version,
+        "draft_pushed": draft_pushed,
         "bridge_enabled": bool(SUPERVISOR_TOKEN),
     }
 
@@ -170,13 +194,18 @@ async def push_layout() -> dict[str, Any]:
 
     store.save(layout)
 
-    link.publish_layout(layout)
+    sent = link.publish_layout(layout)
+    # Only a push that reached the broker counts as sent. Recording one that did
+    # not would leave the editor claiming to be waiting on the device, when what
+    # it is really waiting on is its own connection.
+    if sent:
+        store.record_pushed(layout)
     # The device only needs the entities this layout actually names
     entities = store.entity_ids(layout)
     bridge.follow(entities)
     weather.follow(entities)
 
-    return {"ok": True, "version": layout["version"]}
+    return {"ok": sent, "version": layout["version"]}
 
 
 @app.post("/api/refresh")
