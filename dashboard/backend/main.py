@@ -246,14 +246,21 @@ async def post_image(
     mode: str = Form("photo"),
     width: int = Form(0),
     height: int = Form(0),
+    rounded: bool = Form(True),
 ) -> dict[str, Any]:
     """Convert and store an upload, then tell the device about it.
 
     "exact" keeps the image's own pixel size and only thresholds it, for art
     drawn to match the UI. "photo" crops to fill width x height and dithers.
+
+    "rounded" rounds a photo's corners to the widgets' radius, on by default
+    because a photo among widgets looks like a mistake with square corners. It
+    does not apply to "exact", where the point is fidelity to what was drawn.
     """
     try:
-        entry = images.store(name or file.filename or "image", await file.read(), mode, width, height)
+        entry = images.store(
+            name or file.filename or "image", await file.read(), mode, width, height, rounded
+        )
     except images.ImageError as error:
         raise HTTPException(status_code=400, detail=str(error))
 
