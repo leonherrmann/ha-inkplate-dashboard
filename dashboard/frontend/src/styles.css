@@ -693,12 +693,57 @@ main {
 
 .palette button {
   display: flex;
-  justify-content: space-between;
-  align-items: baseline;
+  justify-content: flex-start;
+  align-items: center;
   gap: 8px;
   width: 100%;
+  overflow: hidden;
+  /* Tighter than a normal button: the palette column is 190px and the default
+     20px of side padding was a fifth of it, which "Update available" could not
+     spare once a render sat beside the label. */
+  padding: 10px 12px;
+  letter-spacing: 0.03em;
   background: var(--yellow);
   color: var(--on-yellow);
+}
+
+/* Label over size rather than beside it. The palette column is 190px and a
+   render takes 40 of them, which is not enough left for "Update available" and
+   a footprint on one line -- side by side they pushed each other out of the
+   button entirely. */
+.palette-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  /* Without this a flex child refuses to shrink below its content, which is
+     what let the text escape the button in the first place. */
+  min-width: 0;
+  text-align: left;
+  line-height: 1.2;
+  /* Only as a last resort. Breaking on demand splits words mid-syllable --
+     "WEATHE/R" -- so the label is sized below to fit whole words instead, and
+     this is just the backstop for a label longer than any of today's. */
+  overflow-wrap: break-word;
+}
+
+/* Smaller than a normal button label so the longest widget name still sets on
+   one line beside its render, in a 190px column. */
+.palette-text > span {
+  font-size: 11px;
+}
+
+/* Contained rather than cropped: a wide widget cropped to a square stops being
+   recognisable, which is the only job this picture has. White backing because
+   the render is ink on paper and the button is yellow. */
+.palette-shot {
+  flex: none;
+  width: 40px;
+  height: 26px;
+  object-fit: contain;
+  background: #fff;
+  border-radius: 3px;
+  padding: 2px;
 }
 
 .palette button small {
@@ -878,6 +923,23 @@ main {
   width: 100%;
   height: 100%;
   overflow: hidden;
+}
+
+/* A real render carries the shadow the firmware draws *outside* the widget's
+   rectangle, so unlike the CSS previews below it has to be allowed out of its
+   box. It lands in the 30px grid gap, exactly as it does on the panel. */
+.pv.has-shot {
+  position: relative;
+  overflow: visible;
+}
+
+/* Sized and placed in device pixels from the geometry the generator recorded;
+   the panel as a whole is scaled, so this scales with it. The pixels are real
+   black and white, so dark mode leaves them alone by itself -- the same reason
+   .panel resets --ink and --paper. */
+.pv-shot {
+  position: absolute;
+  display: block;
 }
 
 /* Shadow subtracted from the box rather than added outside it, so a preview

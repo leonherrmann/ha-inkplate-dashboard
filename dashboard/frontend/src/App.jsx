@@ -8,6 +8,7 @@ import Panel from "./Panel.jsx";
 import PageTabs from "./PageTabs.jsx";
 import QueueTab from "./QueueTab.jsx";
 import ThemeToggle from "./ThemeToggle.jsx";
+import { paletteShot } from "./widgetShots.js";
 import * as api from "./api.js";
 import {
   CHIP_ROW_POSITIONS,
@@ -485,16 +486,31 @@ export default function App() {
             <aside className="palette">
               <h2>Add widget</h2>
               <div className="palette-items">
-                {(manifest?.widgets || []).map((type) => (
-                  <button key={type.type} onClick={() => addWidget(type)}>
-                    <span>{type.label}</span>
-                    <small>
-                      {type.size_from || !type.width
-                        ? "varies"
-                        : `${type.width}×${type.height}`}
-                    </small>
-                  </button>
-                ))}
+                {(manifest?.widgets || []).map((type) => {
+                  const shot = paletteShot(type.type);
+                  return (
+                    <button key={type.type} onClick={() => addWidget(type)}>
+                      {/* A widget a newer firmware offers but that has no
+                          render yet still lists, just without a picture. */}
+                      {shot && (
+                        <img
+                          className="palette-shot"
+                          src={shot.url}
+                          alt=""
+                          draggable={false}
+                        />
+                      )}
+                      <span className="palette-text">
+                        <span>{type.label}</span>
+                        <small>
+                          {type.size_from || !type.width
+                            ? "varies"
+                            : `${type.width}×${type.height}`}
+                        </small>
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </aside>
 
