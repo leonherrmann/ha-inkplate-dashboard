@@ -123,7 +123,11 @@ export default function App() {
   const manifest = status?.manifest;
   const panel = manifest?.display || { width: 1280, height: 720 };
   // The firmware owns the grid and publishes it; this is only the fallback
-  const grid = manifest?.grid || FALLBACK_GRID;
+  // Merged over the fallback rather than replacing it. The add-on updates
+  // independently of the firmware, so between the two releases the manifest is
+  // the old one and has no chip_h at all -- and an undefined there puts NaN
+  // into the chip band's geometry rather than simply looking wrong.
+  const grid = { ...FALLBACK_GRID, ...(manifest?.grid || {}) };
   // Where the chip row sits is a layout choice, not a device one -- the
   // firmware draws at the pixels it is given and never derives a row.
   const chipRow = layout?.chip_row || DEFAULT_CHIP_ROW;
