@@ -13,6 +13,9 @@ from typing import Any, Callable
 
 import paho.mqtt.client as mqtt
 
+import firmware
+import store
+from discovery import discovery
 from history import history
 from settings import (
     MQTT_HOST,
@@ -82,6 +85,26 @@ class DeviceLink:
                 (topics.page, 0),
             ]
         )
+        # Before the retained messages land, so Home Assistant has the entities
+        # by the time their first values arrive. announce() runs again when the
+        # stats come in, which is where the running version comes from.
+        self.announce(force=True)
+
+    def announce(self, force: bool = False) -> None:
+        """Keep Home Assistant's picture of the device current.
+
+        Cheap and idempotent: discovery skips the publish unless something it
+        would say has actually changed, so this can be called from anywhere
+        that might have changed it. Connecting passes force -- see there.
+        """
+        running = ((self.stats or {}).get("firmware") or {}).get("running")
+        try:
+            pages = store.load().get("pages", [])
+        except Exception as error:  # a broken layout must not cost the link
+            log.warning("Could not read the layout for discovery: %s", error)
+            pages = []
+        discovery.publish(self, pages, running, force=force)
+        discovery.publish_firmware_state(self, running, firmware.store.state.get("version"))
 
     def _on_message(self, client: mqtt.Client, userdata, message: mqtt.MQTTMessage) -> None:
         payload = message.payload.decode("utf-8", errors="replace")
@@ -109,6 +132,9 @@ class DeviceLink:
                 self.charging = history.charging(self.stats.get("voltage"))
                 history.record(self.stats, self.online)
                 self.publish_charging(self.charging)
+                # The running version arrives here and nowhere else, so this is
+                # where the update entity and the device's sw_version learn it.
+                self.announce()
 
         if self.on_change:
             self.on_change()
@@ -164,6 +190,16 @@ class DeviceLink:
         if charging is None:
             return
         self._publish(topics.charging, "on" if charging else "off", retain=True)
+
+    def publish_raw(self, topic: str, payload: str, retain: bool) -> bool:
+        """An arbitrary topic, for discovery.
+
+        Everything else here publishes into the device's own contract, which is
+        why those topics are named rather than passed in. Discovery messages go
+        to Home Assistant's tree instead, so they need a way round that -- but
+        through the same lock and the same connected check.
+        """
+        return self._publish(topic, payload, retain=retain)
 
     def _publish(self, topic: str, payload: str, retain: bool) -> bool:
         if not self._client:

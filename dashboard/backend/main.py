@@ -72,6 +72,9 @@ async def publish_firmware() -> None:
     """Tell the device what build is on offer, and where to fetch it."""
     base = await image_base_url()
     link.publish_firmware(firmware.store.manifest(base))
+    # A newly found release is what the update entity in Home Assistant exists
+    # to report, so it hears about it at the same moment the device does.
+    link.announce()
 
 
 async def publish_images() -> None:
@@ -180,6 +183,10 @@ async def get_layout() -> dict[str, Any]:
 @app.put("/api/layout")
 async def put_layout(layout: dict[str, Any]) -> dict[str, Any]:
     store.save(layout)
+    # Adding, removing or renaming a page changes the options on the Page
+    # select in Home Assistant. On save rather than on push, because the list
+    # the editor is showing is the saved one.
+    link.announce()
     return {"ok": True}
 
 
