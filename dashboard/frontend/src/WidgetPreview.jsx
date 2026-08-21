@@ -50,9 +50,11 @@ function Chip({ children }) {
   return <div className="pv-chip">{children}</div>;
 }
 
+// Bare on the background rather than in a pill: the cell is already a strong
+// outlined rectangle, and a pill around it is a box drawn on a box.
 function BatteryPreview() {
   return (
-    <Chip>
+    <div className="pv-chip bare">
       <div className="pv-battery">
         <div className="pv-battery-cell">
           <div className="pv-battery-fill" />
@@ -60,7 +62,7 @@ function BatteryPreview() {
         <div className="pv-battery-nub" />
       </div>
       <span className="pv-chip-text">72%</span>
-    </Chip>
+    </div>
   );
 }
 
