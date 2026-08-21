@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.17.1
+
+- **Chips can no longer land on top of each other.** Placement checked the panel
+  edges and nothing else, so dropping one chip onto another put both at the same
+  position — and because the clamp floors at the left gap, dragging anywhere left
+  of a neighbour stacked them both against the left edge. The row is still free
+  to the pixel, but a chip now keeps at least the grid's gap from its neighbours
+  and from the panel edges, sliding clear of whatever is in the way. Adding a
+  chip follows the same rule instead of dropping it on what is already there.
+- The battery preview matches the firmware again: no outline, and a bigger cell.
+
+Wants firmware **v0.1.14**, which takes the outline off the clock and the
+battery on the panel itself.
+
 ## 0.17.0
 
 - The panel has a **chip row**: one row of small widgets — wifi, battery, and
