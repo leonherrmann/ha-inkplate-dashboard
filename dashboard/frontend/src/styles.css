@@ -813,11 +813,36 @@ main {
 /* Deliberately no touch-action: none. The TouchSensor activates on a press
    delay and suppresses scrolling itself once a drag starts, so leaving this
    alone keeps the page scrollable by swiping over the panel. */
-/* In grid mode the backdrop shows the real cells, so where a widget will land
-   is obvious before you drop it. */
-.panel.cells {
-  background-image: linear-gradient(to right, rgba(230, 57, 70, 0.22) 2px, transparent 2px),
-    linear-gradient(to bottom, rgba(230, 57, 70, 0.22) 2px, transparent 2px);
+
+/* In grid mode the cells are drawn as real rectangles by <GridCells>, so the
+   rule grid underneath would only add noise. */
+.panel.gridded {
+  background-image: none;
+}
+
+.cells-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* The cell as the device actually leaves it: the rectangle a widget fills, with
+   the 30px gap showing as the space between. Filled rather than outlined, so a
+   1x1 and a 2x1 read as different shapes at a glance and the gap is the thing
+   you see rather than a line you have to interpret. */
+.cell {
+  position: absolute;
+  border-radius: 8px;
+  background-color: rgba(230, 57, 70, 0.07);
+  outline: 1px dashed rgba(230, 57, 70, 0.3);
+  outline-offset: -1px;
+}
+
+/* One undivided band: chips take the width their content needs, so there are no
+   columns here to draw. */
+.cell.chip-band {
+  border-radius: 22px;
+  background-color: rgba(230, 57, 70, 0.04);
 }
 
 .size-picker {
@@ -950,16 +975,60 @@ main {
   padding: 2px 10px;
 }
 
+/* The chip row's pill. Outlined rather than filled with a shadow like the
+   cards: a chip sits on whatever is behind it, so the device draws an outline
+   and never punches a hole in the background. Geometry mirrors ChipWidget --
+   3px stroke, 16px side padding, 12px between the icon and the text. */
+.pv-chip {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 100%;
+  padding: 0 16px;
+  border: 3px solid var(--ink);
+  border-radius: 22px;
+  background: var(--paper);
+}
+
+.pv-chip-text {
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.pv-chip-icon {
+  width: 48px;
+  height: 48px;
+  background-color: var(--ink);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+}
+
+/* Material Symbols, the same shapes the firmware compiles in, inlined so the
+   preview needs no network round trip and no icon font. */
+.pv-wifi-icon {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -960 960 960'%3E%3Cpath d='M480-120 0-600q95-97 219.5-148.5T480-800q137 0 261 51.5T960-600L480-120Zm0-113 350-350q-78-60-166-88.5T480-700q-96 0-184 28.5T130-583l350 350Z'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -960 960 960'%3E%3Cpath d='M480-120 0-600q95-97 219.5-148.5T480-800q137 0 261 51.5T960-600L480-120Zm0-113 350-350q-78-60-166-88.5T480-700q-96 0-184 28.5T130-583l350 350Z'/%3E%3C/svg%3E");
+}
+
+.pv-cloud-icon {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -960 960 960'%3E%3Cpath d='M792-56 686-160H260q-91 0-155.5-64.5T40-380q0-78 47-138.5T210-596q3-8 5-15l-96-97 57-57 672 672-56 37ZM260-240h346L336-510q-8 15-12 32t-4 38h-60q-58 0-99 41t-41 99q0 58 41 99t99 41Zm596-38-58-58q11-14 16.5-30.5T820-402q0-45-31.5-76.5T712-510h-72v-80q0-66-47-113t-113-47q-24 0-45.5 6.5T395-725l-58-58q31-23 67.5-35t75.5-12q100 0 170 70t70 170q75 5 122.5 57T890-410q0 39-13 73t-21 59Z'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -960 960 960'%3E%3Cpath d='M792-56 686-160H260q-91 0-155.5-64.5T40-380q0-78 47-138.5T210-596q3-8 5-15l-96-97 57-57 672 672-56 37ZM260-240h346L336-510q-8 15-12 32t-4 38h-60q-58 0-99 41t-41 99q0 58 41 99t99 41Zm596-38-58-58q11-14 16.5-30.5T820-402q0-45-31.5-76.5T712-510h-72v-80q0-66-47-113t-113-47q-24 0-45.5 6.5T395-725l-58-58q31-23 67.5-35t75.5-12q100 0 170 70t70 170q75 5 122.5 57T890-410q0 39-13 73t-21 59Z'/%3E%3C/svg%3E");
+}
+
 .pv-battery {
   display: flex;
   align-items: center;
-  height: 100%;
 }
 
 .pv-battery-cell {
-  width: 64px;
-  height: 32px;
+  width: 58px;
+  height: 34px;
   border: 3px solid var(--ink);
+  border-radius: 7px;
   padding: 3px;
 }
 
@@ -967,18 +1036,14 @@ main {
   width: 72%;
   height: 100%;
   background: var(--ink);
+  border-radius: 3px;
 }
 
 .pv-battery-nub {
   width: 6px;
   height: 12px;
   background: var(--ink);
-}
-
-.pv-battery-text {
-  font-size: 22px;
-  font-weight: 800;
-  margin-left: 14px;
+  border-radius: 0 2px 2px 0;
 }
 
 /* Solid black box with white content, like the device draws it */

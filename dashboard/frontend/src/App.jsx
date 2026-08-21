@@ -10,15 +10,21 @@ import QueueTab from "./QueueTab.jsx";
 import ThemeToggle from "./ThemeToggle.jsx";
 import * as api from "./api.js";
 import {
+  CHIP_ROW_POSITIONS,
+  DEFAULT_CHIP_ROW,
   DEFAULT_SNAP,
   FALLBACK_GRID,
   SNAP_MODES,
   ZOOM_LEVELS,
+  cardBandTop,
+  chipRowTop,
   defaultPosition,
+  isChipType,
   isReachable,
   newId,
   placeWidget,
   widgetSize,
+  widgetType,
 } from "./layout.js";
 
 const TABS = [
@@ -117,7 +123,14 @@ export default function App() {
   const manifest = status?.manifest;
   const panel = manifest?.display || { width: 1280, height: 720 };
   // The firmware owns the grid and publishes it; this is only the fallback
-  const grid = manifest?.grid || FALLBACK_GRID;
+  // Merged over the fallback rather than replacing it. The add-on updates
+  // independently of the firmware, so between the two releases the manifest is
+  // the old one and has no chip_h at all -- and an undefined there puts NaN
+  // into the chip band's geometry rather than simply looking wrong.
+  const grid = { ...FALLBACK_GRID, ...(manifest?.grid || {}) };
+  // Where the chip row sits is a layout choice, not a device one -- the
+  // firmware draws at the pixels it is given and never derives a row.
+  const chipRow = layout?.chip_row || DEFAULT_CHIP_ROW;
 
   const pages = layout?.pages || [];
   const activePage = pages.find((page) => page.id === activePageId) || pages[0] || null;
@@ -194,11 +207,15 @@ export default function App() {
     const rescued = (layout.pages || []).reduce((total, page) => total + stranded(page), 0);
     if (rescued === 0) return;
 
-    const home = defaultPosition(grid);
     const next = structuredClone(layout);
     for (const page of next.pages || []) {
       for (const widget of page.widgets || []) {
         if (isReachable(widget, widgetSize(manifest, widget, uploads), panel)) continue;
+        const home = defaultPosition(grid, {
+          chipRow,
+          isChip: isChipType(widgetType(manifest, widget)),
+          panel,
+        });
         widget.x = home.x;
         widget.y = home.y;
       }
@@ -214,16 +231,41 @@ export default function App() {
 
   const addWidget = (type) => {
     // Lands on the first cell rather than the very corner, so a new widget is
-    // already grid-aligned and inside the edge gap.
+    // already grid-aligned and inside the edge gap. A chip lands in the chip
+    // row, which is the only row it can occupy.
     const widget = {
       id: newId(),
       type: type.type,
-      ...defaultPosition(grid),
+      ...defaultPosition(grid, { chipRow, isChip: isChipType(type), panel }),
       options: {},
       ...(type.sizes?.length ? { size: type.sizes[0].id } : {}),
     };
     updateWidgets((current) => [...current, widget]);
     setSelectedId(widget.id);
+  };
+
+  // Moving the chip row moves the card band with it, so every widget has to
+  // come along: leaving them put would misalign the whole layout by the height
+  // of the row plus a gap. Chips are pinned to the row's new edge; cards shift
+  // by the difference between the two band tops.
+  const setChipRow = (next) => {
+    if (next === chipRow) return;
+
+    const shift = cardBandTop(grid, next) - cardBandTop(grid, chipRow);
+    const chipY = chipRowTop(grid, panel, next);
+
+    const moved = structuredClone(layout);
+    moved.chip_row = next;
+    for (const page of moved.pages || []) {
+      for (const widget of page.widgets || []) {
+        if (isChipType(widgetType(manifest, widget))) {
+          widget.y = chipY;
+        } else {
+          widget.y += shift;
+        }
+      }
+    }
+    persist(moved);
   };
 
   const moveWidget = (id, position) =>
@@ -250,7 +292,13 @@ export default function App() {
       current.map((widget) => {
         if (widget.id !== id) return widget;
         const resized = { ...widget, size: sizeId };
-        return { ...resized, ...placeWidget(resized, { x: 0, y: 0 }, snapMode, grid, widgetSize(manifest, resized, uploads), panel) };
+        return {
+          ...resized,
+          ...placeWidget(resized, { x: 0, y: 0 }, snapMode, grid, widgetSize(manifest, resized, uploads), panel, {
+            chipRow,
+            isChip: isChipType(widgetType(manifest, resized)),
+          }),
+        };
       })
     );
 
@@ -377,6 +425,19 @@ export default function App() {
                 </div>
 
                 <div className="toolbar-group">
+                  <span className="toolbar-label">Chip row</span>
+                  {CHIP_ROW_POSITIONS.map(({ id, label }) => (
+                    <button
+                      key={id}
+                      className={id === chipRow ? "chip active" : "chip"}
+                      onClick={() => setChipRow(id)}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="toolbar-group">
                   <span className="toolbar-label">Zoom</span>
                   {ZOOM_LEVELS.map(({ label, value }) => (
                     <button
@@ -400,6 +461,7 @@ export default function App() {
                 onMove={moveWidget}
                 snapMode={snapMode}
                 grid={grid}
+                chipRow={chipRow}
                 zoom={zoom}
               />
             </main>

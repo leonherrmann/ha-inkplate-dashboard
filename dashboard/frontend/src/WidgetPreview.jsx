@@ -43,15 +43,36 @@ function ClimatePreview({ options }) {
   );
 }
 
+// Chips are an outlined pill, not the cards' filled box with a shadow: they sit
+// on whatever is behind them, including a background image, so the real widget
+// draws an outline and nothing else.
+function Chip({ children }) {
+  return <div className="pv-chip">{children}</div>;
+}
+
 function BatteryPreview() {
   return (
-    <div className="pv-battery">
-      <div className="pv-battery-cell">
-        <div className="pv-battery-fill" />
+    <Chip>
+      <div className="pv-battery">
+        <div className="pv-battery-cell">
+          <div className="pv-battery-fill" />
+        </div>
+        <div className="pv-battery-nub" />
       </div>
-      <div className="pv-battery-nub" />
-      <span className="pv-battery-text">72%</span>
-    </div>
+      <span className="pv-chip-text">72%</span>
+    </Chip>
+  );
+}
+
+// The nominal width in the manifest is the widest state -- radio up, broker
+// down -- so the preview shows both icons. On the panel the chip shrinks to the
+// wifi glyph alone once the broker answers.
+function WifiPreview() {
+  return (
+    <Chip>
+      <span className="pv-chip-icon pv-wifi-icon" />
+      <span className="pv-chip-icon pv-cloud-icon" />
+    </Chip>
   );
 }
 
@@ -128,6 +149,7 @@ const previews = {
   clock: ClockPreview,
   climate: ClimatePreview,
   battery: BatteryPreview,
+  wifi: WifiPreview,
   weather: WeatherPreview,
   image: ImagePreview,
   text: TextPreview,
