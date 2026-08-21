@@ -54,6 +54,17 @@ else
     bashio::log.error "No MQTT broker configured or detected - the device cannot be reached"
 fi
 
+# Discovery is on by default. Clearing the prefix turns it off -- but entities
+# already announced stay, because they are retained messages held by the broker
+# rather than something this add-on can take back by going quiet.
+if bashio::config.has_value 'discovery_prefix'; then
+    export DISCOVERY_PREFIX="$(bashio::config 'discovery_prefix')"
+    bashio::log.info "Announcing entities to Home Assistant under '${DISCOVERY_PREFIX}'"
+else
+    export DISCOVERY_PREFIX=""
+    bashio::log.info "MQTT discovery is off; no entities will be created"
+fi
+
 bashio::log.info "Starting Inkplate Dashboard for device '${DEVICE_ID}'"
 bashio::log.info "Serving image blobs to the device on port ${DEVICE_PORT}"
 python3 -m uvicorn device_api:app --host 0.0.0.0 --port "${DEVICE_PORT}" &

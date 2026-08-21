@@ -38,6 +38,12 @@ FIRMWARE_POLL_HOURS = float(os.environ.get("FIRMWARE_POLL_HOURS", "6"))
 # one. A fine-grained token with read access to that repo's contents is enough.
 FIRMWARE_TOKEN = os.environ.get("FIRMWARE_TOKEN", "").strip()
 
+# Where Home Assistant listens for MQTT discovery. "homeassistant" is its
+# default and almost nobody changes it, but a broker shared with another
+# controller sometimes does. Set empty to publish no discovery at all, which
+# also stops the add-on creating entities on a system that does not want them.
+DISCOVERY_PREFIX = os.environ.get("DISCOVERY_PREFIX", "homeassistant").strip().strip("/")
+
 # Present when running as a real add-on; absent when developing on a laptop, in
 # which case the state bridge stays off and you can still edit and push layouts.
 SUPERVISOR_TOKEN = os.environ.get("SUPERVISOR_TOKEN")
@@ -66,6 +72,10 @@ class Topics:
         self.images_manifest = f"{self.root}/images/manifest"
         # What build is on offer and where to fetch it
         self.firmware_manifest = f"{self.root}/firmware/manifest"
+        # Installed and offered version in one payload, which is the shape Home
+        # Assistant's update entity wants. Written by the add-on for Home
+        # Assistant; the device neither publishes nor reads it.
+        self.firmware_state = f"{self.root}/firmware/state"
 
     def state(self, entity_id: str, attribute: str | None = None) -> str:
         if attribute:
