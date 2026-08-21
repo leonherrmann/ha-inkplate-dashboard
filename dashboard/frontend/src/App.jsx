@@ -22,6 +22,8 @@ import {
   isChipType,
   isReachable,
   newId,
+  otherChips,
+  placeChipX,
   placeWidget,
   widgetSize,
   widgetType,
@@ -233,13 +235,27 @@ export default function App() {
     // Lands on the first cell rather than the very corner, so a new widget is
     // already grid-aligned and inside the edge gap. A chip lands in the chip
     // row, which is the only row it can occupy.
+    const isChip = isChipType(type);
     const widget = {
       id: newId(),
       type: type.type,
-      ...defaultPosition(grid, { chipRow, isChip: isChipType(type), panel }),
+      ...defaultPosition(grid, { chipRow, isChip, panel }),
       options: {},
       ...(type.sizes?.length ? { size: type.sizes[0].id } : {}),
     };
+
+    // A new chip starts at the left of the row and slides clear of whatever is
+    // already there, rather than landing on top of it.
+    if (isChip) {
+      widget.x = placeChipX(
+        grid.gap,
+        widgetSize(manifest, widget, uploads).width,
+        otherChips(widgets, manifest, uploads, widget.id),
+        grid,
+        panel
+      );
+    }
+
     updateWidgets((current) => [...current, widget]);
     setSelectedId(widget.id);
   };

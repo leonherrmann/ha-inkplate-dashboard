@@ -91,6 +91,52 @@ function lastCellThatFits(limit, axis, grid, chipRow) {
   return Math.max(start, origin);
 }
 
+// Where a chip lands horizontally. Free to the pixel, with two rules: it stays
+// inside the panel's edge gap, and it keeps at least that same gap from any
+// other chip. Without the second rule two chips could sit on the same pixel,
+// which is what dragging one onto another used to do -- both ended up at the
+// left edge, overlapping.
+//
+// Neighbours are measured with the manifest's nominal widths, which are the
+// widest each chip gets, so the spacing the editor guarantees is never tighter
+// than what the device draws.
+export function placeChipX(desired, width, others, grid, panel) {
+  const min = grid.gap;
+  const max = Math.max(min, panel.width - grid.gap - width);
+  const intoRow = (value) => clamp(Math.round(value), min, max);
+
+  // The span of left edges at which this chip would collide with that one
+  const blocked = others
+    .map((other) => ({
+      from: other.x - grid.gap - width,
+      to: other.x + other.width + grid.gap,
+    }))
+    .sort((a, b) => a.from - b.from);
+
+  const legal = (value) => !blocked.some((span) => value > span.from && value < span.to);
+
+  const wanted = intoRow(desired);
+  if (legal(wanted)) return wanted;
+
+  // Otherwise the nearest spot hard against one side or the other of whatever
+  // is in the way. Every span edge is a candidate, because sliding clear of one
+  // neighbour can land inside the next.
+  const candidates = blocked.flatMap((span) => [intoRow(span.from), intoRow(span.to)]);
+  const usable = candidates.filter(legal);
+  if (usable.length === 0) return wanted;
+
+  return usable.reduce((best, value) =>
+    Math.abs(value - wanted) < Math.abs(best - wanted) ? value : best
+  );
+}
+
+// The chips a given widget has to keep clear of: every other one on the page.
+export function otherChips(widgets, manifest, uploads, excludeId) {
+  return (widgets || [])
+    .filter((widget) => widget.id !== excludeId && isChipType(widgetType(manifest, widget)))
+    .map((widget) => ({ x: widget.x, width: widgetSize(manifest, widget, uploads).width }));
+}
+
 // Where a widget ends up after a drag: raw pixel delta, snapped, then kept on
 // the panel so nothing can be dragged out of sight. In grid mode the clamp is
 // also snapped, so being pushed back from an edge still lands on a cell.
@@ -99,17 +145,13 @@ function lastCellThatFits(limit, axis, grid, chipRow) {
 // that row is the whole reason it exists and there is no second place to put
 // it. Its x is never snapped, whatever the mode says: chips size themselves to
 // their content, so a column pitch would either truncate the long ones or pad
-// the short ones out to nothing. Only the panel edges hold it in.
+// the short ones out to nothing.
 export function placeWidget(widget, delta, mode, grid, size, panel, options = {}) {
-  const { chipRow = DEFAULT_CHIP_ROW, isChip = false } = options;
+  const { chipRow = DEFAULT_CHIP_ROW, isChip = false, others = [] } = options;
 
   if (isChip) {
     return {
-      x: clamp(
-        mode === "grid" ? widget.x + delta.x : snapValue(widget.x + delta.x, "x", mode, grid, chipRow),
-        grid.gap,
-        Math.max(grid.gap, panel.width - grid.gap - size.width)
-      ),
+      x: placeChipX(widget.x + delta.x, size.width, others, grid, panel),
       y: chipRowTop(grid, panel, chipRow),
     };
   }

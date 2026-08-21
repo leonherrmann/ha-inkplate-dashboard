@@ -14,6 +14,7 @@ import {
   chipRowTop,
   gridPitch,
   isChipType,
+  otherChips,
   placeWidget,
   widgetSize,
   widgetType,
@@ -156,6 +157,7 @@ export default function Panel({
       placeWidget(widget, delta, snapMode, grid, widgetSize(manifest, widget, uploads), panel, {
         chipRow,
         isChip: isChipType(widgetType(manifest, widget)),
+        others: otherChips(widgets, manifest, uploads, widget.id),
       })
     );
   };
