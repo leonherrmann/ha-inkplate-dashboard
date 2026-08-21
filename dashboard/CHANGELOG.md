@@ -1,5 +1,34 @@
 # Changelog
 
+## 0.18.0
+
+- **Photos get rounded corners**, to the same radius as a widget, so a picture
+  sits among them rather than on top of them. On by default, with a toggle to
+  keep them square. Photos only — "pixel accurate" exists so that what you drew
+  is what gets drawn, and rounding it would break that promise. The corners
+  become white rather than transparent, because the panel has no alpha.
+- **Wifi and MQTT are separate widgets.** As one it changed width depending on
+  its state — narrow when healthy, wider when it grew the broker-down cloud —
+  which meant the editor could never reserve the right amount of room for it.
+  They are also two different faults with two different fixes, the router or
+  Home Assistant, so they are worth saying separately.
+- **A new "Update available" widget**, which appears on the panel only when
+  newer firmware is on offer and takes no room at all otherwise. The editor
+  always draws it, so you can place it before it has anything to say.
+- Chips carry the same offset shadow as the other widgets. The clock and the
+  battery have no outline at all — both are already a strong rectangle, and a
+  border around one is a box drawn on a box.
+- The battery shows its percentage before the cell, with the number in a fixed
+  slot so the cell does not shuffle sideways as the reading changes.
+
+Wants firmware **v0.1.15** for the new widgets and the changed battery. On an
+older panel the editor simply will not offer MQTT or Update available, because
+the widget list comes from the device.
+
+Note for existing layouts: a `wifi` widget you already placed now shows only
+wifi. Nothing is lost, but add an **MQTT** widget beside it to keep an eye on
+the broker.
+
 ## 0.17.1
 
 - **Chips can no longer land on top of each other.** Placement checked the panel
