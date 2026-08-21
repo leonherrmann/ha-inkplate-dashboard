@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.20.0
+
+- **The panel appears in Home Assistant as a device**, with ten entities, and
+  you do not have to write a line of YAML for it. Everything it reports was
+  already travelling over MQTT but stopped at this add-on, so the battery could
+  only ever be looked at here. Now there is a real sensor to put on a dashboard,
+  graph for as long as Home Assistant keeps history, and write automations
+  against — "tell me when the panel drops below 20%", or "show the weather page
+  at seven".
+
+  You get: **connectivity**, **battery**, **battery voltage**, **charging**,
+  **WiFi signal**, **uptime**, a **Refresh** and a **Next page** button, a
+  **Page** select listing your pages, and a **Firmware** update entity — so the
+  panel turns up in Home Assistant's own updates list alongside everything else.
+
+- The Page select follows your layout: add, remove or rename a page and its
+  options change with it.
+- **`discovery_prefix`** is a new option, for a broker that keeps Home
+  Assistant's discovery somewhere other than `homeassistant`. Clear it to
+  create no entities at all. Note that clearing it stops new announcements but
+  does not remove entities already created — those are retained messages held
+  by your broker, not by this add-on.
+
+Pairs with firmware **v0.1.16**, which stops a failed lookup of
+`homeassistant.local` from taking the panel off MQTT — it now remembers the
+address that last worked. This add-on does not require it, and v0.1.16 does not
+require this add-on, but they were released together.
+
 ## 0.19.0
 
 - **Widgets are drawn from real pictures of the panel**, not from an imitation
