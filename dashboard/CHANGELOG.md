@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.19.0
+
+- **Widgets are drawn from real pictures of the panel**, not from an imitation
+  of it. The editor used to draw each widget a second time in CSS by hand, and
+  the two copies drifted apart — 0.17.1 shipped "the battery preview matches the
+  firmware again" as a bug fix, which is the sort of thing only somebody's eyes
+  ever catch. These images are rendered from the firmware's own sources, so they
+  cannot disagree with the panel.
+- **The Add widget list shows each widget** instead of only naming it. Same
+  pictures, shrunk. The list had to be relaid out to fit them: the name sits
+  above the size now rather than beside it, because side by side in that narrow
+  column "Update available" and its size pushed each other out of the button.
+- **Climate has a picture per room**, so the widget on the canvas shows the room
+  you actually chose rather than a stand-in for it.
+- **Text and Image are deliberately unchanged.** What they show is yours — your
+  words, your photograph — so they are still drawn live rather than replaced by
+  a picture of somebody else's content.
+
+Needs no firmware update: this is all on the add-on side and **v0.1.15 is still
+the current firmware**. A widget offered by a firmware newer than this add-on
+knows about still appears in the list, just without a picture.
+
 ## 0.18.0
 
 - **Photos get rounded corners**, to the same radius as a widget, so a picture
