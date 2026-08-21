@@ -9,7 +9,58 @@ import {
 } from "@dnd-kit/core";
 
 import WidgetPreview from "./WidgetPreview.jsx";
-import { placeWidget, widgetSize } from "./layout.js";
+import {
+  cardBandTop,
+  chipRowTop,
+  gridPitch,
+  isChipType,
+  placeWidget,
+  widgetSize,
+  widgetType,
+} from "./layout.js";
+
+// The real cells, as rectangles with the gap between them, rather than rules
+// drawn on the cell boundaries. The old backgroundSize trick could only ever
+// draw lines at the pitch, so the 30px gap the device leaves around every cell
+// was invisible and widgets looked like they should butt up against each other.
+function GridCells({ grid, panel, chipRow }) {
+  const cells = [];
+  const bandTop = cardBandTop(grid, chipRow);
+
+  for (let row = 0; row < grid.rows; row += 1) {
+    for (let col = 0; col < grid.cols; col += 1) {
+      cells.push(
+        <div
+          key={`${row}-${col}`}
+          className="cell"
+          style={{
+            left: grid.gap + col * gridPitch(grid, "x"),
+            top: bandTop + row * gridPitch(grid, "y"),
+            width: grid.unit_w,
+            height: grid.unit_h,
+          }}
+        />
+      );
+    }
+  }
+
+  return (
+    <div className="cells-layer" aria-hidden="true">
+      {cells}
+      {/* One band, full width: chips size themselves, so there is nothing to
+          divide it into. */}
+      <div
+        className="cell chip-band"
+        style={{
+          left: grid.gap,
+          top: chipRowTop(grid, panel, chipRow),
+          width: panel.width - 2 * grid.gap,
+          height: grid.chip_h,
+        }}
+      />
+    </div>
+  );
+}
 
 // Measured from a zero-height, full-width ruler. Measuring the panel's own
 // container is what caused the mobile overflow: the fixed 1280px panel widened
@@ -76,6 +127,7 @@ export default function Panel({
   onMove,
   snapMode,
   grid,
+  chipRow,
   zoom,
 }) {
   const [rulerRef, available] = useAvailableWidth();
@@ -101,19 +153,19 @@ export default function Panel({
     const delta = { x: event.delta.x / scale, y: event.delta.y / scale };
     onMove(
       widget.id,
-      placeWidget(widget, delta, snapMode, grid, widgetSize(manifest, widget, uploads), panel)
+      placeWidget(widget, delta, snapMode, grid, widgetSize(manifest, widget, uploads), panel, {
+        chipRow,
+        isChip: isChipType(widgetType(manifest, widget)),
+      })
     );
   };
 
   // In grid mode the backdrop shows the actual cells, so it is obvious where a
   // widget will land; the finer modes just get a plain rule grid.
-  const backdrop =
-    snapMode === "grid"
-      ? {
-          backgroundSize: `${grid.unit_w + grid.gap}px ${grid.unit_h + grid.gap}px`,
-          backgroundPosition: `${grid.gap}px ${grid.gap}px`,
-        }
-      : { backgroundSize: `${snapMode === "fine" ? 20 : 10}px ${snapMode === "fine" ? 20 : 10}px` };
+  const showCells = snapMode === "grid";
+  const backdrop = showCells
+    ? {}
+    : { backgroundSize: `${snapMode === "fine" ? 20 : 10}px ${snapMode === "fine" ? 20 : 10}px` };
 
   return (
     <div className="panel-outer">
@@ -131,7 +183,7 @@ export default function Panel({
         >
           <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
             <div
-              className={snapMode === "grid" ? "panel cells" : "panel"}
+              className={showCells ? "panel gridded" : "panel"}
               style={{
                 width: panel.width,
                 height: panel.height,
@@ -142,6 +194,7 @@ export default function Panel({
                 if (event.target === event.currentTarget) onSelect(null);
               }}
             >
+              {showCells && <GridCells grid={grid} panel={panel} chipRow={chipRow} />}
               {widgets.map((widget) => (
                 <DraggableWidget
                   key={widget.id}

@@ -28,6 +28,16 @@ PUSHED_PATH = os.path.join(DATA_DIR, "pushed.json")
 # Cell size of the grid positions used before they became pixels
 LEGACY_CELL = 80
 
+# The card rows were 200 tall before the chip row took 72 of the panel's height
+# and left them 166. Positions are absolute pixels, so a layout written against
+# the old grid puts row 1 at y=260 and row 2 at y=490 -- 34 and 68 pixels below
+# where those rows now are. Rescaling by row index rather than by a ratio is
+# what keeps a widget on the row it was on.
+LEGACY_UNIT_H = 200
+GRID_GAP = 30
+CHIP_ROW_H = 72
+DEFAULT_CHIP_ROW = "bottom"
+
 DEFAULT_SLEEP: dict[str, Any] = {
     "enabled": False,
     "start": "23:00",
@@ -46,6 +56,10 @@ EMPTY_LAYOUT: dict[str, Any] = {
     "version": 0,
     "sleep": dict(DEFAULT_SLEEP),
     "rotation": dict(DEFAULT_ROTATION),
+    # Top or bottom. The firmware draws widgets at the pixels it is given and
+    # never derives a row, so this is the editor's to know, not the device's.
+    "chip_row": DEFAULT_CHIP_ROW,
+    "grid_generation": 2,
     "pages": [{"id": "main", "name": "Main", "queued": True, "dwell_seconds": 0, "widgets": []}],
 }
 
@@ -88,7 +102,52 @@ def _migrate(layout: dict[str, Any]) -> dict[str, Any]:
     layout.pop("grid", None)
     layout.setdefault("sleep", dict(DEFAULT_SLEEP))
     layout.setdefault("rotation", dict(DEFAULT_ROTATION))
+    layout.setdefault("chip_row", DEFAULT_CHIP_ROW)
+    _migrate_to_chip_row_grid(layout)
     return layout
+
+
+# Widgets that belong in the chip row. The manifest is the real authority, but
+# it arrives over MQTT and may not have been heard from when a layout is first
+# read off disk -- and a migration that silently skipped would leave the layout
+# half-converted. This list only has to be right for the types that existed when
+# the chip row landed.
+_CHIP_TYPES = frozenset({"battery", "wifi"})
+
+
+def _migrate_to_chip_row_grid(layout: dict[str, Any]) -> None:
+    """Move a layout from the 200px card rows to the 166px ones.
+
+    Runs once and records that it has, because it is not idempotent: applying it
+    twice would move every widget up another row's worth. Positions are absolute
+    pixels, so nothing else would notice the grid had changed under them -- the
+    widgets would simply drift further down the panel with each row.
+    """
+    if layout.get("grid_generation", 0) >= 2:
+        return
+
+    old_pitch = LEGACY_UNIT_H + GRID_GAP
+    new_pitch = (LEGACY_UNIT_H - 34) + GRID_GAP  # 166 + 30
+    chip_y = 720 - GRID_GAP - CHIP_ROW_H
+
+    for page in layout.get("pages", []):
+        for widget in page.get("widgets", []):
+            if widget.get("type") in _CHIP_TYPES:
+                widget["y"] = chip_y
+                continue
+
+            # The clock is a sized widget now rather than a fixed special
+            if widget.get("type") == "clock":
+                widget.setdefault("size", "2x1")
+
+            y = int(widget.get("y", GRID_GAP))
+            row = max(0, round((y - GRID_GAP) / old_pitch))
+            # Keep whatever offset the widget had within its row, so a
+            # deliberately nudged widget is not snapped flat onto the cell.
+            offset = y - (GRID_GAP + row * old_pitch)
+            widget["y"] = max(0, GRID_GAP + row * new_pitch + offset)
+
+    layout["grid_generation"] = 2
 
 
 def save(layout: dict[str, Any]) -> None:

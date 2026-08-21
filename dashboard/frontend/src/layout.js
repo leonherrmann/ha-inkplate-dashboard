@@ -4,7 +4,33 @@
 // Grid mode snaps to cell origins, so a widget lands exactly where the firmware
 // would put it. The firmware publishes the grid in its manifest, so this is only
 // the fallback for before it has been heard from.
-export const FALLBACK_GRID = { gap: 30, unit_w: 220, unit_h: 200, cols: 5, rows: 3 };
+export const FALLBACK_GRID = {
+  gap: 30,
+  unit_w: 220,
+  unit_h: 166,
+  cols: 5,
+  rows: 3,
+  chip_h: 72,
+};
+
+// The panel carries one chip row, at the top or the bottom. Which one shifts
+// the card rows, so it belongs to the layout rather than to the device -- the
+// firmware draws widgets at the pixels it is given and never derives a row.
+export const CHIP_ROW_POSITIONS = [
+  { id: "top", label: "Top" },
+  { id: "bottom", label: "Bottom" },
+];
+
+export const DEFAULT_CHIP_ROW = "bottom";
+
+export function chipRowTop(grid, panel, chipRow) {
+  return chipRow === "top" ? grid.gap : panel.height - grid.gap - grid.chip_h;
+}
+
+// Where the card rows start. Only the chip row being at the top moves them.
+export function cardBandTop(grid, chipRow) {
+  return chipRow === "top" ? grid.gap + grid.chip_h + grid.gap : grid.gap;
+}
 
 export const SNAP_MODES = [
   { id: "grid", label: "Grid", hint: "cells" },
@@ -18,15 +44,22 @@ export function gridPitch(grid, axis) {
   return axis === "x" ? grid.unit_w + grid.gap : grid.unit_h + grid.gap;
 }
 
-export function gridOrigin(grid, axis, index) {
-  return grid.gap + index * gridPitch(grid, axis);
+// Where the run of cells starts on this axis. Horizontally that is always the
+// edge gap; vertically it is wherever the chip row leaves the card band.
+export function axisOrigin(grid, axis, chipRow) {
+  return axis === "x" ? grid.gap : cardBandTop(grid, chipRow);
+}
+
+export function gridOrigin(grid, axis, index, chipRow) {
+  return axisOrigin(grid, axis, chipRow) + index * gridPitch(grid, axis);
 }
 
 // Nearest legal position on the chosen snap mode
-export function snapValue(value, axis, mode, grid) {
+export function snapValue(value, axis, mode, grid, chipRow) {
   if (mode === "grid") {
     const pitch = gridPitch(grid, axis);
-    return grid.gap + Math.round((value - grid.gap) / pitch) * pitch;
+    const origin = axisOrigin(grid, axis, chipRow);
+    return origin + Math.round((value - origin) / pitch) * pitch;
   }
   const step = SNAP_MODES.find((entry) => entry.id === mode)?.step || 1;
   return Math.round(value / step) * step;
@@ -49,23 +82,43 @@ export function clamp(value, min, max) {
 // the one past the limit -- that is how a drag into a corner could put a widget
 // beyond the panel edge, where the viewport clips it and nothing can reach it
 // again. The upper bound has to round down, never up.
-function lastCellThatFits(limit, axis, grid) {
+function lastCellThatFits(limit, axis, grid, chipRow) {
   const pitch = gridPitch(grid, axis);
-  const origin = grid.gap + Math.floor((limit - grid.gap) / pitch) * pitch;
-  // A widget too big for even the first cell still starts at the gap; it will
-  // overhang, but there is nowhere better to put it.
-  return Math.max(grid.gap, origin);
+  const start = axisOrigin(grid, axis, chipRow);
+  const origin = start + Math.floor((limit - start) / pitch) * pitch;
+  // A widget too big for even the first cell still starts at the origin; it
+  // will overhang, but there is nowhere better to put it.
+  return Math.max(start, origin);
 }
 
 // Where a widget ends up after a drag: raw pixel delta, snapped, then kept on
 // the panel so nothing can be dragged out of sight. In grid mode the clamp is
 // also snapped, so being pushed back from an edge still lands on a cell.
-export function placeWidget(widget, delta, mode, grid, size, panel) {
+//
+// A chip is different on both axes. Its y is pinned to the chip row, because
+// that row is the whole reason it exists and there is no second place to put
+// it. Its x is never snapped, whatever the mode says: chips size themselves to
+// their content, so a column pitch would either truncate the long ones or pad
+// the short ones out to nothing. Only the panel edges hold it in.
+export function placeWidget(widget, delta, mode, grid, size, panel, options = {}) {
+  const { chipRow = DEFAULT_CHIP_ROW, isChip = false } = options;
+
+  if (isChip) {
+    return {
+      x: clamp(
+        mode === "grid" ? widget.x + delta.x : snapValue(widget.x + delta.x, "x", mode, grid, chipRow),
+        grid.gap,
+        Math.max(grid.gap, panel.width - grid.gap - size.width)
+      ),
+      y: chipRowTop(grid, panel, chipRow),
+    };
+  }
+
   const place = (value, axis, extent, span) => {
-    const snapped = snapValue(value, axis, mode, grid);
+    const snapped = snapValue(value, axis, mode, grid, chipRow);
     const limit = Math.max(0, extent - span);
     return mode === "grid"
-      ? clamp(snapped, grid.gap, lastCellThatFits(limit, axis, grid))
+      ? clamp(snapped, axisOrigin(grid, axis, chipRow), lastCellThatFits(limit, axis, grid, chipRow))
       : clamp(snapped, 0, limit);
   };
 
@@ -96,9 +149,19 @@ export function isReachable(widget, size, panel) {
 }
 
 // Where a rescued widget lands, and where a new one starts: the first cell,
-// grid-aligned and inside the edge gap rather than jammed into the corner.
-export function defaultPosition(grid) {
-  return { x: grid.gap, y: grid.gap };
+// grid-aligned and inside the edge gap rather than jammed into the corner. A
+// chip starts in the chip row instead, since that is the only row it can sit in.
+export function defaultPosition(grid, options = {}) {
+  const { chipRow = DEFAULT_CHIP_ROW, isChip = false, panel } = options;
+  if (isChip && panel) {
+    return { x: grid.gap, y: chipRowTop(grid, panel, chipRow) };
+  }
+  return { x: grid.gap, y: cardBandTop(grid, chipRow) };
+}
+
+// Whether a manifest type lives in the chip row
+export function isChipType(type) {
+  return Boolean(type?.chip);
 }
 
 // A widget's drawn size comes from the manifest, since the firmware owns it.
