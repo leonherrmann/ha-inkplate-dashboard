@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.17.0
+
+- The panel has a **chip row**: one row of small widgets — wifi, battery, and
+  the sensor chips to come — along the top or the bottom, chosen from the
+  toolbar. Card rows are 166px tall now instead of 200 to make room for it.
+- Chips are **not restricted in width**. They take exactly the space their
+  content needs and sit freely along the row, because a status row is labels of
+  different lengths and snapping them to a column would either truncate the long
+  ones or pad the short ones out to nothing.
+- Moving the chip row between top and bottom **moves every widget with it**, so
+  a layout stays aligned instead of sitting a row's height out.
+- The **grid preview shows the real cells**, as rectangles with the 30px gap the
+  device actually leaves around each one. It used to draw rules on the cell
+  boundaries, so the gap was invisible and widgets looked like they should butt
+  up against each other.
+- The clock is a 2x1 widget rather than a fixed size of its own.
+- **Existing layouts are migrated automatically** when the add-on starts. Widget
+  positions are absolute pixels, so without this everything below the first row
+  would sit 34px too low per row; battery and wifi move into the chip row.
+- Needs a firmware build with the chip row to draw any of this. Against an older
+  panel the editor falls back to the grid it knows and keeps working, but the
+  device will go on rendering the 200px rows until it is updated.
+
 ## 0.16.0
 
 - The sync indicator tells the truth. It had two states and could only compare
