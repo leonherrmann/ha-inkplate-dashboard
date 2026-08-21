@@ -43,37 +43,55 @@ function ClimatePreview({ options }) {
   );
 }
 
-// Chips are an outlined pill, not the cards' filled box with a shadow: they sit
-// on whatever is behind them, including a background image, so the real widget
-// draws an outline and nothing else.
-function Chip({ children }) {
-  return <div className="pv-chip">{children}</div>;
+// A chip gets the cards' treatment at a smaller radius: hard offset shadow,
+// border, filled body. "bare" drops all of it, for the chips that are already a
+// strong shape on their own and would otherwise be a box drawn on a box.
+function Chip({ children, bare = false }) {
+  return <div className={bare ? "pv-chip bare" : "pv-chip"}>{children}</div>;
 }
 
-// Bare on the background rather than in a pill: the cell is already a strong
-// outlined rectangle, and a pill around it is a box drawn on a box.
+// Reading first, cell after, the way a meter reads. The text slot is fixed to
+// the width of "100%" so the cell does not slide as the reading changes.
 function BatteryPreview() {
   return (
-    <div className="pv-chip bare">
+    <Chip bare>
+      <span className="pv-chip-text pv-battery-reading">72%</span>
       <div className="pv-battery">
         <div className="pv-battery-cell">
           <div className="pv-battery-fill" />
         </div>
         <div className="pv-battery-nub" />
       </div>
-      <span className="pv-chip-text">72%</span>
-    </div>
+    </Chip>
   );
 }
 
-// The nominal width in the manifest is the widest state -- radio up, broker
-// down -- so the preview shows both icons. On the panel the chip shrinks to the
-// wifi glyph alone once the broker answers.
 function WifiPreview() {
   return (
     <Chip>
       <span className="pv-chip-icon pv-wifi-icon" />
+    </Chip>
+  );
+}
+
+// The broker, as its own chip. One icon either way, so unlike the old combined
+// widget its width does not depend on its state.
+function MqttPreview() {
+  return (
+    <Chip>
       <span className="pv-chip-icon pv-cloud-icon" />
+    </Chip>
+  );
+}
+
+// On the panel this is absent until an update is offered. The editor always
+// draws it, because a widget you cannot see is a widget you cannot move — the
+// preview shows the room it will take when it does appear.
+function UpdatePreview() {
+  return (
+    <Chip>
+      <span className="pv-chip-icon pv-upgrade-icon" />
+      <span className="pv-chip-text">v0.0.0</span>
     </Chip>
   );
 }
@@ -152,6 +170,8 @@ const previews = {
   climate: ClimatePreview,
   battery: BatteryPreview,
   wifi: WifiPreview,
+  mqtt: MqttPreview,
+  update: UpdatePreview,
   weather: WeatherPreview,
   image: ImagePreview,
   text: TextPreview,

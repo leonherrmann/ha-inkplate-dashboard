@@ -988,6 +988,9 @@ main {
   border: 3px solid var(--ink);
   border-radius: 22px;
   background: var(--paper);
+  /* The cards' hard offset shadow, which sits in the gap rather than in the
+     widget. Not a blur: the panel has no grey to blur into. */
+  box-shadow: 6px 6px 0 var(--ink);
 }
 
 /* A chip with no pill drops the side padding with it: that padding holds the
@@ -998,6 +1001,14 @@ main {
   border-radius: 0;
   background: none;
   padding: 0;
+  box-shadow: none;
+}
+
+/* Right-aligned in a slot the width of "100%", so the cell beside it stays put
+   as the reading crosses 10% and 100%. */
+.pv-battery-reading {
+  min-width: 76px;
+  text-align: right;
 }
 
 .pv-chip-text {
@@ -1027,6 +1038,11 @@ main {
 .pv-cloud-icon {
   -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -960 960 960'%3E%3Cpath d='M792-56 686-160H260q-91 0-155.5-64.5T40-380q0-78 47-138.5T210-596q3-8 5-15l-96-97 57-57 672 672-56 37ZM260-240h346L336-510q-8 15-12 32t-4 38h-60q-58 0-99 41t-41 99q0 58 41 99t99 41Zm596-38-58-58q11-14 16.5-30.5T820-402q0-45-31.5-76.5T712-510h-72v-80q0-66-47-113t-113-47q-24 0-45.5 6.5T395-725l-58-58q31-23 67.5-35t75.5-12q100 0 170 70t70 170q75 5 122.5 57T890-410q0 39-13 73t-21 59Z'/%3E%3C/svg%3E");
   mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -960 960 960'%3E%3Cpath d='M792-56 686-160H260q-91 0-155.5-64.5T40-380q0-78 47-138.5T210-596q3-8 5-15l-96-97 57-57 672 672-56 37ZM260-240h346L336-510q-8 15-12 32t-4 38h-60q-58 0-99 41t-41 99q0 58 41 99t99 41Zm596-38-58-58q11-14 16.5-30.5T820-402q0-45-31.5-76.5T712-510h-72v-80q0-66-47-113t-113-47q-24 0-45.5 6.5T395-725l-58-58q31-23 67.5-35t75.5-12q100 0 170 70t70 170q75 5 122.5 57T890-410q0 39-13 73t-21 59Z'/%3E%3C/svg%3E");
+}
+
+.pv-upgrade-icon {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -960 960 960'%3E%3Cpath d='M440-160v-326L336-382l-56-58 200-200 200 200-56 58-104-104v326h-80ZM160-600v-120q0-33 23.5-56.5T240-800h480q33 0 56.5 23.5T800-720v120h-80v-120H240v120h-80Z'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -960 960 960'%3E%3Cpath d='M440-160v-326L336-382l-56-58 200-200 200 200-56 58-104-104v326h-80ZM160-600v-120q0-33 23.5-56.5T240-800h480q33 0 56.5 23.5T800-720v120h-80v-120H240v120h-80Z'/%3E%3C/svg%3E");
 }
 
 .pv-battery {
@@ -1532,6 +1548,35 @@ main {
 
 .upload input[type="file"] {
   padding: 8px;
+}
+
+/* A checkbox beside its label, rather than the stacked grid every other field
+   in this form uses. */
+.upload label.toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.upload label.toggle input {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  flex: none;
+}
+
+.upload label.toggle span {
+  display: grid;
+  gap: 2px;
+}
+
+/* Matches .hint, which is how every other explanatory line in this form is
+   dimmed -- there is no muted colour token, it is done with opacity. */
+.upload label.toggle small {
+  font-size: 12px;
+  opacity: 0.7;
+  line-height: 1.5;
+  font-weight: 400;
 }
 
 .image-grid {

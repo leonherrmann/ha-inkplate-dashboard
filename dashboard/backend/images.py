@@ -27,7 +27,7 @@ import re
 import struct
 from typing import Any
 
-from PIL import Image, ImageOps
+from PIL import Image, ImageDraw, ImageOps
 
 from settings import DATA_DIR
 
@@ -46,6 +46,12 @@ NAME_PATTERN = re.compile(r"^[a-z0-9][a-z0-9_-]{0,31}$")
 # The panel, so an upload cannot ask for something that could never be drawn
 MAX_WIDTH = 1280
 MAX_HEIGHT = 720
+
+# CARD_RADIUS in the firmware's CardWidget.h. A photo sitting among widgets
+# looks like a mistake with square corners; matching their radius makes it look
+# like it belongs. Kept in step by hand -- the manifest carries the grid, not
+# the card styling, and this is the only thing on this side that needs it.
+CORNER_RADIUS = 16
 
 
 class ImageError(ValueError):
@@ -119,12 +125,42 @@ def _cover(image: Image.Image, width: int, height: int) -> Image.Image:
     return ImageOps.fit(image, (width, height), method=Image.LANCZOS, centering=(0.5, 0.5))
 
 
-def convert(data: bytes, mode: str, width: int = 0, height: int = 0) -> tuple[bytes, bytes, int, int]:
+def _round_corners(bitmap: Image.Image, radius: int) -> Image.Image:
+    """Clear the corners to paper, so the image reads as a card rather than a
+    rectangle dropped on the page.
+
+    After the dither, never before: rounding first would leave the corner pixels
+    in the image for Atkinson to push error into, and the curve would come back
+    speckled instead of clean.
+    """
+    width, height = bitmap.size
+    radius = min(radius, width // 2, height // 2)
+    if radius <= 0:
+        return bitmap
+
+    mask = Image.new("1", (width, height), 0)
+    ImageDraw.Draw(mask).rounded_rectangle((0, 0, width - 1, height - 1), radius=radius, fill=1)
+    # White outside the curve. The blob has no transparency -- a set bit is ink
+    # -- so "rounded" means the corners are paper, not that they are absent.
+    return Image.composite(bitmap, Image.new("1", (width, height), 1), mask)
+
+
+def convert(
+    data: bytes,
+    mode: str,
+    width: int = 0,
+    height: int = 0,
+    rounded: bool = True,
+) -> tuple[bytes, bytes, int, int]:
     """Uploaded bytes to (blob, preview_png, width, height).
 
     mode "exact"  keeps the image's own pixel size and only thresholds it, so
                   hand-drawn art stays exactly as drawn.
     mode "photo"  crops to fill width x height and dithers.
+
+    rounded rounds the corners to the widgets' radius. Only meaningful for a
+    photo: "exact" exists precisely so that what was drawn is what is drawn, and
+    quietly eating its corners would break that promise.
     """
     try:
         source = Image.open(io.BytesIO(data))
@@ -156,6 +192,8 @@ def convert(data: bytes, mode: str, width: int = 0, height: int = 0) -> tuple[by
                 f"A photo needs a target size within {MAX_WIDTH}x{MAX_HEIGHT}, got {width}x{height}."
             )
         bitmap = _atkinson(_cover(source.convert("L"), width, height))
+        if rounded:
+            bitmap = _round_corners(bitmap, CORNER_RADIUS)
     else:
         raise ImageError(f"Unknown mode '{mode}'. Use 'exact' or 'photo'.")
 
@@ -195,9 +233,16 @@ def preview_path(name: str) -> str:
     return os.path.join(IMAGES_DIR, f"{name}.png")
 
 
-def store(name: str, data: bytes, mode: str, width: int = 0, height: int = 0) -> dict[str, Any]:
+def store(
+    name: str,
+    data: bytes,
+    mode: str,
+    width: int = 0,
+    height: int = 0,
+    rounded: bool = True,
+) -> dict[str, Any]:
     name = normalise_name(name)
-    blob, preview, width, height = convert(data, mode, width, height)
+    blob, preview, width, height = convert(data, mode, width, height, rounded)
 
     os.makedirs(IMAGES_DIR, exist_ok=True)
     with open(blob_path(name), "wb") as handle:
@@ -208,6 +253,9 @@ def store(name: str, data: bytes, mode: str, width: int = 0, height: int = 0) ->
     entry = {
         "name": name,
         "mode": mode,
+        # Recorded so the editor can show the toggle in the state it was
+        # uploaded with, rather than snapping back to the default
+        "rounded": bool(rounded) and mode == "photo",
         "width": width,
         "height": height,
         "bytes": len(blob),

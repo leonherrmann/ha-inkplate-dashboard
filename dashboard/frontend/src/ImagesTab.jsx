@@ -75,6 +75,10 @@ export default function ImagesTab({ grid, panel, onMessage }) {
   const [file, setFile] = useState(null);
   const [name, setName] = useState("");
   const [mode, setMode] = useState("photo");
+  // On by default: a photo among widgets looks like a mistake with square
+  // corners. Only meaningful for a photo -- "exact" exists so that what was
+  // drawn is what is drawn.
+  const [rounded, setRounded] = useState(true);
   const [cols, setCols] = useState(2);
   const [rows, setRows] = useState(1);
   const [sizeMode, setSizeMode] = useState("grid"); // grid | full | custom
@@ -130,6 +134,7 @@ export default function ImagesTab({ grid, panel, onMessage }) {
         mode,
         width: target.width,
         height: target.height,
+        rounded: mode === "photo" && rounded,
       });
       onMessage(`Uploaded ${entry.name} (${entry.width}×${entry.height})`);
       setFile(null);
@@ -279,6 +284,24 @@ export default function ImagesTab({ grid, panel, onMessage }) {
               {target.width}×{target.height} px. Anything that does not fit this shape is
               cropped from the centre.
             </p>
+          </label>
+        )}
+
+        {mode === "photo" && (
+          <label className="toggle">
+            <input
+              type="checkbox"
+              checked={rounded}
+              onChange={(event) => setRounded(event.target.checked)}
+            />
+            <span>
+              Round the corners
+              <small>
+                To the same radius as a widget, so the photo sits among them rather than
+                on top of them. The corners become white, not transparent — the panel has
+                no alpha.
+              </small>
+            </span>
           </label>
         )}
 

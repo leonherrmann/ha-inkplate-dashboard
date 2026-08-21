@@ -34,13 +34,16 @@ export const checkFirmware = () => request("firmware/check", { method: "POST" })
 export const updateFirmware = () => request("firmware/update", { method: "POST" });
 
 // The boundary is left to the browser, so no Content-Type header here
-export const uploadImage = ({ file, name, mode, width, height }) => {
+export const uploadImage = ({ file, name, mode, width, height, rounded }) => {
   const form = new FormData();
   form.append("file", file);
   form.append("name", name || "");
   form.append("mode", mode);
   form.append("width", String(width || 0));
   form.append("height", String(height || 0));
+  // FastAPI parses "true"/"false" for a bool form field; a bare boolean would
+  // arrive as the string "undefined" when it is false.
+  form.append("rounded", rounded ? "true" : "false");
   return request("images", { method: "POST", body: form });
 };
 
