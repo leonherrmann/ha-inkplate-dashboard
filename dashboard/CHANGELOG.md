@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.21.0
+
+- **A new Entity widget**, for everything the Climate and Weather cards are not:
+  a sensor, a plug, a light, a door. Pick an entity and an icon and it shows its
+  reading. It comes in **three sizes** — small, wide and large — which differ in
+  how big everything is drawn rather than in what is drawn, so a wall of them
+  reads the same way at any size.
+- **The name and the unit come from Home Assistant.** You do not have to type
+  either: the entity's own name and unit arrive with its state. Both can still be
+  overridden per widget, which is worth doing on the small size, because Home
+  Assistant names run long and "Hallway Temperature Sensor" does not fit across a
+  small card.
+- A reading too wide for its card is **drawn smaller rather than cut off**. A
+  truncated number is not a partial reading, it is a different and entirely
+  believable one. Names are still shortened to fit — a label can lose its tail, a
+  reading cannot. An entity Home Assistant cannot reach shows a dash.
+- The **icon list no longer shows every icon twice.** Some icons exist at two
+  sizes so a widget can pick the right one for the card it is on; the editor was
+  offering both as though they were different icons.
+
+Needs firmware **v0.1.18**, which is where the widget itself lives. On an older
+panel the editor simply will not offer it, because the widget list comes from the
+device.
+
 ## 0.20.0
 
 - **The panel appears in Home Assistant as a device**, with ten entities, and
