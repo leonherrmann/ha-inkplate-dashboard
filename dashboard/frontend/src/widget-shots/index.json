@@ -153,6 +153,300 @@
     "height": 123,
     "width": 378
   },
+  "entity-1x1-entity_air": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-1x1-entity_air.png",
+    "height": 172,
+    "width": 226
+  },
+  "entity-1x1-entity_battery_full": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-1x1-entity_battery_full.png",
+    "height": 172,
+    "width": 226
+  },
+  "entity-1x1-entity_bolt": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-1x1-entity_bolt.png",
+    "height": 172,
+    "width": 226
+  },
+  "entity-1x1-entity_directions_walk": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-1x1-entity_directions_walk.png",
+    "height": 172,
+    "width": 226
+  },
+  "entity-1x1-entity_door_open": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-1x1-entity_door_open.png",
+    "height": 172,
+    "width": 226
+  },
+  "entity-1x1-entity_humidity_percentage": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-1x1-entity_humidity_percentage.png",
+    "height": 172,
+    "width": 226
+  },
+  "entity-1x1-entity_lightbulb": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-1x1-entity_lightbulb.png",
+    "height": 172,
+    "width": 226
+  },
+  "entity-1x1-entity_power": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-1x1-entity_power.png",
+    "height": 172,
+    "width": 226
+  },
+  "entity-1x1-entity_sensors": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-1x1-entity_sensors.png",
+    "height": 172,
+    "width": 226
+  },
+  "entity-1x1-entity_speed": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-1x1-entity_speed.png",
+    "height": 172,
+    "width": 226
+  },
+  "entity-1x1-entity_thermostat": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-1x1-entity_thermostat.png",
+    "height": 172,
+    "width": 226
+  },
+  "entity-1x1-entity_toggle_on": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-1x1-entity_toggle_on.png",
+    "height": 172,
+    "width": 226
+  },
+  "entity-1x1-entity_water_drop": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-1x1-entity_water_drop.png",
+    "height": 172,
+    "width": 226
+  },
+  "entity-1x1-entity_window_closed": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-1x1-entity_window_closed.png",
+    "height": 172,
+    "width": 226
+  },
+  "entity-2x1-entity_air": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-2x1-entity_air.png",
+    "height": 172,
+    "width": 476
+  },
+  "entity-2x1-entity_battery_full": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-2x1-entity_battery_full.png",
+    "height": 172,
+    "width": 476
+  },
+  "entity-2x1-entity_bolt": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-2x1-entity_bolt.png",
+    "height": 172,
+    "width": 476
+  },
+  "entity-2x1-entity_directions_walk": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-2x1-entity_directions_walk.png",
+    "height": 172,
+    "width": 476
+  },
+  "entity-2x1-entity_door_open": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-2x1-entity_door_open.png",
+    "height": 172,
+    "width": 476
+  },
+  "entity-2x1-entity_humidity_percentage": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-2x1-entity_humidity_percentage.png",
+    "height": 172,
+    "width": 476
+  },
+  "entity-2x1-entity_lightbulb": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-2x1-entity_lightbulb.png",
+    "height": 172,
+    "width": 476
+  },
+  "entity-2x1-entity_power": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-2x1-entity_power.png",
+    "height": 172,
+    "width": 476
+  },
+  "entity-2x1-entity_sensors": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-2x1-entity_sensors.png",
+    "height": 172,
+    "width": 476
+  },
+  "entity-2x1-entity_speed": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-2x1-entity_speed.png",
+    "height": 172,
+    "width": 476
+  },
+  "entity-2x1-entity_thermostat": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-2x1-entity_thermostat.png",
+    "height": 172,
+    "width": 476
+  },
+  "entity-2x1-entity_toggle_on": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-2x1-entity_toggle_on.png",
+    "height": 172,
+    "width": 476
+  },
+  "entity-2x1-entity_water_drop": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-2x1-entity_water_drop.png",
+    "height": 172,
+    "width": 476
+  },
+  "entity-2x1-entity_window_closed": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-2x1-entity_window_closed.png",
+    "height": 172,
+    "width": 476
+  },
+  "entity-2x2-entity_air": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-2x2-entity_air.png",
+    "height": 368,
+    "width": 476
+  },
+  "entity-2x2-entity_battery_full": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-2x2-entity_battery_full.png",
+    "height": 368,
+    "width": 476
+  },
+  "entity-2x2-entity_bolt": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-2x2-entity_bolt.png",
+    "height": 368,
+    "width": 476
+  },
+  "entity-2x2-entity_directions_walk": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-2x2-entity_directions_walk.png",
+    "height": 368,
+    "width": 476
+  },
+  "entity-2x2-entity_door_open": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-2x2-entity_door_open.png",
+    "height": 368,
+    "width": 476
+  },
+  "entity-2x2-entity_humidity_percentage": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-2x2-entity_humidity_percentage.png",
+    "height": 368,
+    "width": 476
+  },
+  "entity-2x2-entity_lightbulb": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-2x2-entity_lightbulb.png",
+    "height": 368,
+    "width": 476
+  },
+  "entity-2x2-entity_power": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-2x2-entity_power.png",
+    "height": 368,
+    "width": 476
+  },
+  "entity-2x2-entity_sensors": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-2x2-entity_sensors.png",
+    "height": 368,
+    "width": 476
+  },
+  "entity-2x2-entity_speed": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-2x2-entity_speed.png",
+    "height": 368,
+    "width": 476
+  },
+  "entity-2x2-entity_thermostat": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-2x2-entity_thermostat.png",
+    "height": 368,
+    "width": 476
+  },
+  "entity-2x2-entity_toggle_on": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-2x2-entity_toggle_on.png",
+    "height": 368,
+    "width": 476
+  },
+  "entity-2x2-entity_water_drop": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-2x2-entity_water_drop.png",
+    "height": 368,
+    "width": 476
+  },
+  "entity-2x2-entity_window_closed": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-2x2-entity_window_closed.png",
+    "height": 368,
+    "width": 476
+  },
   "mqtt": {
     "dx": 0,
     "dy": 0,
