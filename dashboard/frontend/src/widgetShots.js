@@ -43,10 +43,18 @@ for (const name of Object.keys(shots).sort()) {
   }
 }
 
-// Most specific first. The icon is in the key because a climate widget is
-// mostly its room icon, so one screenshot of a bedroom would be wrong for the
-// other nine rooms -- worse than the CSS preview it replaced, which at least
-// printed the room's name.
+// Most specific first. Two things can key a shot, for two different reasons.
+//
+// The icon keys a climate widget, which is mostly its room icon: one screenshot
+// of a bedroom would be wrong for the other nine rooms, and worse than the CSS
+// preview it replaced, which at least printed the room's name.
+//
+// The domain keys an entity widget. Until v0.1.18 the icon did, because the
+// icon was typed in and was the only thing telling two cards apart. Now the
+// card draws each domain differently -- a light shows a brightness, a door
+// shows Open -- and picks its own icon from the domain, the device class and
+// the state. So the domain is both what decides the appearance and what can be
+// read straight off the chosen entity id.
 //
 // The prefix fallbacks at the end matter more than they look: a widget just
 // dragged in has none of its options set yet, so an exact "climate-1x1-<icon>"
@@ -54,8 +62,12 @@ for (const name of Object.keys(shots).sort()) {
 // and then visibly switch to a render the moment a room was picked.
 export function widgetShot(type, sizeId, options = {}) {
   const icon = options.icon;
+  const entity = options.entity;
+  const domain =
+    typeof entity === "string" && entity.includes(".") ? entity.split(".")[0] : null;
   const candidates = [
     icon && sizeId && `${type}-${sizeId}-${icon}`,
+    domain && sizeId && `${type}-${sizeId}-${domain}`,
     sizeId && `${type}-${sizeId}`,
     icon && `${type}-${icon}`,
     type,

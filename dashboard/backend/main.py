@@ -329,18 +329,34 @@ async def update_firmware() -> dict[str, Any]:
     return {"ok": True, "version": firmware.store.state.get("version")}
 
 
+async def _states() -> list[dict[str, Any]]:
+    headers = {"Authorization": f"Bearer {SUPERVISOR_TOKEN}"}
+    async with aiohttp.ClientSession(headers=headers) as session:
+        async with session.get(f"{HA_REST_URL}/states") as response:
+            response.raise_for_status()
+            return await response.json()
+
+
 @app.get("/api/entities")
 async def get_entities() -> list[dict[str, str]]:
     """Entities for the editor's pickers, annotated with domain and area."""
     if not SUPERVISOR_TOKEN:
         return []
-    headers = {"Authorization": f"Bearer {SUPERVISOR_TOKEN}"}
-    async with aiohttp.ClientSession(headers=headers) as session:
-        async with session.get(f"{HA_REST_URL}/states") as response:
-            response.raise_for_status()
-            states = await response.json()
+    return await registry.entities(await _states())
 
-    return await registry.entities(states)
+
+@app.get("/api/devices")
+async def get_devices() -> list[dict[str, Any]]:
+    """Devices for the device picker, each with its entities already ranked.
+
+    The panel is never told what a device is -- the registry is websocket-only
+    and needs credentials it does not have. The editor resolves a device to its
+    entity ids here and writes that list into the layout, so the firmware still
+    only ever sees entities. See the device widget in the firmware repo.
+    """
+    if not SUPERVISOR_TOKEN:
+        return []
+    return await registry.devices(await _states())
 
 
 # The built editor is mounted last so it does not shadow /api. Ingress serves the

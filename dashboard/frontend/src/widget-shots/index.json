@@ -153,297 +153,276 @@
     "height": 123,
     "width": 378
   },
-  "entity-1x1-entity_air": {
+  "device-2x2": {
     "dx": 0,
     "dy": 0,
-    "file": "entity-1x1-entity_air.png",
-    "height": 172,
-    "width": 226
-  },
-  "entity-1x1-entity_battery_full": {
-    "dx": 0,
-    "dy": 0,
-    "file": "entity-1x1-entity_battery_full.png",
-    "height": 172,
-    "width": 226
-  },
-  "entity-1x1-entity_bolt": {
-    "dx": 0,
-    "dy": 0,
-    "file": "entity-1x1-entity_bolt.png",
-    "height": 172,
-    "width": 226
-  },
-  "entity-1x1-entity_directions_walk": {
-    "dx": 0,
-    "dy": 0,
-    "file": "entity-1x1-entity_directions_walk.png",
-    "height": 172,
-    "width": 226
-  },
-  "entity-1x1-entity_door_open": {
-    "dx": 0,
-    "dy": 0,
-    "file": "entity-1x1-entity_door_open.png",
-    "height": 172,
-    "width": 226
-  },
-  "entity-1x1-entity_humidity_percentage": {
-    "dx": 0,
-    "dy": 0,
-    "file": "entity-1x1-entity_humidity_percentage.png",
-    "height": 172,
-    "width": 226
-  },
-  "entity-1x1-entity_lightbulb": {
-    "dx": 0,
-    "dy": 0,
-    "file": "entity-1x1-entity_lightbulb.png",
-    "height": 172,
-    "width": 226
-  },
-  "entity-1x1-entity_power": {
-    "dx": 0,
-    "dy": 0,
-    "file": "entity-1x1-entity_power.png",
-    "height": 172,
-    "width": 226
-  },
-  "entity-1x1-entity_sensors": {
-    "dx": 0,
-    "dy": 0,
-    "file": "entity-1x1-entity_sensors.png",
-    "height": 172,
-    "width": 226
-  },
-  "entity-1x1-entity_speed": {
-    "dx": 0,
-    "dy": 0,
-    "file": "entity-1x1-entity_speed.png",
-    "height": 172,
-    "width": 226
-  },
-  "entity-1x1-entity_thermostat": {
-    "dx": 0,
-    "dy": 0,
-    "file": "entity-1x1-entity_thermostat.png",
-    "height": 172,
-    "width": 226
-  },
-  "entity-1x1-entity_toggle_on": {
-    "dx": 0,
-    "dy": 0,
-    "file": "entity-1x1-entity_toggle_on.png",
-    "height": 172,
-    "width": 226
-  },
-  "entity-1x1-entity_water_drop": {
-    "dx": 0,
-    "dy": 0,
-    "file": "entity-1x1-entity_water_drop.png",
-    "height": 172,
-    "width": 226
-  },
-  "entity-1x1-entity_window_closed": {
-    "dx": 0,
-    "dy": 0,
-    "file": "entity-1x1-entity_window_closed.png",
-    "height": 172,
-    "width": 226
-  },
-  "entity-2x1-entity_air": {
-    "dx": 0,
-    "dy": 0,
-    "file": "entity-2x1-entity_air.png",
-    "height": 172,
-    "width": 476
-  },
-  "entity-2x1-entity_battery_full": {
-    "dx": 0,
-    "dy": 0,
-    "file": "entity-2x1-entity_battery_full.png",
-    "height": 172,
-    "width": 476
-  },
-  "entity-2x1-entity_bolt": {
-    "dx": 0,
-    "dy": 0,
-    "file": "entity-2x1-entity_bolt.png",
-    "height": 172,
-    "width": 476
-  },
-  "entity-2x1-entity_directions_walk": {
-    "dx": 0,
-    "dy": 0,
-    "file": "entity-2x1-entity_directions_walk.png",
-    "height": 172,
-    "width": 476
-  },
-  "entity-2x1-entity_door_open": {
-    "dx": 0,
-    "dy": 0,
-    "file": "entity-2x1-entity_door_open.png",
-    "height": 172,
-    "width": 476
-  },
-  "entity-2x1-entity_humidity_percentage": {
-    "dx": 0,
-    "dy": 0,
-    "file": "entity-2x1-entity_humidity_percentage.png",
-    "height": 172,
-    "width": 476
-  },
-  "entity-2x1-entity_lightbulb": {
-    "dx": 0,
-    "dy": 0,
-    "file": "entity-2x1-entity_lightbulb.png",
-    "height": 172,
-    "width": 476
-  },
-  "entity-2x1-entity_power": {
-    "dx": 0,
-    "dy": 0,
-    "file": "entity-2x1-entity_power.png",
-    "height": 172,
-    "width": 476
-  },
-  "entity-2x1-entity_sensors": {
-    "dx": 0,
-    "dy": 0,
-    "file": "entity-2x1-entity_sensors.png",
-    "height": 172,
-    "width": 476
-  },
-  "entity-2x1-entity_speed": {
-    "dx": 0,
-    "dy": 0,
-    "file": "entity-2x1-entity_speed.png",
-    "height": 172,
-    "width": 476
-  },
-  "entity-2x1-entity_thermostat": {
-    "dx": 0,
-    "dy": 0,
-    "file": "entity-2x1-entity_thermostat.png",
-    "height": 172,
-    "width": 476
-  },
-  "entity-2x1-entity_toggle_on": {
-    "dx": 0,
-    "dy": 0,
-    "file": "entity-2x1-entity_toggle_on.png",
-    "height": 172,
-    "width": 476
-  },
-  "entity-2x1-entity_water_drop": {
-    "dx": 0,
-    "dy": 0,
-    "file": "entity-2x1-entity_water_drop.png",
-    "height": 172,
-    "width": 476
-  },
-  "entity-2x1-entity_window_closed": {
-    "dx": 0,
-    "dy": 0,
-    "file": "entity-2x1-entity_window_closed.png",
-    "height": 172,
-    "width": 476
-  },
-  "entity-2x2-entity_air": {
-    "dx": 0,
-    "dy": 0,
-    "file": "entity-2x2-entity_air.png",
+    "file": "device-2x2.png",
     "height": 368,
     "width": 476
   },
-  "entity-2x2-entity_battery_full": {
+  "device-2x3": {
     "dx": 0,
     "dy": 0,
-    "file": "entity-2x2-entity_battery_full.png",
+    "file": "device-2x3.png",
+    "height": 564,
+    "width": 476
+  },
+  "device-3x2": {
+    "dx": 0,
+    "dy": 0,
+    "file": "device-3x2.png",
+    "height": 368,
+    "width": 726
+  },
+  "entity-1x1-binary_sensor": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-1x1-binary_sensor.png",
+    "height": 172,
+    "width": 226
+  },
+  "entity-1x1-climate": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-1x1-climate.png",
+    "height": 172,
+    "width": 226
+  },
+  "entity-1x1-cover": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-1x1-cover.png",
+    "height": 172,
+    "width": 226
+  },
+  "entity-1x1-fan": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-1x1-fan.png",
+    "height": 172,
+    "width": 226
+  },
+  "entity-1x1-light": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-1x1-light.png",
+    "height": 172,
+    "width": 226
+  },
+  "entity-1x1-lock": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-1x1-lock.png",
+    "height": 172,
+    "width": 226
+  },
+  "entity-1x1-media_player": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-1x1-media_player.png",
+    "height": 172,
+    "width": 226
+  },
+  "entity-1x1-person": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-1x1-person.png",
+    "height": 172,
+    "width": 226
+  },
+  "entity-1x1-sensor": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-1x1-sensor.png",
+    "height": 172,
+    "width": 226
+  },
+  "entity-1x1-switch": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-1x1-switch.png",
+    "height": 172,
+    "width": 226
+  },
+  "entity-1x1-update": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-1x1-update.png",
+    "height": 172,
+    "width": 226
+  },
+  "entity-1x1-vacuum": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-1x1-vacuum.png",
+    "height": 172,
+    "width": 226
+  },
+  "entity-2x1-binary_sensor": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-2x1-binary_sensor.png",
+    "height": 172,
+    "width": 476
+  },
+  "entity-2x1-climate": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-2x1-climate.png",
+    "height": 172,
+    "width": 476
+  },
+  "entity-2x1-cover": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-2x1-cover.png",
+    "height": 172,
+    "width": 476
+  },
+  "entity-2x1-fan": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-2x1-fan.png",
+    "height": 172,
+    "width": 476
+  },
+  "entity-2x1-light": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-2x1-light.png",
+    "height": 172,
+    "width": 476
+  },
+  "entity-2x1-lock": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-2x1-lock.png",
+    "height": 172,
+    "width": 476
+  },
+  "entity-2x1-media_player": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-2x1-media_player.png",
+    "height": 172,
+    "width": 476
+  },
+  "entity-2x1-person": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-2x1-person.png",
+    "height": 172,
+    "width": 476
+  },
+  "entity-2x1-sensor": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-2x1-sensor.png",
+    "height": 172,
+    "width": 476
+  },
+  "entity-2x1-switch": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-2x1-switch.png",
+    "height": 172,
+    "width": 476
+  },
+  "entity-2x1-update": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-2x1-update.png",
+    "height": 172,
+    "width": 476
+  },
+  "entity-2x1-vacuum": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-2x1-vacuum.png",
+    "height": 172,
+    "width": 476
+  },
+  "entity-2x2-binary_sensor": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity-2x2-binary_sensor.png",
     "height": 368,
     "width": 476
   },
-  "entity-2x2-entity_bolt": {
+  "entity-2x2-climate": {
     "dx": 0,
     "dy": 0,
-    "file": "entity-2x2-entity_bolt.png",
+    "file": "entity-2x2-climate.png",
     "height": 368,
     "width": 476
   },
-  "entity-2x2-entity_directions_walk": {
+  "entity-2x2-cover": {
     "dx": 0,
     "dy": 0,
-    "file": "entity-2x2-entity_directions_walk.png",
+    "file": "entity-2x2-cover.png",
     "height": 368,
     "width": 476
   },
-  "entity-2x2-entity_door_open": {
+  "entity-2x2-fan": {
     "dx": 0,
     "dy": 0,
-    "file": "entity-2x2-entity_door_open.png",
+    "file": "entity-2x2-fan.png",
     "height": 368,
     "width": 476
   },
-  "entity-2x2-entity_humidity_percentage": {
+  "entity-2x2-light": {
     "dx": 0,
     "dy": 0,
-    "file": "entity-2x2-entity_humidity_percentage.png",
+    "file": "entity-2x2-light.png",
     "height": 368,
     "width": 476
   },
-  "entity-2x2-entity_lightbulb": {
+  "entity-2x2-lock": {
     "dx": 0,
     "dy": 0,
-    "file": "entity-2x2-entity_lightbulb.png",
+    "file": "entity-2x2-lock.png",
     "height": 368,
     "width": 476
   },
-  "entity-2x2-entity_power": {
+  "entity-2x2-media_player": {
     "dx": 0,
     "dy": 0,
-    "file": "entity-2x2-entity_power.png",
+    "file": "entity-2x2-media_player.png",
     "height": 368,
     "width": 476
   },
-  "entity-2x2-entity_sensors": {
+  "entity-2x2-person": {
     "dx": 0,
     "dy": 0,
-    "file": "entity-2x2-entity_sensors.png",
+    "file": "entity-2x2-person.png",
     "height": 368,
     "width": 476
   },
-  "entity-2x2-entity_speed": {
+  "entity-2x2-sensor": {
     "dx": 0,
     "dy": 0,
-    "file": "entity-2x2-entity_speed.png",
+    "file": "entity-2x2-sensor.png",
     "height": 368,
     "width": 476
   },
-  "entity-2x2-entity_thermostat": {
+  "entity-2x2-switch": {
     "dx": 0,
     "dy": 0,
-    "file": "entity-2x2-entity_thermostat.png",
+    "file": "entity-2x2-switch.png",
     "height": 368,
     "width": 476
   },
-  "entity-2x2-entity_toggle_on": {
+  "entity-2x2-update": {
     "dx": 0,
     "dy": 0,
-    "file": "entity-2x2-entity_toggle_on.png",
+    "file": "entity-2x2-update.png",
     "height": 368,
     "width": 476
   },
-  "entity-2x2-entity_water_drop": {
+  "entity-2x2-vacuum": {
     "dx": 0,
     "dy": 0,
-    "file": "entity-2x2-entity_water_drop.png",
-    "height": 368,
-    "width": 476
-  },
-  "entity-2x2-entity_window_closed": {
-    "dx": 0,
-    "dy": 0,
-    "file": "entity-2x2-entity_window_closed.png",
+    "file": "entity-2x2-vacuum.png",
     "height": 368,
     "width": 476
   },

@@ -189,19 +189,30 @@ def pushed() -> dict[str, Any] | None:
         return None
 
 
+def _looks_like_entity(value: Any) -> bool:
+    if not isinstance(value, str) or value.count(".") != 1 or " " in value:
+        return False
+    domain, _, object_id = value.partition(".")
+    return bool(domain and object_id)
+
+
 def entity_ids(layout: dict[str, Any]) -> set[str]:
     """Every entity the layout refers to, so the bridge knows what to follow.
 
     Any option whose value looks like an entity id counts; the manifest marks
     them as type "entity", but matching on the domain.object shape keeps this
     independent of whether the manifest happens to be available.
+
+    Lists count too. The device widget stores its resolved entities as an array
+    under `entities`, and a device card whose entities were never followed draws
+    a full set of dashes -- which looks like a firmware fault and is not one.
     """
     found: set[str] = set()
     for page in layout.get("pages", []):
         for widget in page.get("widgets", []):
             for value in (widget.get("options") or {}).values():
-                if isinstance(value, str) and value.count(".") == 1 and " " not in value:
-                    domain, _, object_id = value.partition(".")
-                    if domain and object_id:
-                        found.add(value)
+                if isinstance(value, list):
+                    found.update(one for one in value if _looks_like_entity(one))
+                elif _looks_like_entity(value):
+                    found.add(value)
     return found

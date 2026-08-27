@@ -115,6 +115,7 @@ export default function App() {
   const { status, error: statusError } = useStatus();
   const [layout, setLayout] = useState(null);
   const [entities, setEntities] = useState([]);
+  const [devices, setDevices] = useState([]);
   const [uploads, setUploads] = useState([]);
   const [tab, setTab] = useState("design");
   const [activePageId, setActivePageId] = useState(null);
@@ -152,6 +153,10 @@ export default function App() {
   useEffect(() => {
     api.getLayout().then(setLayout).catch((problem) => setMessage(problem.message));
     api.getEntities().then(setEntities).catch(() => setEntities([]));
+    // For the device widget's picker. Its own call rather than derived from the
+    // entities: the device registry is a separate websocket read, and a device
+    // is not something the state list knows about.
+    api.getDevices().then(setDevices).catch(() => setDevices([]));
     // Named in the image widget's picker alongside the built-in icons
     api.getImages().then((data) => setUploads(data.images || [])).catch(() => setUploads([]));
   }, []);
@@ -299,6 +304,18 @@ export default function App() {
     updateWidgets((current) =>
       current.map((widget) =>
         widget.id === id ? { ...widget, options: { ...widget.options, [key]: value } } : widget
+      )
+    );
+
+  // Several options in one edit, so they land in a single layout save. Picking
+  // a device sets its id, its resolved entity list and its name together, and
+  // three separate saves would leave two intermediate layouts on disk -- one of
+  // them with a device chosen and no entities, which is a card that draws
+  // nothing.
+  const setOptions = (id, patch) =>
+    updateWidgets((current) =>
+      current.map((widget) =>
+        widget.id === id ? { ...widget, options: { ...widget.options, ...patch } } : widget
       )
     );
 
@@ -518,8 +535,10 @@ export default function App() {
               widget={selected}
               manifest={manifest}
               entities={entities}
+              devices={devices}
               uploads={uploads}
               onSetOption={setOption}
+              onSetOptions={setOptions}
               onSetSize={setSize}
               onRemove={removeWidget}
               onClose={() => setSelectedId(null)}
