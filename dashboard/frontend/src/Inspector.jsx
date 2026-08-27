@@ -179,13 +179,15 @@ export default function Inspector({
   const options = type?.options || [];
   const size = widgetSize(manifest, widget);
 
-  // How many tiles the device card divides itself into: its cell count. Taken
-  // from the manifest rather than written down here, so it follows the firmware
-  // if a size is ever added or reshaped.
+  // How many entities the chosen size actually draws. The firmware publishes it
+  // per size, because guessing from the cell count happened to be right for two
+  // of the three device sizes and stopped being right the moment the card was
+  // relaid out as a bento -- where every shape holds the same six, arranged
+  // differently.
   const chosenSize = type?.sizes?.find(
     (one) => one.id === (widget.size || type.sizes?.[0]?.id)
   );
-  const capacity = (chosenSize?.cols || 0) * (chosenSize?.rows || 0);
+  const capacity = chosenSize?.capacity || 0;
 
   return (
     <aside className="inspector open">
