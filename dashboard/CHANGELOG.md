@@ -1,5 +1,35 @@
 # Changelog
 
+## 0.22.0
+
+- **Widgets now show what an entity actually means, not "on" or "off".** A light
+  shows its brightness and its colour temperature, a door shows Open or Closed, a
+  blind shows how far it is open, a thermostat shows the room temperature and what
+  it is heating to. Around twenty kinds of entity are handled, and binary sensors
+  use Home Assistant's own wording — a leak sensor says Wet, a motion sensor says
+  Detected.
+- **The icon is chosen for you.** A light that is off draws an outline bulb and a
+  lit one draws a filled bulb; an open door and a shut door are different glyphs.
+  You can still override it per widget, but you no longer have to pick one.
+- **The wide and large sizes now say more, not just say it bigger.** The wide size
+  puts a second fact beside the reading, and the large size puts it on a line of
+  its own; the small size still shows one number, as big as it will go. Choosing
+  the size is how you ask for more detail.
+- **A new Device widget.** Home Assistant groups entities under the physical
+  device they belong to, and this puts one on a card: a door sensor showing Open,
+  its battery and its temperature together, instead of three separate widgets.
+  Pick a device and the editor works out which of its entities are worth showing
+  and in what order. Three sizes, holding four to eight rows.
+- The device's own name is stripped from each row, so "Front Door Battery" reads
+  as "Battery" under a card headed "Front Door" — the same thing Home Assistant's
+  device page does.
+- Editor previews for entity widgets now match the kind of entity you picked, so
+  a light and a door no longer look the same on the canvas.
+
+Needs firmware **v0.1.19**, which is where both widgets live. On an older panel
+the editor will not offer the Device widget and entity cards will keep their old
+appearance, because the widget list comes from the device.
+
 ## 0.21.0
 
 - **A new Entity widget**, for everything the Climate and Weather cards are not:
