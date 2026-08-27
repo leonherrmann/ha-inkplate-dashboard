@@ -1,8 +1,41 @@
 import EntityPicker from "./EntityPicker.jsx";
+import DevicePicker, { MAX_DEVICE_ENTITIES } from "./DevicePicker.jsx";
 import { imagePreviewUrl } from "./api.js";
 import { widgetSize, widgetType } from "./layout.js";
 
-function Option({ option, value, entities, uploads, onChange }) {
+function Option({ option, widget, value, entities, devices, uploads, onChange, onChangeMany }) {
+  // Picking a device sets three things at once, which is why this one option
+  // reaches for onChangeMany: the id, so it can be re-resolved later; the
+  // resolved entity list, which is what the panel actually renders; and the
+  // name, prefilled because a device already has a good one and typing it again
+  // is the sort of thing that makes an editor tiring.
+  if (option.type === "device") {
+    return (
+      <DevicePicker
+        devices={devices}
+        value={value}
+        chosen={widget?.options?.entities}
+        onChange={(device) => {
+          if (!device) {
+            onChangeMany({ device: "", entities: [] });
+            return;
+          }
+          onChangeMany({
+            device: device.id,
+            entities: device.entities
+              .slice(0, MAX_DEVICE_ENTITIES)
+              .map((one) => one.entity_id),
+            // Only if the name is still whatever the last device left, so a
+            // name the user typed is never silently overwritten.
+            ...(!widget?.options?.name || widget.options.name === widget.options.deviceName
+              ? { name: device.name, deviceName: device.name }
+              : {}),
+          });
+        }}
+      />
+    );
+  }
+
   if (option.type === "entity") {
     return (
       <EntityPicker
@@ -108,8 +141,10 @@ export default function Inspector({
   widget,
   manifest,
   entities,
+  devices,
   uploads,
   onSetOption,
+  onSetOptions,
   onSetSize,
   onRemove,
   onClose,
@@ -171,10 +206,13 @@ export default function Inspector({
           <span>{option.label}</span>
           <Option
             option={option}
+            widget={widget}
             value={widget.options?.[option.key]}
             entities={entities}
+            devices={devices}
             uploads={uploads}
             onChange={(next) => onSetOption(widget.id, option.key, next)}
+            onChangeMany={(patch) => onSetOptions(widget.id, patch)}
           />
         </label>
       ))}
