@@ -54,6 +54,33 @@ DOMAIN_RANK = [
 # rather than ranked last.
 CATEGORY_RANK = {None: 0, "diagnostic": 1}
 
+# Domains a device card should never offer. Every one of these has a state that
+# is either an instruction or a timestamp of when something last happened, and
+# neither is a reading worth a tile on a panel you glance at.
+#
+# `button` is the one that prompted this: almost every Zigbee and Matter device
+# carries an Identify button, and a few carry Restart or Ping. Their state is
+# the moment they were last pressed, so a tile for one would show a time that
+# means nothing and never changes.
+UNSHOWABLE_DOMAINS = {
+    "button",
+    "event",
+    "scene",
+    "script",
+    "automation",
+    "siren",
+    "remote",
+    "camera",
+    "image",
+    "text",
+    "todo",
+    "notify",
+    "conversation",
+    "stt",
+    "tts",
+    "assist_satellite",
+}
+
 
 class Registry:
     def __init__(self) -> None:
@@ -114,6 +141,8 @@ class Registry:
                 continue
 
             domain = entity_id.split(".", 1)[0]
+            if domain in UNSHOWABLE_DOMAINS:
+                continue
             by_device.setdefault(device_id, []).append(
                 {
                     "entity_id": entity_id,

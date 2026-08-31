@@ -12,12 +12,13 @@ import { createPortal } from "react-dom";
 
 const ALL = "__all__";
 
-// What gets written into the layout. The tall card draws about eight rows, so
-// beyond that a row could never be seen -- and every entity written here costs
-// the panel a state subscription plus one per attribute its domain wants, which
-// on a full dashboard is the difference between a hundred topics and a
-// thousand. The list is already ranked, so this keeps the ones that matter.
-export const MAX_DEVICE_ENTITIES = 8;
+// What picking a device fills in. Six is what the largest card draws, so a
+// seventh could never be seen -- and every entity written here costs the panel a
+// state subscription plus one per attribute its domain wants, which on a full
+// dashboard is the difference between a hundred topics and a thousand. The list
+// arrives ranked, so this keeps the ones that matter; the inspector's entity
+// list can then add, remove or reorder them by hand.
+export const MAX_DEVICE_ENTITIES = 6;
 
 function Modal({ devices, value, onPick, onClose }) {
   const [query, setQuery] = useState("");

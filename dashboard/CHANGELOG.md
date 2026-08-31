@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.23.0
+
+- **Choose which of a device's entities the card shows, and in what order.**
+  Picking a device still fills the list in for you, but that ranking is only a
+  good guess on average — whether the humidity or the CO2 belongs on the card
+  depends on what the panel is for. The inspector now lists every entity the
+  device has, with the chosen ones at the top in their own order and the rest
+  below, and arrows to move them.
+- **Order decides what survives a smaller card.** The card draws its main
+  reading from the first entity and fills the rest in order, so anything past
+  what the chosen size can draw is marked *not drawn at this size* rather than
+  quietly disappearing.
+- **Devices no longer offer entities that cannot say anything.** Every Zigbee
+  and Matter device carries an Identify button, and a few carry Restart or Ping;
+  a button's state is the moment it was last pressed, so a row for one would
+  show a time that never changes. Fifteen kinds of entity are left out on the
+  same grounds.
+- **The device card has been redesigned**, and needs firmware **v0.1.20** to
+  appear that way on the panel — the editor's pictures of it are updated either
+  way. It now gives the main reading a white box and sets everything else as
+  plain type around it, instead of boxing every reading equally.
+
 ## 0.22.0
 
 - **Widgets now show what an entity actually means, not "on" or "off".** A light

@@ -1,16 +1,19 @@
 import EntityPicker from "./EntityPicker.jsx";
 import DevicePicker, { MAX_DEVICE_ENTITIES } from "./DevicePicker.jsx";
+import DeviceEntities from "./DeviceEntities.jsx";
 import { imagePreviewUrl } from "./api.js";
 import { widgetSize, widgetType } from "./layout.js";
 
-function Option({ option, widget, value, entities, devices, uploads, onChange, onChangeMany }) {
+function Option({ option, widget, value, entities, devices, uploads, capacity, onChange, onChangeMany }) {
   // Picking a device sets three things at once, which is why this one option
   // reaches for onChangeMany: the id, so it can be re-resolved later; the
   // resolved entity list, which is what the panel actually renders; and the
   // name, prefilled because a device already has a good one and typing it again
   // is the sort of thing that makes an editor tiring.
   if (option.type === "device") {
+    const device = devices.find((one) => one.id === value);
     return (
+      <>
       <DevicePicker
         devices={devices}
         value={value}
@@ -33,6 +36,20 @@ function Option({ option, widget, value, entities, devices, uploads, onChange, o
           });
         }}
       />
+      {/* Which of them to draw, and in what order. The ranking that lands here
+          on picking a device is a good average guess and no more -- whether the
+          CO2 or the humidity belongs on the card depends on what the panel is
+          for. Capacity is the chosen size's own cell count from the manifest,
+          so the editor never has to be told what the firmware draws. */}
+      {device && (
+        <DeviceEntities
+          available={device.entities}
+          chosen={widget?.options?.entities}
+          capacity={capacity}
+          onChange={(next) => onChangeMany({ entities: next })}
+        />
+      )}
+      </>
     );
   }
 
@@ -162,6 +179,16 @@ export default function Inspector({
   const options = type?.options || [];
   const size = widgetSize(manifest, widget);
 
+  // How many entities the chosen size actually draws. The firmware publishes it
+  // per size, because guessing from the cell count happened to be right for two
+  // of the three device sizes and stopped being right the moment the card was
+  // relaid out as a bento -- where every shape holds the same six, arranged
+  // differently.
+  const chosenSize = type?.sizes?.find(
+    (one) => one.id === (widget.size || type.sizes?.[0]?.id)
+  );
+  const capacity = chosenSize?.capacity || 0;
+
   return (
     <aside className="inspector open">
       <div className="inspector-head">
@@ -211,6 +238,7 @@ export default function Inspector({
             entities={entities}
             devices={devices}
             uploads={uploads}
+            capacity={capacity}
             onChange={(next) => onSetOption(widget.id, option.key, next)}
             onChangeMany={(patch) => onSetOptions(widget.id, patch)}
           />

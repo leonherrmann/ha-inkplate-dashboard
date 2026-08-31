@@ -1748,3 +1748,141 @@ main {
   flex: 1;
   margin-bottom: 0;
 }
+
+/* --- a device widget's entity list ------------------------------------------
+   Which of a device's entities the card draws, and in what order. Both at once,
+   in one list: the chosen ones sit at the top in their own order, the rest
+   below. Two panels to look between would make reordering feel like a different
+   task from choosing, and it is the same one. */
+.device-entities {
+  margin-top: 10px;
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.device-entities-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  background: var(--grey);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.device-entities-warn {
+  color: var(--on-yellow);
+  background: var(--yellow);
+  padding: 0 6px;
+  border-radius: 4px;
+}
+
+.device-entities-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.device-entity {
+  display: flex;
+  align-items: stretch;
+  border-top: 1px solid var(--ink-line);
+}
+
+.device-entity:first-child {
+  border-top: none;
+}
+
+/* Dimmed rather than hidden: an entity that is chosen but past what this size
+   draws is still a choice, and one that silently vanished would read as a bug. */
+.device-entity.overflow .device-entity-text {
+  opacity: 0.55;
+}
+
+.device-entity-toggle {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  box-shadow: none;
+  background: none;
+  text-transform: none;
+  letter-spacing: 0;
+  text-align: left;
+  padding: 7px 10px;
+  min-width: 0;
+}
+
+.device-entity-toggle:active {
+  transform: none;
+}
+
+.device-entity-box {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--ink);
+  border-radius: 4px;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.device-entity.on .device-entity-box {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.device-entity-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.device-entity-name {
+  font-weight: 800;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.device-entity-meta {
+  font-size: 10px;
+  font-weight: 600;
+  opacity: 0.6;
+}
+
+.device-entity-order {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
+}
+
+.device-entity-order button {
+  border: none;
+  border-left: 1px solid var(--ink-line);
+  box-shadow: none;
+  background: none;
+  padding: 0 8px;
+  font-size: 11px;
+  line-height: 1;
+  flex: 1;
+}
+
+.device-entity-order button:disabled {
+  opacity: 0.25;
+}
+
+.device-entity-order button:active {
+  transform: none;
+}
