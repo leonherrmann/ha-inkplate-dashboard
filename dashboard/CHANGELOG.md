@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.24.0
+
+- **A bigger clock.** The clock now comes in two sizes, and the new **Big**
+  one shows the minutes at the same size as the hours with the date spelled
+  out underneath — meant to be read from across the room rather than from
+  your desk. The existing Wide clock is unchanged, and clocks already on a
+  page stay exactly as they are.
+- Needs firmware **v0.1.21** for the new size to appear.
+
 ## 0.23.0
 
 - **Choose which of a device's entities the card shows, and in what order.**

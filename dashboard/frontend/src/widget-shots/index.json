@@ -153,6 +153,13 @@
     "height": 123,
     "width": 378
   },
+  "clock-2x2": {
+    "dx": 45,
+    "dy": 93,
+    "file": "clock-2x2.png",
+    "height": 176,
+    "width": 380
+  },
   "device-2x2": {
     "dx": 0,
     "dy": 0,
