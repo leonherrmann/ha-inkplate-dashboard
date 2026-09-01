@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.25.0
+
+- **Any entity as a chip in the status row.** Alongside the clock, battery and
+  connection chips you can now put a reading from Home Assistant — "19.4°C"
+  beside a thermometer, "Open" beside a door. It picks its own icon from the
+  kind of entity it is, and takes only as much width as its reading needs.
+- The chip shows the reading alone by default. Type a **Name** if you want a
+  word in front of it, which is worth doing when two chips would otherwise
+  draw the same icon.
+- Needs firmware **v0.1.22**.
+
 ## 0.24.0
 
 - **A bigger clock.** The clock now comes in two sizes, and the new **Big**
