@@ -578,6 +578,7 @@ export default function App() {
           refresh={layout.refresh}
           onRefreshChange={(next) => persist({ ...layout, refresh: next })}
           onRefresh={() => api.refreshDevice().then(() => setMessage("Refresh sent"))}
+          onShowInfo={() => api.showDeviceInfo().then(() => setMessage("Device info sent to the panel"))}
         />
       )}
     </div>

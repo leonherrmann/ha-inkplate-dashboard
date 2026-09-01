@@ -221,6 +221,19 @@ async def refresh_device() -> dict[str, Any]:
     return {"ok": True}
 
 
+@app.post("/api/device-info")
+async def show_device_info() -> dict[str, Any]:
+    """Put the device's own diagnostics on the panel for a minute.
+
+    Deliberately shown on the panel rather than returned here: everything the
+    device knows otherwise reaches this add-on over MQTT, so when MQTT is what
+    is broken none of it arrives. The one case where you most need to see the
+    broker settings is the one where the device cannot tell us them.
+    """
+    link.publish_command("info")
+    return {"ok": True}
+
+
 @app.post("/api/page/{page_id}")
 async def show_page(page_id: str) -> dict[str, Any]:
     """Put a specific page up now. The device still rotates on from it."""

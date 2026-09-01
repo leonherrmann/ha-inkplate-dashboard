@@ -17,6 +17,7 @@ export default function DeviceTab({
   refresh,
   onRefreshChange,
   onRefresh,
+  onShowInfo,
 }) {
   const [samples, setSamples] = useState(null);
   const [firmware, setFirmware] = useState(null);
@@ -256,6 +257,14 @@ export default function DeviceTab({
         <section className="group">
           <button onClick={onRefresh}>Force a full refresh</button>
           <p className="hint">Redraws the whole panel, clearing any e-ink ghosting.</p>
+
+          <button onClick={onShowInfo}>Show device info on the panel</button>
+          <p className="hint">
+            Puts the device's network, broker and firmware details on the screen
+            itself for a minute. Worth reaching for when the panel is offline and
+            this page has nothing to show — the device can still say why on its
+            own screen.
+          </p>
         </section>
       </div>
     </div>
