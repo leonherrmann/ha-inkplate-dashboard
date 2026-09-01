@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026.9.0
+
+Versions are CalVer from here — `YYYY.M.PATCH`, the same scheme Home Assistant
+itself uses. This follows 0.30.0; nothing is skipped.
+
+- **Two new clock sizes: half screen and full screen.** Half screen sets the
+  hours over the minutes at 250px with the date beside them; full screen puts
+  the whole time on one line at 324px. They appear in the size picker once the
+  panel is running firmware v2026.9.0.
+- **The small clock sets the hours and minutes at the same size.** It used to
+  set big hours beside small minutes, which is harder to read as a time, not
+  easier. **Any 2x1 clock already on your dashboard will change appearance.**
+- Needs firmware **v2026.9.0**.
+
 ## 0.30.0
 
 - **You can set how often the screen clears itself**, on the Device tab under
