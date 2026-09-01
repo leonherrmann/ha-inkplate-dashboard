@@ -147,11 +147,11 @@
     "width": 476
   },
   "clock-2x1": {
-    "dx": 65,
+    "dx": 48,
     "dy": 24,
     "file": "clock-2x1.png",
     "height": 117,
-    "width": 341
+    "width": 375
   },
   "clock-2x2": {
     "dx": 22,
