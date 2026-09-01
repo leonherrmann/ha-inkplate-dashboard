@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.27.0
+
+- **Chips in the status row are spaced evenly.** The editor can only guess how
+  wide a chip will be — what it actually takes depends on the reading it shows
+  — so chips that looked evenly spaced here could end up with very uneven gaps
+  on the panel. The panel now spaces them itself, keeping the order you gave
+  them. Positions on the canvas are still approximate for chips.
+- **The small clock shows a shorter month** ("AUG 16" rather than "AUGUST 16"),
+  which stops the month dwarfing the day, and the whole widget is properly
+  centred.
+- Needs firmware **v0.1.25**.
+
 ## 0.26.0
 
 - **The clock is drawn in the dashboard's own typeface now.** It used to carry
