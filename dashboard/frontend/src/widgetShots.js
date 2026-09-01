@@ -69,6 +69,11 @@ export function widgetShot(type, sizeId, options = {}) {
     icon && sizeId && `${type}-${sizeId}-${icon}`,
     domain && sizeId && `${type}-${sizeId}-${domain}`,
     sizeId && `${type}-${sizeId}`,
+    // Sizeless, which is what the chips are: a chip measures itself rather than
+    // taking a footprint from the grid, so it has no size to key on. Without
+    // this an entity chip on the canvas fell through to whichever domain sorted
+    // first, putting a thermometer where a door belonged.
+    domain && `${type}-${domain}`,
     icon && `${type}-${icon}`,
     type,
   ];

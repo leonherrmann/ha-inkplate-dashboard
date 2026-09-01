@@ -1,6 +1,6 @@
 # https://developers.home-assistant.io/docs/add-ons/configuration#add-on-config
 name: Inkplate Dashboard
-version: "0.24.0"
+version: "0.25.0"
 slug: inkplate_dashboard
 description: Edit the layout of an Inkplate 5 e-ink dashboard and push it over MQTT
 url: "https://github.com/leonherrmann/ha-inkplate-dashboard"

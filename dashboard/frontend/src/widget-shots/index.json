@@ -433,6 +433,90 @@
     "height": 368,
     "width": 476
   },
+  "entity_chip-binary_sensor": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity_chip-binary_sensor.png",
+    "height": 78,
+    "width": 173
+  },
+  "entity_chip-climate": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity_chip-climate.png",
+    "height": 78,
+    "width": 195
+  },
+  "entity_chip-cover": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity_chip-cover.png",
+    "height": 78,
+    "width": 161
+  },
+  "entity_chip-fan": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity_chip-fan.png",
+    "height": 78,
+    "width": 162
+  },
+  "entity_chip-light": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity_chip-light.png",
+    "height": 78,
+    "width": 161
+  },
+  "entity_chip-lock": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity_chip-lock.png",
+    "height": 78,
+    "width": 198
+  },
+  "entity_chip-media_player": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity_chip-media_player.png",
+    "height": 78,
+    "width": 286
+  },
+  "entity_chip-person": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity_chip-person.png",
+    "height": 78,
+    "width": 181
+  },
+  "entity_chip-sensor": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity_chip-sensor.png",
+    "height": 78,
+    "width": 195
+  },
+  "entity_chip-switch": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity_chip-switch.png",
+    "height": 78,
+    "width": 137
+  },
+  "entity_chip-update": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity_chip-update.png",
+    "height": 78,
+    "width": 234
+  },
+  "entity_chip-vacuum": {
+    "dx": 0,
+    "dy": 0,
+    "file": "entity_chip-vacuum.png",
+    "height": 78,
+    "width": 222
+  },
   "mqtt": {
     "dx": 0,
     "dy": 0,
