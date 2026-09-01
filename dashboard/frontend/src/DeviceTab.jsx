@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import SleepSettings from "./SleepSettings.jsx";
+import RefreshSettings from "./RefreshSettings.jsx";
 import Sparkline from "./Sparkline.jsx";
 import * as api from "./api.js";
 import { Battery, formatAge, formatUptime, signalLabel } from "./DeviceStats.jsx";
@@ -8,7 +9,15 @@ import { Battery, formatAge, formatUptime, signalLabel } from "./DeviceStats.jsx
 // Everything about the device rather than the layout: health, when it was last
 // heard from, and the night sleep schedule. Night sleep used to sit in the
 // widget palette, which it has nothing to do with.
-export default function DeviceTab({ status, lastSeenAge, sleep, onSleepChange, onRefresh }) {
+export default function DeviceTab({
+  status,
+  lastSeenAge,
+  sleep,
+  onSleepChange,
+  refresh,
+  onRefreshChange,
+  onRefresh,
+}) {
   const [samples, setSamples] = useState(null);
   const [firmware, setFirmware] = useState(null);
   const [busy, setBusy] = useState("");
@@ -241,6 +250,8 @@ export default function DeviceTab({ status, lastSeenAge, sleep, onSleepChange, o
           </section>
 
         <SleepSettings sleep={sleep} onChange={onSleepChange} />
+
+        <RefreshSettings refresh={refresh} onChange={onRefreshChange} />
 
         <section className="group">
           <button onClick={onRefresh}>Force a full refresh</button>
