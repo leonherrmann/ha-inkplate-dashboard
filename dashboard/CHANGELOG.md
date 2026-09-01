@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.26.0
+
+- **The clock is drawn in the dashboard's own typeface now.** It used to carry
+  its own hand-made digits; it uses Nunito like every other widget, so the two
+  clock sizes and the cards around them finally match. It looks near enough
+  identical — the change is that the digits are evenly spaced, so the time no
+  longer shifts a little as the numbers change.
+- Needs firmware **v0.1.23**.
+
 ## 0.25.0
 
 - **Any entity as a chip in the status row.** Alongside the clock, battery and
