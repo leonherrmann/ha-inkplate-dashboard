@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.29.0
+
+- **The small clock's date is bigger**, and shows the month above the day again
+  ("AUG" over "16"). It had been sized as a caption on the time, which left it
+  hard to read next to the hour.
+- Needs firmware **v0.1.27**.
+
 ## 0.28.0
 
 - **Chips can sit in a group at each end of the row again.** 0.27.0 spaced them
