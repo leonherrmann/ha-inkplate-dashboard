@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.30.0
+
+- **You can set how often the screen clears itself**, on the Device tab under
+  Screen refresh. e-ink repaints quickly but each quick repaint leaves a faint
+  ghost; only the slow black flash clears them. The device now measures how much
+  of the screen has actually ghosted and flashes once it passes the share you
+  choose, so a dashboard where little moves goes roughly two hours between
+  flashes instead of the twenty-five minutes it used to.
+- Four levels, from **Cleanest** to **Rarely**, defaulting to **Balanced**. The
+  estimates are hedged on purpose: the same setting is about an hour on a page
+  with a large clock and over two on a typical dashboard.
+- A percentage set outside the editor shows as **Custom** rather than being
+  snapped to the nearest level.
+- Needs firmware **v0.1.29**.
+
 ## 0.29.0
 
 - **The small clock's date is bigger**, and shows the month above the day again
