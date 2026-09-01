@@ -52,10 +52,20 @@ DEFAULT_ROTATION: dict[str, Any] = {
     "default_dwell_seconds": 60,
 }
 
+# How much ghosting the panel tolerates before spending a full refresh -- the
+# slow black flash -- as a percentage of the screen. A percentage rather than a
+# pixel count so the editor never has to know the panel's size; the firmware
+# clamps it and does the arithmetic. 12 is the firmware's own default, and the
+# two are deliberately the same number so they cannot drift apart.
+DEFAULT_REFRESH: dict[str, Any] = {
+    "ghost_percent": 12,
+}
+
 EMPTY_LAYOUT: dict[str, Any] = {
     "version": 0,
     "sleep": dict(DEFAULT_SLEEP),
     "rotation": dict(DEFAULT_ROTATION),
+    "refresh": dict(DEFAULT_REFRESH),
     # Top or bottom. The firmware draws widgets at the pixels it is given and
     # never derives a row, so this is the editor's to know, not the device's.
     "chip_row": DEFAULT_CHIP_ROW,
@@ -102,6 +112,7 @@ def _migrate(layout: dict[str, Any]) -> dict[str, Any]:
     layout.pop("grid", None)
     layout.setdefault("sleep", dict(DEFAULT_SLEEP))
     layout.setdefault("rotation", dict(DEFAULT_ROTATION))
+    layout.setdefault("refresh", dict(DEFAULT_REFRESH))
     layout.setdefault("chip_row", DEFAULT_CHIP_ROW)
     _migrate_to_chip_row_grid(layout)
     return layout

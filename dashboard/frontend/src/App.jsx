@@ -575,6 +575,8 @@ export default function App() {
           lastSeenAge={lastSeenAge}
           sleep={layout.sleep}
           onSleepChange={(next) => persist({ ...layout, sleep: next })}
+          refresh={layout.refresh}
+          onRefreshChange={(next) => persist({ ...layout, refresh: next })}
           onRefresh={() => api.refreshDevice().then(() => setMessage("Refresh sent"))}
         />
       )}
