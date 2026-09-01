@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.28.0
+
+- **Chips can sit in a group at each end of the row again.** 0.27.0 spaced them
+  evenly but pulled them all to the left; now the side you drag a chip to is
+  the side it aligns to, and each group is evenly spaced within itself.
+- **The small clock shows the day above the month** ("16" over "AUG").
+- Needs firmware **v0.1.26**.
+
 ## 0.27.0
 
 - **Chips in the status row are spaced evenly.** The editor can only guess how
