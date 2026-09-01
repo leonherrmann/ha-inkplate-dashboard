@@ -147,11 +147,11 @@
     "width": 476
   },
   "clock-2x1": {
-    "dx": 48,
-    "dy": 24,
+    "dx": 16,
+    "dy": 37,
     "file": "clock-2x1.png",
-    "height": 117,
-    "width": 375
+    "height": 91,
+    "width": 441
   },
   "clock-2x2": {
     "dx": 22,
@@ -159,6 +159,20 @@
     "file": "clock-2x2.png",
     "height": 169,
     "width": 427
+  },
+  "clock-3x3": {
+    "dx": 65,
+    "dy": 20,
+    "file": "clock-3x3.png",
+    "height": 517,
+    "width": 595
+  },
+  "clock-5x3": {
+    "dx": 27,
+    "dy": 68,
+    "file": "clock-5x3.png",
+    "height": 421,
+    "width": 1181
   },
   "device-2x2": {
     "dx": 0,
