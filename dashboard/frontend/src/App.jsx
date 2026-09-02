@@ -17,15 +17,17 @@ import {
   FALLBACK_GRID,
   SNAP_MODES,
   ZOOM_LEVELS,
-  cardBandTop,
   chipRowTop,
   defaultPosition,
+  hasChipRow,
   isChipType,
   isReachable,
   newId,
   otherChips,
+  pageGrid,
   placeChipX,
   placeWidget,
+  regridY,
   widgetSize,
   widgetType,
 } from "./layout.js";
@@ -131,14 +133,17 @@ export default function App() {
   // independently of the firmware, so between the two releases the manifest is
   // the old one and has no chip_h at all -- and an undefined there puts NaN
   // into the chip band's geometry rather than simply looking wrong.
-  const grid = { ...FALLBACK_GRID, ...(manifest?.grid || {}) };
-  // Where the chip row sits is a layout choice, not a device one -- the
-  // firmware draws at the pixels it is given and never derives a row.
-  const chipRow = layout?.chip_row || DEFAULT_CHIP_ROW;
+  const deviceGrid = { ...FALLBACK_GRID, ...(manifest?.grid || {}) };
 
   const pages = layout?.pages || [];
   const activePage = pages.find((page) => page.id === activePageId) || pages[0] || null;
   const widgets = activePage?.widgets || [];
+  // Where the chip row sits, or whether the page has one at all, is a layout
+  // choice and a *per page* one -- the firmware draws at the pixels it is given
+  // and never derives a row. With no row the page's cells are taller, which is
+  // what pageGrid folds in, so everything downstream can go on taking one grid.
+  const chipRow = activePage?.chip_row || DEFAULT_CHIP_ROW;
+  const grid = pageGrid(deviceGrid, chipRow);
   const selected = widgets.find((widget) => widget.id === selectedId) || null;
 
   // Both timestamps come from the backend, so a clock skewed on this machine
@@ -207,9 +212,13 @@ export default function App() {
     // Counted before anything is copied: the status poll re-runs this
     // constantly, and cloning the layout each time to discover nothing is wrong
     // would be pure waste.
+    // Each page is measured against its own chip row: the same widget is 34px
+    // taller per row on a page that has none.
+    const pageChipRow = (page) => page.chip_row || DEFAULT_CHIP_ROW;
     const stranded = (page) =>
       (page.widgets || []).filter(
-        (widget) => !isReachable(widget, widgetSize(manifest, widget, uploads), panel)
+        (widget) =>
+          !isReachable(widget, widgetSize(manifest, widget, uploads, pageChipRow(page)), panel)
       ).length;
 
     const rescued = (layout.pages || []).reduce((total, page) => total + stranded(page), 0);
@@ -217,10 +226,12 @@ export default function App() {
 
     const next = structuredClone(layout);
     for (const page of next.pages || []) {
+      const rowSetting = pageChipRow(page);
       for (const widget of page.widgets || []) {
-        if (isReachable(widget, widgetSize(manifest, widget, uploads), panel)) continue;
-        const home = defaultPosition(grid, {
-          chipRow,
+        const size = widgetSize(manifest, widget, uploads, rowSetting);
+        if (isReachable(widget, size, panel)) continue;
+        const home = defaultPosition(pageGrid(deviceGrid, rowSetting), {
+          chipRow: rowSetting,
           isChip: isChipType(widgetType(manifest, widget)),
           panel,
         });
@@ -242,6 +253,9 @@ export default function App() {
     // already grid-aligned and inside the edge gap. A chip lands in the chip
     // row, which is the only row it can occupy.
     const isChip = isChipType(type);
+    // The palette disables these, so this is the belt to that pair of braces: a
+    // chip on a page with no row would have nowhere legal to sit.
+    if (isChip && !hasChipRow(chipRow)) return;
     const widget = {
       id: newId(),
       type: type.type,
@@ -255,7 +269,7 @@ export default function App() {
     if (isChip) {
       widget.x = placeChipX(
         grid.gap,
-        widgetSize(manifest, widget, uploads).width,
+        widgetSize(manifest, widget, uploads, chipRow).width,
         otherChips(widgets, manifest, uploads, widget.id),
         grid,
         panel
@@ -266,27 +280,47 @@ export default function App() {
     setSelectedId(widget.id);
   };
 
-  // Moving the chip row moves the card band with it, so every widget has to
-  // come along: leaving them put would misalign the whole layout by the height
-  // of the row plus a gap. Chips are pinned to the row's new edge; cards shift
-  // by the difference between the two band tops.
+  // Changing a page's chip row moves everything on that page. Moving the row
+  // from one edge to the other shifts the card band; turning it off also makes
+  // every row 34px taller, so the pitch changes and a widget has to be put back
+  // on the row it was on rather than nudged by a constant. regridY does that.
+  //
+  // Only the page being edited changes: the setting is per page, which is the
+  // point of it.
   const setChipRow = (next) => {
-    if (next === chipRow) return;
+    if (next === chipRow || !activePage) return;
 
-    const shift = cardBandTop(grid, next) - cardBandTop(grid, chipRow);
-    const chipY = chipRowTop(grid, panel, next);
-
-    const moved = structuredClone(layout);
-    moved.chip_row = next;
-    for (const page of moved.pages || []) {
-      for (const widget of page.widgets || []) {
-        if (isChipType(widgetType(manifest, widget))) {
-          widget.y = chipY;
-        } else {
-          widget.y += shift;
-        }
+    // Chips are deleted rather than hidden, because a widget that cannot be
+    // seen or selected is one the editor offers no way back to. There is no
+    // undo yet, so this cannot be taken back -- hence the confirm.
+    const doomed = hasChipRow(next)
+      ? []
+      : (activePage.widgets || []).filter((widget) =>
+          isChipType(widgetType(manifest, widget))
+        );
+    if (doomed.length > 0) {
+      const what =
+        doomed.length === 1 ? "the chip on this page" : `all ${doomed.length} chips on this page`;
+      if (!window.confirm(`Turning the chip row off deletes ${what}. This cannot be undone.`)) {
+        return;
       }
     }
+
+    const chipY = chipRowTop(grid, panel, next);
+    const moved = structuredClone(layout);
+    const page = moved.pages.find((candidate) => candidate.id === activePage.id);
+    if (!page) return;
+
+    page.chip_row = next;
+    page.widgets = (page.widgets || [])
+      .filter((widget) => !doomed.some((one) => one.id === widget.id))
+      .map((widget) =>
+        isChipType(widgetType(manifest, widget))
+          ? { ...widget, y: chipY }
+          : { ...widget, y: regridY(widget.y, deviceGrid, chipRow, next) }
+      );
+
+    if (doomed.length > 0) setSelectedId(null);
     persist(moved);
   };
 
@@ -328,7 +362,7 @@ export default function App() {
         const resized = { ...widget, size: sizeId };
         return {
           ...resized,
-          ...placeWidget(resized, { x: 0, y: 0 }, snapMode, grid, widgetSize(manifest, resized, uploads), panel, {
+          ...placeWidget(resized, { x: 0, y: 0 }, snapMode, grid, widgetSize(manifest, resized, uploads, chipRow), panel, {
             chipRow,
             isChip: isChipType(widgetType(manifest, resized)),
           }),
@@ -343,6 +377,10 @@ export default function App() {
       name: `Page ${pages.length + 1}`,
       queued: true,
       dwell_seconds: 0,
+      // Inherited from the page being looked at rather than reset to the
+      // default: a dashboard whose pages all carry the row at the top wants the
+      // next one the same way, and it is one click to change.
+      chip_row: chipRow,
       widgets: [],
     };
     persist({ ...layout, pages: [...pages, page] });
@@ -458,7 +496,10 @@ export default function App() {
                   ))}
                 </div>
 
-                <div className="toolbar-group">
+                {/* Per page, not per dashboard: turning it off gives this
+                    page's cards the row's height, and a full-screen clock page
+                    can drop it while a dashboard page keeps it. */}
+                <div className="toolbar-group" title="Applies to this page only">
                   <span className="toolbar-label">Chip row</span>
                   {CHIP_ROW_POSITIONS.map(({ id, label }) => (
                     <button
@@ -467,6 +508,7 @@ export default function App() {
                       onClick={() => setChipRow(id)}
                     >
                       {label}
+                      {id === "off" && <small>taller rows</small>}
                     </button>
                   ))}
                 </div>
@@ -505,8 +547,17 @@ export default function App() {
               <div className="palette-items">
                 {(manifest?.widgets || []).map((type) => {
                   const shot = paletteShot(type.type);
+                  // A chip needs a chip row to sit in. On a page with none it is
+                  // shown but not addable, rather than dropped from the list --
+                  // the reason it is unavailable is then visible.
+                  const needsRow = isChipType(type) && !hasChipRow(chipRow);
                   return (
-                    <button key={type.type} onClick={() => addWidget(type)}>
+                    <button
+                      key={type.type}
+                      onClick={() => addWidget(type)}
+                      disabled={needsRow}
+                      title={needsRow ? "This page has no chip row" : undefined}
+                    >
                       {/* A widget a newer firmware offers but that has no
                           render yet still lists, just without a picture. */}
                       {shot && (
@@ -534,6 +585,7 @@ export default function App() {
             <Inspector
               widget={selected}
               manifest={manifest}
+              chipRow={chipRow}
               entities={entities}
               devices={devices}
               uploads={uploads}
@@ -558,9 +610,11 @@ export default function App() {
         />
       )}
 
+      {/* ImagesTab takes the device's grid, not a page's: its size presets are
+          for a picture, and the tab is not scoped to a page. */}
       {tab === "images" && (
         <ImagesTab
-          grid={grid}
+          grid={deviceGrid}
           panel={panel}
           onMessage={(text) => {
             setMessage(text);

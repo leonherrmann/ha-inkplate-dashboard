@@ -8,28 +8,70 @@ export const FALLBACK_GRID = {
   gap: 30,
   unit_w: 220,
   unit_h: 166,
+  unit_h_off: 200,
   cols: 5,
   rows: 3,
   chip_h: 72,
 };
 
-// The panel carries one chip row, at the top or the bottom. Which one shifts
-// the card rows, so it belongs to the layout rather than to the device -- the
+// A page carries a chip row at the top or the bottom, or none at all. This is a
+// *per page* choice: a full-screen clock page wants no row while a dashboard
+// page wants one. It belongs to the layout rather than to the device -- the
 // firmware draws widgets at the pixels it is given and never derives a row.
 export const CHIP_ROW_POSITIONS = [
   { id: "top", label: "Top" },
   { id: "bottom", label: "Bottom" },
+  { id: "off", label: "Off" },
 ];
 
 export const DEFAULT_CHIP_ROW = "bottom";
 
+export function hasChipRow(chipRow) {
+  return chipRow !== "off";
+}
+
+// The grid a page lays out on. With no chip row the 72px row and one 30px gap
+// come free, and the three card rows take them: a cell is 200 tall rather than
+// 166. Both heights come from the manifest, because the setting is per page and
+// one layout can hold pages of each kind.
+//
+// The height rides on the grid object rather than being passed alongside it, so
+// everything below -- the pitch, the origins, the snapping, the clamping --
+// keeps working on the page it was handed without learning a new argument.
+export function pageGrid(grid, chipRow) {
+  if (hasChipRow(chipRow)) return grid;
+  return { ...grid, unit_h: grid.unit_h_off || grid.unit_h };
+}
+
+// Where the chip row sits. Meaningless with the row off, where nothing should
+// be asking: a page with no row has no chips on it.
 export function chipRowTop(grid, panel, chipRow) {
   return chipRow === "top" ? grid.gap : panel.height - grid.gap - grid.chip_h;
 }
 
-// Where the card rows start. Only the chip row being at the top moves them.
+// Where the card rows start. Only a row at the top moves them: with it at the
+// bottom, or with no row at all, the cards start at the edge gap. What changes
+// in the third case is how tall they then are, which is pageGrid's business.
 export function cardBandTop(grid, chipRow) {
   return chipRow === "top" ? grid.gap + grid.chip_h + grid.gap : grid.gap;
+}
+
+// Where a widget's y lands when its page's chip row changes. Both the band top
+// and the row pitch move -- turning the row off takes the pitch from 196 to 230
+// -- so a widget is put back on the row it was on rather than shifted by a
+// fixed amount, which would leave the bottom row 68px out.
+//
+// Whatever offset it had within its row is kept, so one deliberately nudged off
+// the grid is not snapped flat onto it. Same rule store.py migrates a layout
+// between grids with, for the same reason.
+export function regridY(y, grid, from, to) {
+  const fromGrid = pageGrid(grid, from);
+  const toGrid = pageGrid(grid, to);
+  const fromTop = cardBandTop(fromGrid, from);
+  const fromPitch = gridPitch(fromGrid, "y");
+  const row = Math.max(0, Math.round((y - fromTop) / fromPitch));
+  const offset = y - (fromTop + row * fromPitch);
+  return Math.max(0, cardBandTop(toGrid, to) + row * gridPitch(toGrid, "y") + offset);
 }
 
 export const SNAP_MODES = [
@@ -251,7 +293,12 @@ function estimateTextSize(widget) {
   };
 }
 
-export function widgetSize(manifest, widget, uploads) {
+// chipRow is the *page's* setting, because a card is 34px taller per row on a
+// page with no chip row. The manifest publishes both heights rather than the
+// editor deriving the second one, so the firmware stays the one place a
+// widget's footprint is decided; an older manifest carries only the first, and
+// falls back to it.
+export function widgetSize(manifest, widget, uploads, chipRow = DEFAULT_CHIP_ROW) {
   const type = manifest?.widgets?.find((candidate) => candidate.type === widget.type);
   if (!type) return { width: 160, height: 120 };
 
@@ -263,7 +310,8 @@ export function widgetSize(manifest, widget, uploads) {
     if (!variant.width || !variant.height) {
       return estimateTextSize(widget);
     }
-    return { width: variant.width, height: variant.height };
+    const height = hasChipRow(chipRow) ? variant.height : variant.height_off || variant.height;
+    return { width: variant.width, height };
   }
 
   if (type.size_from) {

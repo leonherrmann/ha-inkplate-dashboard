@@ -38,6 +38,12 @@ GRID_GAP = 30
 CHIP_ROW_H = 72
 DEFAULT_CHIP_ROW = "bottom"
 
+# The card rows are 200 tall again on a page that turns its chip row off, which
+# is the same arithmetic the pre-chip-row grid used: the row and one gap are the
+# whole difference. Kept as its own name because it means something different
+# now -- a live setting rather than a grid that no longer exists.
+UNIT_H_OFF = 200
+
 DEFAULT_SLEEP: dict[str, Any] = {
     "enabled": False,
     "start": "23:00",
@@ -66,11 +72,21 @@ EMPTY_LAYOUT: dict[str, Any] = {
     "sleep": dict(DEFAULT_SLEEP),
     "rotation": dict(DEFAULT_ROTATION),
     "refresh": dict(DEFAULT_REFRESH),
-    # Top or bottom. The firmware draws widgets at the pixels it is given and
-    # never derives a row, so this is the editor's to know, not the device's.
-    "chip_row": DEFAULT_CHIP_ROW,
     "grid_generation": 2,
-    "pages": [{"id": "main", "name": "Main", "queued": True, "dwell_seconds": 0, "widgets": []}],
+    # chip_row is per page: top, bottom or off. The firmware draws widgets at
+    # the pixels it is given and never derives a row, but it does read this to
+    # know how tall a cell on the page is -- with no row the three card rows
+    # divide the whole panel and are 200 instead of 166.
+    "pages": [
+        {
+            "id": "main",
+            "name": "Main",
+            "queued": True,
+            "dwell_seconds": 0,
+            "chip_row": DEFAULT_CHIP_ROW,
+            "widgets": [],
+        }
+    ],
 }
 
 
@@ -91,6 +107,13 @@ def _migrate(layout: dict[str, Any]) -> dict[str, Any]:
     Widgets used to be identified by their array index, which is why deleting one
     disturbed the others, and positioned in 80px grid cells.
     """
+    # The chip row used to be one choice for the whole dashboard. It is per page
+    # now, because a full-screen clock page wants no row while a dashboard page
+    # wants one -- so the old value becomes every page's starting point and the
+    # root key goes. Idempotent: once the root key is gone the pages keep their
+    # own, and a page added since carries one already.
+    inherited = layout.pop("chip_row", None) or DEFAULT_CHIP_ROW
+
     for index, page in enumerate(layout.get("pages", [])):
         # Pages predate having an identity of their own. The id is what rotation
         # and any Home Assistant automation refer to, so backfill it.
@@ -99,6 +122,7 @@ def _migrate(layout: dict[str, Any]) -> dict[str, Any]:
         page.setdefault("name", str(page["id"]).replace("_", " ").title())
         page.setdefault("queued", True)
         page.setdefault("dwell_seconds", 0)
+        page.setdefault("chip_row", inherited)
 
         for widget in page.get("widgets", []):
             if not widget.get("id"):
@@ -113,7 +137,6 @@ def _migrate(layout: dict[str, Any]) -> dict[str, Any]:
     layout.setdefault("sleep", dict(DEFAULT_SLEEP))
     layout.setdefault("rotation", dict(DEFAULT_ROTATION))
     layout.setdefault("refresh", dict(DEFAULT_REFRESH))
-    layout.setdefault("chip_row", DEFAULT_CHIP_ROW)
     _migrate_to_chip_row_grid(layout)
     return layout
 
