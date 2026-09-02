@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026.9.3
+
+- **Dragging widgets works on a phone.** Two faults that compounded each other:
+  holding a widget made Safari offer to save the image instead of picking the
+  widget up, because a widget preview is an image and the drag gesture is a
+  press and hold; and the drag itself started only sometimes, because the
+  browser could begin scrolling during the moment before the drag was
+  recognised. A touch that begins on a widget now belongs to the drag, while
+  swiping the background still scrolls the page.
+- Add-on only. No firmware change: still needs **v2026.9.2**.
+
 ## 2026.9.2
 
 Numbered to match the firmware it needs. There is no add-on 2026.9.1 — that was
