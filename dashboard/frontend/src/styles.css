@@ -855,9 +855,10 @@ main {
     linear-gradient(to bottom, rgba(20, 17, 15, 0.11) 1px, transparent 1px);
 }
 
-/* Deliberately no touch-action: none. The TouchSensor activates on a press
-   delay and suppresses scrolling itself once a drag starts, so leaving this
-   alone keeps the page scrollable by swiping over the panel. */
+/* No touch-action here, on the panel itself: swiping the background still
+   scrolls the page. The draggable widgets set it on themselves instead -- see
+   .widget, and the note there about why leaving it off everywhere did not work
+   on a phone. */
 
 /* In grid mode the cells are drawn as real rectangles by <GridCells>, so the
    rule grid underneath would only add noise. */
@@ -904,6 +905,21 @@ main {
 .widget {
   position: absolute;
   cursor: grab;
+
+  /* A touch that starts on a widget belongs to the drag, not to the page.
+     Without this iOS Safari can begin panning during the TouchSensor's 200ms
+     activation delay, which cancels the touch and means the drag never starts --
+     the reason dragging on a phone worked only sometimes. Scoped to the widget
+     rather than to .panel so swiping the background still scrolls. */
+  touch-action: none;
+
+  /* Every widget preview is an <img>, and the drag gesture is a press and hold
+     -- which is exactly the gesture iOS Safari uses to offer "Save Image". Without
+     these, holding a widget to move it opens the download sheet instead of
+     picking the widget up. */
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .widget.dragging {

@@ -134,7 +134,7 @@ function ImagePreview({ options, uploads }) {
 
   const uploaded = uploads?.some((image) => image.name === name);
   const source = uploaded ? imagePreviewUrl(name) : `photos/${name}.png`;
-  return <img className="pv-image" src={source} alt={name} />;
+  return <img className="pv-image" src={source} alt={name} draggable={false} />;
 }
 
 // Confined text wraps in the browser the same way it does on the panel, which
