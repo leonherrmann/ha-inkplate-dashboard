@@ -1,5 +1,24 @@
 # Changelog
 
+## 2026.9.4
+
+- **The chip row can be turned off, and it is now set per page.** Top, bottom or
+  off, chosen for the page you are editing rather than for the whole dashboard —
+  so a full-screen clock page can drop the row while a dashboard page keeps it.
+- **A page without a chip row gets taller cards.** The row and its gap are 102
+  pixels, and that page's three card rows take them: cards are 200 tall instead
+  of 166, filling the panel. Every widget simply gets taller; none of them is
+  redrawn. Turning the setting on or off moves the page's widgets to the rows
+  they were on, keeping any offset you had nudged them by.
+- **Turning the row off deletes that page's chips**, after asking. There is no
+  undo yet, so it cannot be taken back — the confirm says how many will go. The
+  palette will not add a chip to a page that has no row.
+- The canvas draws real renders of the taller cards, so what you place is what
+  the panel will draw.
+- Needs firmware **v2026.9.4**, which is what reads the setting and lays a page
+  out at the taller height. Against an older firmware a page with the row off
+  would be drawn with 166px rows and everything below the first row misplaced.
+
 ## 2026.9.3
 
 - **Dragging widgets works on a phone.** Two faults that compounded each other:
