@@ -25,10 +25,17 @@ const urls = import.meta.glob("./widget-shots/*.png", {
 
 // index.json carries the geometry, the glob carries the hashed URLs Vite
 // emits. Joined on the filename, which is the one thing both agree on.
+//
+// A grid-sized widget carries a second rendition under "tall", which is the
+// same widget on a page with no chip row: its cells are 200 rather than 166, so
+// the card is taller and its content re-centred. Both are resolved here, and
+// widgetShot() picks between them.
 const shots = {};
 for (const [name, entry] of Object.entries(index)) {
   const url = urls[`./widget-shots/${entry.file}`];
-  if (url) shots[name] = { ...entry, url };
+  if (!url) continue;
+  const tallUrl = entry.tall && urls[`./widget-shots/${entry.tall.file}`];
+  shots[name] = { ...entry, url, tall: tallUrl ? { ...entry.tall, url: tallUrl } : null };
 }
 
 // Names are "type", "type-size" or "type-size-icon", so the first one or two
@@ -60,7 +67,10 @@ for (const name of Object.keys(shots).sort()) {
 // dragged in has none of its options set yet, so an exact "climate-1x1-<icon>"
 // cannot match. Without them a new climate widget would draw the CSS preview
 // and then visibly switch to a render the moment a room was picked.
-export function widgetShot(type, sizeId, options = {}) {
+// tall asks for the rendition drawn on a page with no chip row. It falls back
+// to the short one when a widget has no tall rendition -- the chips, and any
+// shot set generated before the setting existed -- rather than drawing nothing.
+export function widgetShot(type, sizeId, options = {}, tall = false) {
   const icon = options.icon;
   const entity = options.entity;
   const domain =
@@ -77,10 +87,14 @@ export function widgetShot(type, sizeId, options = {}) {
     icon && `${type}-${icon}`,
     type,
   ];
+  const rendition = (shot) => (tall && shot?.tall) || shot || null;
+
   for (const name of candidates) {
-    if (name && shots[name]) return shots[name];
+    if (name && shots[name]) return rendition(shots[name]);
   }
-  return (sizeId && firstByPrefix[`${type}-${sizeId}`]) || firstByPrefix[type] || null;
+  return rendition(
+    (sizeId && firstByPrefix[`${type}-${sizeId}`]) || firstByPrefix[type] || null
+  );
 }
 
 // One representative shot per type, for the palette.

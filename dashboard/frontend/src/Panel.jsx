@@ -13,6 +13,7 @@ import {
   cardBandTop,
   chipRowTop,
   gridPitch,
+  hasChipRow,
   isChipType,
   otherChips,
   placeWidget,
@@ -49,16 +50,19 @@ function GridCells({ grid, panel, chipRow }) {
     <div className="cells-layer" aria-hidden="true">
       {cells}
       {/* One band, full width: chips size themselves, so there is nothing to
-          divide it into. */}
-      <div
-        className="cell chip-band"
-        style={{
-          left: grid.gap,
-          top: chipRowTop(grid, panel, chipRow),
-          width: panel.width - 2 * grid.gap,
-          height: grid.chip_h,
-        }}
-      />
+          divide it into. A page with the row off has no band at all -- its
+          three cell rows have already taken that height. */}
+      {hasChipRow(chipRow) && (
+        <div
+          className="cell chip-band"
+          style={{
+            left: grid.gap,
+            top: chipRowTop(grid, panel, chipRow),
+            width: panel.width - 2 * grid.gap,
+            height: grid.chip_h,
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -90,7 +94,7 @@ function useAvailableWidth() {
   return [ref, width];
 }
 
-function DraggableWidget({ widget, size, selected, onSelect, scale, uploads }) {
+function DraggableWidget({ widget, size, selected, onSelect, scale, uploads, tall }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: widget.id,
   });
@@ -113,7 +117,14 @@ function DraggableWidget({ widget, size, selected, onSelect, scale, uploads }) {
       {...listeners}
       {...attributes}
     >
-      <WidgetPreview type={widget.type} options={widget.options} size={size} uploads={uploads} sizeId={widget.size} />
+      <WidgetPreview
+        type={widget.type}
+        options={widget.options}
+        size={size}
+        uploads={uploads}
+        sizeId={widget.size}
+        tall={tall}
+      />
     </div>
   );
 }
@@ -154,7 +165,7 @@ export default function Panel({
     const delta = { x: event.delta.x / scale, y: event.delta.y / scale };
     onMove(
       widget.id,
-      placeWidget(widget, delta, snapMode, grid, widgetSize(manifest, widget, uploads), panel, {
+      placeWidget(widget, delta, snapMode, grid, widgetSize(manifest, widget, uploads, chipRow), panel, {
         chipRow,
         isChip: isChipType(widgetType(manifest, widget)),
         others: otherChips(widgets, manifest, uploads, widget.id),
@@ -201,11 +212,12 @@ export default function Panel({
                 <DraggableWidget
                   key={widget.id}
                   widget={widget}
-                  size={widgetSize(manifest, widget, uploads)}
+                  size={widgetSize(manifest, widget, uploads, chipRow)}
                   selected={widget.id === selectedId}
                   onSelect={onSelect}
                   scale={scale}
                   uploads={uploads}
+                  tall={!hasChipRow(chipRow)}
                 />
               ))}
             </div>
