@@ -1,10 +1,11 @@
 import EntityPicker from "./EntityPicker.jsx";
 import DevicePicker, { MAX_DEVICE_ENTITIES } from "./DevicePicker.jsx";
+import AreaPicker, { MAX_ROOM_ENTITIES } from "./AreaPicker.jsx";
 import DeviceEntities from "./DeviceEntities.jsx";
 import { imagePreviewUrl } from "./api.js";
 import { widgetSize, widgetType } from "./layout.js";
 
-function Option({ option, widget, value, entities, devices, uploads, capacity, onChange, onChangeMany }) {
+function Option({ option, widget, value, entities, devices, areas, uploads, capacity, onChange, onChangeMany }) {
   // Picking a device sets three things at once, which is why this one option
   // reaches for onChangeMany: the id, so it can be re-resolved later; the
   // resolved entity list, which is what the panel actually renders; and the
@@ -44,6 +45,49 @@ function Option({ option, widget, value, entities, devices, uploads, capacity, o
       {device && (
         <DeviceEntities
           available={device.entities}
+          chosen={widget?.options?.entities}
+          capacity={capacity}
+          onChange={(next) => onChangeMany({ entities: next })}
+        />
+      )}
+      </>
+    );
+  }
+
+  // Same arrangement as "device" above, and for the same reason: picking an
+  // area sets the id (to re-resolve later) and the resolved entity list (what
+  // the panel actually renders) in one go, with the name prefilled unless the
+  // user has already typed one of their own.
+  if (option.type === "area") {
+    const area = areas.find((one) => one.id === value);
+    return (
+      <>
+      <AreaPicker
+        areas={areas}
+        value={value}
+        chosen={widget?.options?.entities}
+        onChange={(area) => {
+          if (!area) {
+            onChangeMany({ area: "", entities: [] });
+            return;
+          }
+          onChangeMany({
+            area: area.id,
+            entities: area.entities
+              .slice(0, MAX_ROOM_ENTITIES)
+              .map((one) => one.entity_id),
+            ...(!widget?.options?.name || widget.options.name === widget.options.areaName
+              ? { name: area.name, areaName: area.name }
+              : {}),
+          });
+        }}
+      />
+      {/* Which of the room's entities to actually watch, and in what order --
+          the room card aggregates by domain rather than drawing a list, so
+          order only matters for which fall off past capacity. */}
+      {area && (
+        <DeviceEntities
+          available={area.entities}
           chosen={widget?.options?.entities}
           capacity={capacity}
           onChange={(next) => onChangeMany({ entities: next })}
@@ -160,6 +204,7 @@ export default function Inspector({
   chipRow,
   entities,
   devices,
+  areas,
   uploads,
   onSetOption,
   onSetOptions,
@@ -240,6 +285,7 @@ export default function Inspector({
             value={widget.options?.[option.key]}
             entities={entities}
             devices={devices}
+            areas={areas}
             uploads={uploads}
             capacity={capacity}
             onChange={(next) => onSetOption(widget.id, option.key, next)}

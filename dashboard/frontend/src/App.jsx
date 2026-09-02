@@ -118,6 +118,7 @@ export default function App() {
   const [layout, setLayout] = useState(null);
   const [entities, setEntities] = useState([]);
   const [devices, setDevices] = useState([]);
+  const [areas, setAreas] = useState([]);
   const [uploads, setUploads] = useState([]);
   const [tab, setTab] = useState("design");
   const [activePageId, setActivePageId] = useState(null);
@@ -162,6 +163,8 @@ export default function App() {
     // entities: the device registry is a separate websocket read, and a device
     // is not something the state list knows about.
     api.getDevices().then(setDevices).catch(() => setDevices([]));
+    // Same reasoning, for the room widget's area picker.
+    api.getAreas().then(setAreas).catch(() => setAreas([]));
     // Named in the image widget's picker alongside the built-in icons
     api.getImages().then((data) => setUploads(data.images || [])).catch(() => setUploads([]));
   }, []);
@@ -588,6 +591,7 @@ export default function App() {
               chipRow={chipRow}
               entities={entities}
               devices={devices}
+              areas={areas}
               uploads={uploads}
               onSetOption={setOption}
               onSetOptions={setOptions}

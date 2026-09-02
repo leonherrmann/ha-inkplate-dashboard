@@ -115,47 +115,13 @@ class Registry:
         if not snapshot["devices"]:
             return []
 
-        names = {
-            state["entity_id"]: (state.get("attributes") or {}).get("friendly_name")
-            or state["entity_id"]
-            for state in states
-        }
-        # Only entities Home Assistant currently has a state for. A registry
-        # entry with no state is one that is not loaded, and a row for it would
-        # never say anything.
-        live = set(names)
-
         by_device: dict[str, list[dict[str, Any]]] = {}
-        for entry in snapshot["entries"]:
-            entity_id = entry.get("entity_id")
-            device_id = entry.get("device_id")
-            if not entity_id or not device_id or entity_id not in live:
+        for entry in await self._showable(snapshot, states):
+            device_id = entry.pop("device_id")
+            entry.pop("area_id", None)
+            if not device_id:
                 continue
-            # Disabled entities have no state at all; hidden ones do, and the
-            # user has said they do not want to see them.
-            if entry.get("disabled_by") or entry.get("hidden_by"):
-                continue
-
-            category = entry.get("entity_category")
-            if category not in CATEGORY_RANK:
-                continue
-
-            domain = entity_id.split(".", 1)[0]
-            if domain in UNSHOWABLE_DOMAINS:
-                continue
-            by_device.setdefault(device_id, []).append(
-                {
-                    "entity_id": entity_id,
-                    "name": names[entity_id],
-                    "domain": domain,
-                    "category": category or "",
-                    "_rank": (
-                        CATEGORY_RANK[category],
-                        DOMAIN_RANK.index(domain) if domain in DOMAIN_RANK else len(DOMAIN_RANK),
-                        names[entity_id],
-                    ),
-                }
-            )
+            by_device.setdefault(device_id, []).append(entry)
 
         out: list[dict[str, Any]] = []
         for device in snapshot["devices"]:
@@ -185,7 +151,99 @@ class Registry:
         out.sort(key=lambda one: one["name"].lower())
         return out
 
+    async def areas(self, states: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """Areas, each with their showable entities ranked the same way a
+        device's are.
+
+        Backs the room widget's auto-population: picking an area in the editor
+        resolves it to entity ids here, the same arrangement as the device
+        card and for the same reason -- the panel has no credentials to ask
+        Home Assistant what an area is, so the add-on resolves it once and
+        writes plain entity ids into the layout.
+        """
+        snapshot = await self._load()
+        if not snapshot["area_names"]:
+            return []
+
+        by_area: dict[str, list[dict[str, Any]]] = {}
+        for entry in await self._showable(snapshot, states):
+            area_id = entry.pop("area_id")
+            entry.pop("device_id", None)
+            if not area_id:
+                continue
+            by_area.setdefault(area_id, []).append(entry)
+
+        out: list[dict[str, Any]] = []
+        for area_id, name in snapshot["area_names"].items():
+            listed = sorted(by_area.get(area_id, []), key=lambda one: one["_rank"])
+            if not listed:
+                # An area with nothing live in it is not worth offering --
+                # mirrors the device list dropping hubs with no entities.
+                continue
+            for one in listed:
+                one.pop("_rank", None)
+            out.append({"id": area_id, "name": name, "entities": listed})
+
+        out.sort(key=lambda one: one["name"].lower())
+        return out
+
     # -- internals ---------------------------------------------------------
+
+    async def _showable(
+        self, snapshot: dict[str, Any], states: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
+        """Entity registry entries a device or room card is allowed to draw,
+        ranked and carrying both their device and area id so each caller can
+        group by whichever it needs.
+        """
+        names = {
+            state["entity_id"]: (state.get("attributes") or {}).get("friendly_name")
+            or state["entity_id"]
+            for state in states
+        }
+        # Only entities Home Assistant currently has a state for. A registry
+        # entry with no state is one that is not loaded, and a row for it would
+        # never say anything.
+        live = set(names)
+
+        out: list[dict[str, Any]] = []
+        for entry in snapshot["entries"]:
+            entity_id = entry.get("entity_id")
+            if not entity_id or entity_id not in live:
+                continue
+            # Disabled entities have no state at all; hidden ones do, and the
+            # user has said they do not want to see them.
+            if entry.get("disabled_by") or entry.get("hidden_by"):
+                continue
+
+            category = entry.get("entity_category")
+            if category not in CATEGORY_RANK:
+                continue
+
+            domain = entity_id.split(".", 1)[0]
+            if domain in UNSHOWABLE_DOMAINS:
+                continue
+
+            # An entity's own area wins; otherwise it inherits its device's.
+            area_id = entry.get("area_id") or snapshot["device_areas"].get(
+                entry.get("device_id")
+            )
+            out.append(
+                {
+                    "entity_id": entity_id,
+                    "device_id": entry.get("device_id"),
+                    "area_id": area_id,
+                    "name": names[entity_id],
+                    "domain": domain,
+                    "category": category or "",
+                    "_rank": (
+                        CATEGORY_RANK[category],
+                        DOMAIN_RANK.index(domain) if domain in DOMAIN_RANK else len(DOMAIN_RANK),
+                        names[entity_id],
+                    ),
+                }
+            )
+        return out
 
     async def _load(self) -> dict[str, Any]:
         if self._snapshot and (time.time() - self._fetched_at) < CACHE_SECONDS:
@@ -242,6 +300,7 @@ class Registry:
         return {
             "area_names": area_names,
             "areas_by_entity": areas_by_entity,
+            "device_areas": device_areas,
             "devices": devices or [],
             "entries": entries or [],
         }
@@ -259,7 +318,13 @@ class Registry:
 
 
 def _empty() -> dict[str, Any]:
-    return {"area_names": {}, "areas_by_entity": {}, "devices": [], "entries": []}
+    return {
+        "area_names": {},
+        "areas_by_entity": {},
+        "device_areas": {},
+        "devices": [],
+        "entries": [],
+    }
 
 
 registry = Registry()
