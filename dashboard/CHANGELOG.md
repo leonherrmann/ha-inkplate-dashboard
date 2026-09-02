@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026.9.2
+
+Numbered to match the firmware it needs. There is no add-on 2026.9.1 — that was
+a firmware-only fix.
+
+- **The panel can show its own diagnostics.** A new button on the Device tab puts
+  the device's network, broker and firmware details on the screen itself for a
+  minute. Shown on the panel rather than here on purpose: everything the device
+  reports reaches this add-on over MQTT, so when MQTT is what is broken this page
+  can only say "offline" — which is exactly when you most want to know what
+  broker it thinks it should be dialling.
+- Needs firmware **v2026.9.2**, which fixes a fault that stopped pushed layouts
+  arriving at all on dashboards with many entities.
+
 ## 2026.9.0
 
 Versions are CalVer from here — `YYYY.M.PATCH`, the same scheme Home Assistant
