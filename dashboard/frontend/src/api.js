@@ -26,6 +26,7 @@ export const saveLayout = (layout) =>
 
 export const pushLayout = () => request("push", { method: "POST" });
 export const refreshDevice = () => request("refresh", { method: "POST" });
+export const showDeviceInfo = () => request("device-info", { method: "POST" });
 export const showPage = (id) => request(`page/${encodeURIComponent(id)}`, { method: "POST" });
 
 export const getImages = () => request("images");
