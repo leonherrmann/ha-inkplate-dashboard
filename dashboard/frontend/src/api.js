@@ -16,6 +16,7 @@ export const getHistory = () => request("history");
 export const getLayout = () => request("layout");
 export const getEntities = () => request("entities");
 export const getDevices = () => request("devices");
+export const getAreas = () => request("areas");
 
 export const saveLayout = (layout) =>
   request("layout", {

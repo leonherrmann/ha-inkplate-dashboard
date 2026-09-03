@@ -372,6 +372,19 @@ async def get_devices() -> list[dict[str, Any]]:
     return await registry.devices(await _states())
 
 
+@app.get("/api/areas")
+async def get_areas() -> list[dict[str, Any]]:
+    """Areas for the room widget's picker, each with its entities already ranked.
+
+    Same arrangement as /api/devices and for the same reason: the panel has no
+    credentials to ask Home Assistant what an area is, so the editor resolves
+    one to entity ids here and writes that list into the layout.
+    """
+    if not SUPERVISOR_TOKEN:
+        return []
+    return await registry.areas(await _states())
+
+
 # The built editor is mounted last so it does not shadow /api. Ingress serves the
 # add-on under a path prefix, which is why the frontend uses relative URLs.
 if os.path.isdir(STATIC_DIR):
