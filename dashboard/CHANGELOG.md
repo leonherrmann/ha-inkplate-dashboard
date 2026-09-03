@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026.9.5
+
+- **Five new domain-specific cards: Light, Door/Window, Air Quality, Media and
+  Room.** Each offers the same five sizes as every other widget (Small, Wide,
+  Large, Tall, Wide large). All five are focused on icons and short text, in
+  the spirit of the climate widget: a light shows a filled or outline bulb and
+  a brightness percentage, a door/window card inverts to black while open, air
+  quality shows the first bound pollutant on a five-step severity scale, and
+  media shows a play/pause glyph in front of the track title.
+- **The Room widget summarises a room rather than listing it.** Pick a room and
+  it fills itself in: how warm it is, how many lights are on, whether anything
+  is open, whether anything is playing — one glyph and a count per question,
+  not a row per entity. Auto-populated from Home Assistant's areas, then still
+  editable by hand, the same as the Device widget's entity list.
+- Needs firmware **v2026.9.5**, which draws all five cards.
+
 ## 2026.9.4
 
 - **The chip row can be turned off, and it is now set per page.** Top, bottom or
