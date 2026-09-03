@@ -1,5 +1,27 @@
 # Changelog
 
+## 2026.9.6
+
+- **The climate card is redesigned, and comes in a third size.** The room now
+  sits in a badge in the top corner, and what the heating is set to sits in a
+  matching one in the bottom corner — a circle cut off by the edge of the card,
+  so the frame looks like it swells and turns solid there. A new **Large
+  (2x2)** size joins Small and Wide, with the temperature set at 112px.
+- **The heating badge says whether it is actually running.** The heater symbol
+  is struck through when it is off, rather than being a different symbol you
+  have to learn.
+- **Every room icon is a badge now.** Only two of the ten were drawn that way,
+  so a dashboard mixed solid discs with floating outlines depending on which
+  rooms you had picked.
+- **Some cards were drawing their reading a size too large.** A fault in how
+  the firmware picked a font meant several widgets fell back to the biggest
+  face rather than the one their layout asks for — the wide air quality card
+  was setting its value half again too big. Fixed, so those cards are a little
+  smaller and better spaced.
+- Readings are now measured against the badges beside them, so a three-digit or
+  below-zero temperature is set smaller instead of colliding with one.
+- Needs firmware **v2026.9.6**, which is what draws all of this.
+
 ## 2026.9.5
 
 - **Five new domain-specific cards: Light, Door/Window, Air Quality, Media and
