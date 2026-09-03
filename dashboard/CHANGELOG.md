@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026.9.7
+
+- **The room card is redesigned.** A black band across the top carries the
+  room's own conditions — how warm it is, how humid, and on the wider sizes the
+  PM2.5 and CO2 — with the room's icon at its right. Below it, one badge per
+  thing the room can tell you about.
+- **Plugs and switches are counted now**, alongside lights, windows and doors,
+  and whatever is playing.
+- **The bigger sizes explain themselves in words.** Instead of a bare number,
+  the wide card says "3 on – 4 off", "All closed", or the name of the track
+  that is playing.
+- **All five sizes are laid out for their own shape** rather than being the
+  same picture scaled: the small one shows icons only, the tall one gives each
+  thing its own line, and the wide one fits two short answers per line.
+- What the heating is set to sits in the same corner badge the climate card
+  uses, so the two cards read as one family.
+- Needs firmware **v2026.9.7**.
+
 ## 2026.9.6
 
 - **The climate card is redesigned, and comes in a third size.** The room now
