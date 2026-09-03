@@ -356,6 +356,146 @@
     },
     "width": 476
   },
+  "climate-2x2-rooms_bed": {
+    "dx": 0,
+    "dy": 0,
+    "file": "climate-2x2-rooms_bed.png",
+    "height": 368,
+    "tall": {
+      "dx": 0,
+      "dy": 0,
+      "file": "climate-2x2-rooms_bed-tall.png",
+      "height": 436,
+      "width": 476
+    },
+    "width": 476
+  },
+  "climate-2x2-rooms_chair": {
+    "dx": 0,
+    "dy": 0,
+    "file": "climate-2x2-rooms_chair.png",
+    "height": 368,
+    "tall": {
+      "dx": 0,
+      "dy": 0,
+      "file": "climate-2x2-rooms_chair-tall.png",
+      "height": 436,
+      "width": 476
+    },
+    "width": 476
+  },
+  "climate-2x2-rooms_checkroom": {
+    "dx": 0,
+    "dy": 0,
+    "file": "climate-2x2-rooms_checkroom.png",
+    "height": 368,
+    "tall": {
+      "dx": 0,
+      "dy": 0,
+      "file": "climate-2x2-rooms_checkroom-tall.png",
+      "height": 436,
+      "width": 476
+    },
+    "width": 476
+  },
+  "climate-2x2-rooms_couch": {
+    "dx": 0,
+    "dy": 0,
+    "file": "climate-2x2-rooms_couch.png",
+    "height": 368,
+    "tall": {
+      "dx": 0,
+      "dy": 0,
+      "file": "climate-2x2-rooms_couch-tall.png",
+      "height": 436,
+      "width": 476
+    },
+    "width": 476
+  },
+  "climate-2x2-rooms_desk": {
+    "dx": 0,
+    "dy": 0,
+    "file": "climate-2x2-rooms_desk.png",
+    "height": 368,
+    "tall": {
+      "dx": 0,
+      "dy": 0,
+      "file": "climate-2x2-rooms_desk-tall.png",
+      "height": 436,
+      "width": 476
+    },
+    "width": 476
+  },
+  "climate-2x2-rooms_hallway": {
+    "dx": 0,
+    "dy": 0,
+    "file": "climate-2x2-rooms_hallway.png",
+    "height": 368,
+    "tall": {
+      "dx": 0,
+      "dy": 0,
+      "file": "climate-2x2-rooms_hallway-tall.png",
+      "height": 436,
+      "width": 476
+    },
+    "width": 476
+  },
+  "climate-2x2-rooms_hanger": {
+    "dx": 0,
+    "dy": 0,
+    "file": "climate-2x2-rooms_hanger.png",
+    "height": 368,
+    "tall": {
+      "dx": 0,
+      "dy": 0,
+      "file": "climate-2x2-rooms_hanger-tall.png",
+      "height": 436,
+      "width": 476
+    },
+    "width": 476
+  },
+  "climate-2x2-rooms_kitchen": {
+    "dx": 0,
+    "dy": 0,
+    "file": "climate-2x2-rooms_kitchen.png",
+    "height": 368,
+    "tall": {
+      "dx": 0,
+      "dy": 0,
+      "file": "climate-2x2-rooms_kitchen-tall.png",
+      "height": 436,
+      "width": 476
+    },
+    "width": 476
+  },
+  "climate-2x2-rooms_local_laundry_service": {
+    "dx": 0,
+    "dy": 0,
+    "file": "climate-2x2-rooms_local_laundry_service.png",
+    "height": 368,
+    "tall": {
+      "dx": 0,
+      "dy": 0,
+      "file": "climate-2x2-rooms_local_laundry_service-tall.png",
+      "height": 436,
+      "width": 476
+    },
+    "width": 476
+  },
+  "climate-2x2-rooms_shower": {
+    "dx": 0,
+    "dy": 0,
+    "file": "climate-2x2-rooms_shower.png",
+    "height": 368,
+    "tall": {
+      "dx": 0,
+      "dy": 0,
+      "file": "climate-2x2-rooms_shower-tall.png",
+      "height": 436,
+      "width": 476
+    },
+    "width": 476
+  },
   "clock-2x1": {
     "dx": 16,
     "dy": 37,
