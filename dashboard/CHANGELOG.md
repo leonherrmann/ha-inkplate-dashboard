@@ -1,5 +1,25 @@
 # Changelog
 
+## 2026.9.8
+
+- **The room card, finished.** Lights, plugs, whatever is playing, and windows
+  and doors — each as an icon with a count beside it, under a black band
+  carrying the room's temperature, humidity and, where there is width for it,
+  the air quality.
+- **An icon fades when nothing in it is on.** A room with every light off shows
+  a greyed lamp, so you can read the card at a glance without reading the
+  numbers — which is the whole point of the smallest size, where there is no
+  room for numbers at all.
+- **The bigger sizes say it in words**: "3 on – 1 off", "All closed", or the
+  track that is playing and the speaker it is on.
+- **Each size is laid out for its own shape** rather than being one picture
+  scaled, and the heating sits in the same corner badge the climate card uses,
+  so the two cards read as one family.
+- Needs firmware **v2026.9.8**.
+
+> There is no firmware v2026.9.7. Its build failed and it was never published,
+> so this release supersedes add-on 2026.9.7 as well.
+
 ## 2026.9.7
 
 - **The room card is redesigned.** A black band across the top carries the
