@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026.9.11
+
+- **The screenshot is the right way up.** The panel keeps its screen in its own
+  orientation, which is upside down from the way it draws, so the first
+  screenshots arrived inverted. The device now says which way up it was drawing
+  and the picture is turned to match.
+- Needs firmware **v2026.9.11**. A panel still on v2026.9.10 is also shown the
+  right way up — that version cannot say which way it was drawing, so the
+  rotation it uses is assumed.
+
 ## 2026.9.10
 
 - **The panel can send you a picture of its screen.** The Device tab has a
