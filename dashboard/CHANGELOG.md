@@ -1,5 +1,24 @@
 # Changelog
 
+## 2026.9.9
+
+- **Undo and redo.** `⌘Z` and `⇧⌘Z` — or `Ctrl+Z` and `Ctrl+Y` — take back any
+  edit to the layout: moving a widget, changing an option, adding or removing a
+  page, reordering the queue, and the chips that go when a page's chip row is
+  turned off. It is the draft that is undone, so press Push to send the result
+  to the panel.
+- **Duplicate a widget** with `⌘D`, or the button in the toolbar. The copy keeps
+  the original's size and options and lands on the next free cell.
+- **Resize on the canvas.** Drag the red corner of a selected widget. A widget
+  can only be one of the sizes the panel knows how to draw, so the outline snaps
+  between them and names the one it is about to become.
+- **Say which widget is drawn on top** where two overlap, with the new Layer
+  controls in the inspector. That is the order the panel draws in, so the canvas
+  now shows the same answer the device will.
+- Buttons in the inspector's Size and Layer rows announce their own names to a
+  screen reader again, rather than their neighbours'.
+- Needs no firmware update — works with **v2026.9.8**.
+
 ## 2026.9.8
 
 - **The room card, finished.** Lights, plugs, whatever is playing, and windows
