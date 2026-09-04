@@ -50,7 +50,33 @@ FRAME_RAWMODE = "1;IR"
 LOG_LIMIT_BYTES = 256 * 1024
 
 
-def save_screenshot(raw: bytes) -> dict[str, Any]:
+# Undoing the panel's rotation. The device stores its framebuffer in the panel's
+# own orientation, not the one it draws in: Graphics::writePixel applies the
+# rotation on the way in, so with the sketch's setRotation(2) the buffer is 180
+# degrees from what a person in front of it sees.
+#
+# Derived from that transform rather than guessed, since only rotation 2 can be
+# tried here -- it is the only one the firmware has ever set. For rotation 1 the
+# device maps drawn (x, y) to native (H-1-y, x), which is recovered by turning
+# the stored image a quarter turn anticlockwise; rotation 3 is the mirror of
+# that. **1 and 3 are unexercised**: no build has used them, so they are a
+# careful reading of the library rather than something observed.
+UNROTATE = {
+    0: None,
+    1: Image.Transpose.ROTATE_90,  # anticlockwise
+    2: Image.Transpose.ROTATE_180,
+    3: Image.Transpose.ROTATE_270,
+}
+
+# What to assume when the device does not say. Firmware v2026.9.10 uploaded
+# without this parameter and drew at rotation 2, as every build of this firmware
+# has, so taking 2 as the default gets the picture the right way up for the one
+# release that cannot tell us. From v2026.9.11 the device says so explicitly and
+# this is not consulted.
+DEFAULT_ROTATION = 2
+
+
+def save_screenshot(raw: bytes, rotation: int = DEFAULT_ROTATION) -> dict[str, Any]:
     """Store the framebuffer as a PNG. Raises ValueError if it is not one."""
     if len(raw) != FRAME_BYTES:
         raise ValueError(
@@ -58,6 +84,10 @@ def save_screenshot(raw: bytes) -> dict[str, Any]:
         )
 
     image = Image.frombytes("1", (PANEL_WIDTH, PANEL_HEIGHT), raw, "raw", FRAME_RAWMODE)
+
+    turn = UNROTATE.get(rotation % 4)
+    if turn is not None:
+        image = image.transpose(turn)
 
     os.makedirs(DATA_DIR, exist_ok=True)
     # Written beside and moved into place, so a reader never catches a half
@@ -68,8 +98,12 @@ def save_screenshot(raw: bytes) -> dict[str, Any]:
 
     meta = {
         "taken_at": time.time(),
-        "width": PANEL_WIDTH,
-        "height": PANEL_HEIGHT,
+        # The picture's own size, which is not the panel's when the device is
+        # drawing at a quarter turn: the buffer is always 1280x720, but what was
+        # drawn into it is 720x1280.
+        "width": image.width,
+        "height": image.height,
+        "rotation": rotation,
         "bytes": os.path.getsize(SCREENSHOT_PATH),
     }
     with open(SCREENSHOT_META, "w", encoding="utf-8") as handle:

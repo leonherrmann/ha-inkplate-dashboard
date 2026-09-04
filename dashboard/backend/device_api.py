@@ -60,16 +60,23 @@ async def get_firmware() -> FileResponse:
 
 
 @app.post("/device/screenshot")
-async def post_screenshot(request: Request) -> dict[str, object]:
+async def post_screenshot(
+    request: Request, rotation: int = reports.DEFAULT_ROTATION
+) -> dict[str, object]:
     """The panel's framebuffer, verbatim, stored here as a PNG.
 
     The body is the raw 1-bit buffer rather than something the device encoded:
     the ESP32 has no business compressing 115KB when the add-on can, and those
     bytes are already in memory as the thing the panel is showing.
+
+    The buffer is in the panel's own orientation, which is not the one the
+    device draws in -- so it says which way up it was drawing and the picture is
+    turned back here. Doing it on the device would need a second 115KB buffer it
+    has no room for.
     """
     raw = await request.body()
     try:
-        meta = reports.save_screenshot(raw)
+        meta = reports.save_screenshot(raw, rotation)
     except ValueError as problem:
         # A wrong length means a truncated upload or a different panel, not a
         # smaller picture -- so it is refused rather than padded or cropped.
