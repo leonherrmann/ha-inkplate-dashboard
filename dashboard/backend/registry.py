@@ -201,6 +201,15 @@ class Registry:
             or state["entity_id"]
             for state in states
         }
+        # What kind of reading each one is, straight from Home Assistant. The
+        # room card's band needs this: a temperature, a humidity, a PM2.5 and a
+        # CO2 each have an option of their own now, and the editor fills them in
+        # when a room is picked. The registry entry does not carry it -- it is a
+        # state attribute -- so it is picked up here alongside the name.
+        classes = {
+            state["entity_id"]: (state.get("attributes") or {}).get("device_class") or ""
+            for state in states
+        }
         # Only entities Home Assistant currently has a state for. A registry
         # entry with no state is one that is not loaded, and a row for it would
         # never say anything.
@@ -235,6 +244,7 @@ class Registry:
                     "area_id": area_id,
                     "name": names[entity_id],
                     "domain": domain,
+                    "device_class": classes.get(entity_id, ""),
                     "category": category or "",
                     "_rank": (
                         CATEGORY_RANK[category],

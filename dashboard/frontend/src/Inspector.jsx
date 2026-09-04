@@ -5,6 +5,60 @@ import DeviceEntities from "./DeviceEntities.jsx";
 import { imagePreviewUrl } from "./api.js";
 import { LAYER_MOVES, widgetSize, widgetType } from "./layout.js";
 
+// The room card's band readings, and how to find each one in an area.
+//
+// The firmware used to work these out itself by scanning the same list the
+// buckets count. It is done here now, once, when a room is picked -- so what
+// the band shows is written down and can be changed, rather than being a rule
+// that has to be reverse-engineered from the drawing.
+//
+// The order within each role is the firmware's old preference, kept so that
+// picking a room reproduces what the card already drew: a thermostat measures
+// the room it is in, where a sensor called "temperature" might be a radiator
+// valve or a fridge.
+const ROOM_ROLES = [
+  { key: "temperature", domains: ["climate"], classes: ["temperature"] },
+  { key: "humidity", classes: ["humidity"] },
+  { key: "pm25", classes: ["pm25"] },
+  { key: "co2", classes: ["carbon_dioxide"] },
+  { key: "climate", domains: ["climate"] },
+];
+
+const blankRoles = () =>
+  Object.fromEntries(ROOM_ROLES.map((role) => [role.key, ""]));
+
+// Which entity plays each part, and what is left for the list. An entity can
+// hold two parts at once -- a thermostat is both the temperature and the
+// heating -- but it is only ever counted once, and never in a bucket: it
+// describes the room rather than being a thing in it.
+function roomRoles(available) {
+  const entities = available || [];
+  const chosen = {};
+  const taken = new Set();
+
+  for (const role of ROOM_ROLES) {
+    const match =
+      (role.domains || []).reduce(
+        (found, domain) => found || entities.find((one) => one.domain === domain),
+        null
+      ) ||
+      (role.classes || []).reduce(
+        (found, kind) => found || entities.find((one) => one.device_class === kind),
+        null
+      );
+    chosen[role.key] = match ? match.entity_id : "";
+    if (match) taken.add(match.entity_id);
+  }
+
+  return {
+    ...chosen,
+    entities: entities
+      .filter((one) => !taken.has(one.entity_id))
+      .slice(0, MAX_ROOM_ENTITIES)
+      .map((one) => one.entity_id),
+  };
+}
+
 function Option({ option, widget, value, entities, devices, areas, uploads, capacity, onChange, onChangeMany }) {
   // Picking a device sets three things at once, which is why this one option
   // reaches for onChangeMany: the id, so it can be re-resolved later; the
@@ -54,46 +108,34 @@ function Option({ option, widget, value, entities, devices, areas, uploads, capa
     );
   }
 
-  // Same arrangement as "device" above, and for the same reason: picking an
-  // area sets the id (to re-resolve later) and the resolved entity list (what
-  // the panel actually renders) in one go, with the name prefilled unless the
-  // user has already typed one of their own.
+  // Picking a room fills the whole card in: the readings that make up the band
+  // each go to the option that draws them, and everything left over becomes the
+  // list the buckets count. Every one of them stays editable afterwards -- this
+  // is a good first answer, not a decision.
+  //
+  // The list itself is rendered after all the options rather than here, unlike
+  // the device card's: the room has five named readings between the picker and
+  // the list, and burying the list among them would read as one more of them.
   if (option.type === "area") {
-    const area = areas.find((one) => one.id === value);
     return (
-      <>
       <AreaPicker
         areas={areas}
         value={value}
         chosen={widget?.options?.entities}
         onChange={(area) => {
           if (!area) {
-            onChangeMany({ area: "", entities: [] });
+            onChangeMany({ area: "", entities: [], ...blankRoles() });
             return;
           }
           onChangeMany({
             area: area.id,
-            entities: area.entities
-              .slice(0, MAX_ROOM_ENTITIES)
-              .map((one) => one.entity_id),
+            ...roomRoles(area.entities),
             ...(!widget?.options?.name || widget.options.name === widget.options.areaName
               ? { name: area.name, areaName: area.name }
               : {}),
           });
         }}
       />
-      {/* Which of the room's entities to actually watch, and in what order --
-          the room card aggregates by domain rather than drawing a list, so
-          order only matters for which fall off past capacity. */}
-      {area && (
-        <DeviceEntities
-          available={area.entities}
-          chosen={widget?.options?.entities}
-          capacity={capacity}
-          onChange={(next) => onChangeMany({ entities: next })}
-        />
-      )}
-      </>
     );
   }
 
@@ -241,6 +283,19 @@ export default function Inspector({
   );
   const capacity = chosenSize?.capacity || 0;
 
+  // The room this card is set to, if it is a room card at all. Its counted list
+  // is rendered below the options rather than beside the picker, so it needs to
+  // be reachable from here.
+  const room =
+    options.some((one) => one.type === "area") && widget.options?.area
+      ? areas.find((one) => one.id === widget.options.area)
+      : null;
+
+  // An entity already doing one of the band's jobs is not offered to the list as
+  // well: it describes the room rather than being a thing in it, and counting a
+  // thermostat among the plugs is how the old arrangement went wrong.
+  const takenByBand = ROOM_ROLES.map((role) => widget.options?.[role.key]).filter(Boolean);
+
   return (
     <aside className="inspector open">
       <div className="inspector-head">
@@ -301,6 +356,27 @@ export default function Inspector({
           />
         </label>
       ))}
+
+      {/* The room's counted list, after the readings rather than among them.
+          The band's entities are each one field; this is a list, and it is what
+          the buckets tally -- the lights, plugs, media and openings. */}
+      {room && (
+        <div className="field-block">
+          <span>Things in the room</span>
+          {room.entities.length > 0 ? (
+            <DeviceEntities
+              available={room.entities.filter(
+                (one) => !takenByBand.includes(one.entity_id)
+              )}
+              chosen={widget.options?.entities}
+              capacity={capacity}
+              onChange={(next) => onSetOption(widget.id, "entities", next)}
+            />
+          ) : (
+            <p className="hint">This room has nothing else in it.</p>
+          )}
+        </div>
+      )}
 
       {options.length === 0 && <p className="hint">This widget has no options.</p>}
 
