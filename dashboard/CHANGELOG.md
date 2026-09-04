@@ -1,5 +1,25 @@
 # Changelog
 
+## 2026.9.12
+
+- **Picking a room fills the whole card in.** The temperature, humidity, PM2.5,
+  CO2 and the thermostat each have a setting of their own now, filled in from
+  the room you choose, and everything else in the room becomes the list the card
+  counts — the lights, plugs, speakers and windows. Every one of them stays
+  editable afterwards.
+- **You can say which sensor belongs on the card.** Before, the card searched
+  the same list it counted and took whatever it found first, so a room with two
+  temperature sensors showed whichever happened to be ranked higher, with no way
+  to change it.
+- **The thermostat is no longer counted as a thing in the room.** It describes
+  the room; it is not one of its plugs.
+- **Humidity is shown as a whole number.** A tenth of a percent is noise, and on
+  the narrow sizes it cost a fifth of the band to say nothing.
+- **A Copy button on the device log**, so it can go straight into a message or
+  an issue without selecting a few hundred lines by hand.
+- Needs firmware **v2026.9.12**. A room card made before this keeps drawing
+  exactly as it did; pick its room again to fill the new settings in.
+
 ## 2026.9.11
 
 - **The screenshot is the right way up.** The panel keeps its screen in its own
