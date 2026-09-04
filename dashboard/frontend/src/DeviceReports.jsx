@@ -91,6 +91,7 @@ export default function DeviceReports({ now }) {
   );
   const logs = useAskAndWait(api.askForLogs, api.getLogs, (held) => held?.received_at || 0);
   const [clearing, setClearing] = useState(false);
+  const [copied, setCopied] = useState("");
 
   const shot = screenshot.held;
   const log = logs.held;
@@ -108,6 +109,50 @@ export default function DeviceReports({ now }) {
     } finally {
       setClearing(false);
     }
+  };
+
+  // A log is for pasting somewhere else -- an issue, a message, a search -- and
+  // selecting a few hundred scrolled lines by hand is the part that puts people
+  // off doing it.
+  //
+  // navigator.clipboard needs a secure context. Ingress is https in practice,
+  // but the add-on is reachable on plain http as well, and there the API is
+  // simply absent rather than failing when called. Hence the fallback, which is
+  // the old execCommand route: a textarea, selected, copied, removed.
+  const copy = async () => {
+    const text = log?.text || "";
+    if (!text) return;
+
+    let ok = false;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        ok = true;
+      }
+    } catch {
+      ok = false;
+    }
+
+    if (!ok) {
+      const scratch = document.createElement("textarea");
+      scratch.value = text;
+      // Off-screen but not display:none -- a hidden element cannot be selected,
+      // and readOnly stops the keyboard opening over it on a phone.
+      scratch.style.position = "fixed";
+      scratch.style.left = "-9999px";
+      scratch.readOnly = true;
+      document.body.appendChild(scratch);
+      scratch.select();
+      try {
+        ok = document.execCommand("copy");
+      } catch {
+        ok = false;
+      }
+      document.body.removeChild(scratch);
+    }
+
+    setCopied(ok ? "Copied" : "Could not copy — select the text instead");
+    setTimeout(() => setCopied(""), 3000);
   };
 
   return (
@@ -160,9 +205,11 @@ export default function DeviceReports({ now }) {
               <span className="report-age">
                 {log.received_at ? `received ${formatAge(age(log.received_at))}` : ""}
               </span>
+              <button onClick={copy}>Copy</button>
               <button disabled={clearing} onClick={clear}>
                 Clear
               </button>
+              {copied && <span className="report-age">{copied}</span>}
             </>
           )}
         </div>
