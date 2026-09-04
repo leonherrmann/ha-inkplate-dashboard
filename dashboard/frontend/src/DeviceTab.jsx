@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 import SleepSettings from "./SleepSettings.jsx";
 import RefreshSettings from "./RefreshSettings.jsx";
+import DeviceReports from "./DeviceReports.jsx";
 import Sparkline from "./Sparkline.jsx";
 import * as api from "./api.js";
 import { Battery, formatAge, formatUptime, signalLabel } from "./DeviceStats.jsx";
@@ -249,6 +250,10 @@ export default function DeviceTab({
               </>
             )}
           </section>
+
+        {/* What the panel says about itself, rather than what the add-on can
+            work out from its readings: a picture of the screen, and its log. */}
+        <DeviceReports now={status?.server_time} />
 
         <SleepSettings sleep={sleep} onChange={onSleepChange} />
 

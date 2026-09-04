@@ -181,6 +181,14 @@ class DeviceLink:
         if manifest:
             log.info("Offering firmware %s", manifest.get("version"))
 
+    def publish_screenshot(self, url: str) -> None:
+        """Point Home Assistant at the newest screenshot.
+
+        Retained, so the image entity has something to show after a restart of
+        Home Assistant rather than a blank card until the next capture.
+        """
+        self._publish(topics.screenshot, url, retain=True)
+
     def publish_charging(self, charging: bool | None) -> None:
         """Charging is worked out here, so the device is told the answer.
 
