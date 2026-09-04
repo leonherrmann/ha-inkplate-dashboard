@@ -3,7 +3,7 @@ import DevicePicker, { MAX_DEVICE_ENTITIES } from "./DevicePicker.jsx";
 import AreaPicker, { MAX_ROOM_ENTITIES } from "./AreaPicker.jsx";
 import DeviceEntities from "./DeviceEntities.jsx";
 import { imagePreviewUrl } from "./api.js";
-import { widgetSize, widgetType } from "./layout.js";
+import { LAYER_MOVES, widgetSize, widgetType } from "./layout.js";
 
 function Option({ option, widget, value, entities, devices, areas, uploads, capacity, onChange, onChangeMany }) {
   // Picking a device sets three things at once, which is why this one option
@@ -206,9 +206,13 @@ export default function Inspector({
   devices,
   areas,
   uploads,
+  layer,
+  layerCount,
   onSetOption,
   onSetOptions,
   onSetSize,
+  onSetLayer,
+  onDuplicate,
   onRemove,
   onClose,
 }) {
@@ -250,9 +254,13 @@ export default function Inspector({
         {widget.x}, {widget.y} · {size.width}×{size.height}
       </div>
 
-      {/* Only for widgets that offer more than one; the specials have none */}
+      {/* Only for widgets that offer more than one; the specials have none.
+          A div rather than a label, though it is styled as one: a <label>
+          wrapping several buttons hands every one of them the *others'* text as
+          its accessible name, so "Small" announces as the row's other sizes.
+          Caught by a WebKit pass, where getByRole could not find any of them. */}
       {type?.sizes?.length > 1 && (
-        <label>
+        <div className="field-block">
           <span>Size</span>
           <div className="size-picker">
             {type.sizes.map((option) => (
@@ -273,7 +281,7 @@ export default function Inspector({
               </button>
             ))}
           </div>
-        </label>
+        </div>
       )}
 
       {options.map((option) => (
@@ -296,9 +304,39 @@ export default function Inspector({
 
       {options.length === 0 && <p className="hint">This widget has no options.</p>}
 
-      <button className="danger" onClick={() => onRemove(widget.id)}>
-        Remove widget
-      </button>
+      {/* Which of two overlapping widgets the panel draws on top. It is the
+          layout's order, so the canvas shows the same answer the device will.
+          Shown only where there is something to be in front of. */}
+      {layerCount > 1 && (
+        <div className="field-block">
+          <span>
+            Layer <small className="layer-count">{layer + 1} of {layerCount}</small>
+          </span>
+          <div className="layer-picker">
+            {LAYER_MOVES.map((move) => (
+              <button
+                key={move.id}
+                className="chip"
+                title={move.title}
+                disabled={
+                  layer < 0 ||
+                  (["back", "backward"].includes(move.id) ? layer === 0 : layer === layerCount - 1)
+                }
+                onClick={() => onSetLayer(widget.id, move.id)}
+              >
+                {move.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="inspector-actions">
+        <button onClick={() => onDuplicate(widget.id)}>Duplicate</button>
+        <button className="danger" onClick={() => onRemove(widget.id)}>
+          Remove
+        </button>
+      </div>
     </aside>
   );
 }

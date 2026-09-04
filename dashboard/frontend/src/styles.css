@@ -891,15 +891,34 @@ main {
   background-color: rgba(230, 57, 70, 0.04);
 }
 
-.size-picker {
+.size-picker,
+.layer-picker {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
 }
 
-.size-picker .chip {
+.size-picker .chip,
+.layer-picker .chip {
   flex: 1 1 auto;
   justify-content: center;
+}
+
+/* Reads as a position, not a label, so it stays out of the heading's voice */
+.layer-count {
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  opacity: 0.6;
+}
+
+.inspector-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.inspector-actions button {
+  flex: 1 1 auto;
 }
 
 .widget {
@@ -931,6 +950,67 @@ main {
 .widget.selected {
   outline: var(--rule) solid var(--red);
   outline-offset: 4px;
+}
+
+/* The ghost is drawn outside the widget's own box, so the widget has to come
+   forward or its neighbours cover the part of the outline that is the whole
+   point -- the size it is about to become. */
+.widget.resizing {
+  z-index: 11;
+}
+
+/* Bottom right, half outside the widget: inside, it covers the corner of a
+   small card, and a card is what you are looking at while you drag it. */
+.resize-handle {
+  position: absolute;
+  /* Sized in panel pixels, and the canvas is usually scaled to fit -- around
+     0.7 on a laptop -- so 26 here is about 18 on screen. Anything smaller is
+     hard to take hold of at the zoom people actually work at. */
+  right: -13px;
+  bottom: -13px;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  /* Buttons here have a 46px floor for a comfortable tap target, which a corner
+     grip cannot have: min-height beats height, so without this the grip comes
+     out a tall bar hanging off the card's edge. Only a screenshot showed it. */
+  min-height: 0;
+  min-width: 0;
+  border: var(--rule) solid var(--ink);
+  background: var(--red);
+  box-shadow: none;
+  cursor: nwse-resize;
+  touch-action: none;
+}
+
+.resize-handle:active {
+  transform: none;
+}
+
+/* Where the corner is now, not where the pointer is: a widget can only be one
+   of the sizes the firmware offers, so this snaps between them as you drag. */
+.resize-ghost {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+  outline: var(--rule) dashed var(--red);
+  outline-offset: 2px;
+  background: rgba(230, 57, 70, 0.06);
+}
+
+.resize-ghost span {
+  position: absolute;
+  right: 0;
+  bottom: -26px;
+  background: var(--red);
+  color: var(--on-accent);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 2px 6px;
+  white-space: nowrap;
 }
 
 /* ---------- widget previews ---------- */
@@ -1234,13 +1314,18 @@ main {
   opacity: 0.65;
 }
 
-.inspector label {
+/* .field-block is a label in everything but the element: a group of buttons
+   inside a real <label> takes its accessible name from the label, which means
+   each button announces its neighbours' text instead of its own. */
+.inspector label,
+.inspector .field-block {
   display: block;
   margin-bottom: 18px;
   min-width: 0;
 }
 
-.inspector label > span {
+.inspector label > span,
+.inspector .field-block > span {
   display: block;
   font-size: 10px;
   font-weight: 800;

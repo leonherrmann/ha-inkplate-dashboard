@@ -257,6 +257,73 @@ export function widgetVariant(type, widget) {
   return type.sizes.find((size) => size.id === widget.size) || type.sizes[0];
 }
 
+// What a variant draws at on a page with this chip row. A card is 34px taller
+// per row on a page with none, which the manifest publishes per variant as
+// height_off; an older manifest carries only the one height and falls back to
+// it. Null for a self-sizing variant -- a width or height of 0 means the
+// firmware measures its own content, and there is no footprint to compare.
+export function variantFootprint(variant, chipRow = DEFAULT_CHIP_ROW) {
+  if (!variant?.width || !variant?.height) return null;
+  return {
+    width: variant.width,
+    height: hasChipRow(chipRow) ? variant.height : variant.height_off || variant.height,
+  };
+}
+
+// The variant closest to a box dragged out on the canvas. Nearest by area
+// difference rather than by corner distance: dragging the handle down past a
+// 2x1 is meant to reach the 2x2, and a corner metric weighs the 100px the
+// pointer overshot horizontally the same as the 200px of height that is the
+// whole point of the gesture.
+//
+// Self-sizing variants are skipped -- they have no footprint to be near.
+export function nearestVariant(type, box, chipRow = DEFAULT_CHIP_ROW) {
+  let best = null;
+  let bestCost = Infinity;
+
+  for (const variant of type?.sizes || []) {
+    const footprint = variantFootprint(variant, chipRow);
+    if (!footprint) continue;
+    const cost =
+      Math.abs(footprint.width - box.width) * footprint.height +
+      Math.abs(footprint.height - box.height) * footprint.width;
+    if (cost < bestCost) {
+      bestCost = cost;
+      best = variant;
+    }
+  }
+
+  return best;
+}
+
+// Draw order is array order -- the firmware builds a page's widgets in the
+// order the layout lists them and draws them in that order, so the last one
+// wins where two overlap. Moving a widget through the array is therefore the
+// whole of z-order, on both the panel and the canvas.
+export const LAYER_MOVES = [
+  { id: "back", label: "Back", title: "Send to back" },
+  { id: "backward", label: "−", title: "Send backward" },
+  { id: "forward", label: "+", title: "Bring forward" },
+  { id: "front", label: "Front", title: "Bring to front" },
+];
+
+export function reorder(widgets, id, move) {
+  const from = widgets.findIndex((widget) => widget.id === id);
+  if (from < 0) return widgets;
+
+  const last = widgets.length - 1;
+  const to = clamp(
+    { back: 0, backward: from - 1, forward: from + 1, front: last }[move] ?? from,
+    0,
+    last
+  );
+  if (to === from) return widgets;
+
+  const next = [...widgets];
+  next.splice(to, 0, next.splice(from, 1)[0]);
+  return next;
+}
+
 // Only used for auto-sized text, where the firmware measures the real thing and
 // the editor cannot. Measured rather than counted: character counts are wildly
 // wrong for anything proportional, and clipping a heading to its first word is
@@ -307,11 +374,7 @@ export function widgetSize(manifest, widget, uploads, chipRow = DEFAULT_CHIP_ROW
     // A variant of 0 means the widget measures its own content, which only the
     // firmware can do properly. Estimate from the text so there is something of
     // roughly the right shape to drag around.
-    if (!variant.width || !variant.height) {
-      return estimateTextSize(widget);
-    }
-    const height = hasChipRow(chipRow) ? variant.height : variant.height_off || variant.height;
-    return { width: variant.width, height };
+    return variantFootprint(variant, chipRow) || estimateTextSize(widget);
   }
 
   if (type.size_from) {
