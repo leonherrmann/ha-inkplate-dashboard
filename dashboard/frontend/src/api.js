@@ -32,6 +32,21 @@ export const showPage = (id) => request(`page/${encodeURIComponent(id)}`, { meth
 
 export const getImages = () => request("images");
 
+// What the panel sends back about itself. Asking is a command over MQTT, so it
+// returns as soon as the broker has it -- the upload lands seconds later, on
+// the device's own next loop, and is noticed by polling for it.
+export const askForScreenshot = () => request("screenshot", { method: "POST" });
+export const getScreenshot = () => request("screenshot");
+export const askForLogs = () => request("logs", { method: "POST" });
+export const getLogs = () => request("logs");
+export const clearLogs = () => request("logs", { method: "DELETE" });
+
+// The picture itself. The URL never changes, so the capture time is appended to
+// get past the browser cache -- a stale screenshot of a dashboard is impossible
+// to tell from a current one.
+export const screenshotUrl = (takenAt) =>
+  `${base}/screenshot.png${takenAt ? `?t=${Math.round(takenAt)}` : ""}`;
+
 export const getFirmware = () => request("firmware");
 export const checkFirmware = () => request("firmware/check", { method: "POST" });
 export const updateFirmware = () => request("firmware/update", { method: "POST" });

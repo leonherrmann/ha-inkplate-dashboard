@@ -39,6 +39,24 @@ No reflash and no device restart — the firmware rebuilds its screen in place.
 Everything is published retained, so a device that reboots or receives a new layout renders
 real values immediately rather than waiting for the next change.
 
+## What the panel reports back
+
+The **Device** tab can ask the panel for two things it cannot work out on its own:
+
+- **A screenshot.** The panel sends the framebuffer it is showing and the add-on
+  stores it as a PNG. It is also a **Screen** entity in Home Assistant, so a captured
+  picture can go on a dashboard there. Taken only when asked — an e-ink dashboard
+  changes slowly, so a picture on a timer would mostly be the same picture again.
+- **Its log.** The panel keeps its last few kilobytes of output in memory and uploads
+  them on request, and **once on its own after every boot**. The boot copy is the one
+  worth having: a slow WiFi association or a broker refusing credentials happens
+  during startup, hours from anyone holding a serial cable.
+
+Both are uploaded over plain HTTP to the same port the device fetches images from,
+because the editor is behind Home Assistant's authenticated ingress and the panel
+cannot log in to it. Those two upload routes are **unauthenticated**: anything on your
+network can post a screenshot or a page of log and the add-on will believe it.
+
 ## Editing the canvas
 
 - **Drag** a widget to move it; **Snap** decides whether it lands on a cell, on 20px, or

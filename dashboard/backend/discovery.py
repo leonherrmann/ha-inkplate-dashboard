@@ -159,6 +159,43 @@ def _entities(pages: list[dict[str, Any]], running: str | None) -> list[tuple[st
                 "entity_category": "config",
             },
         ),
+        # A picture of the panel, which is the one thing about this device that
+        # none of the readings above can stand in for. The entity follows a URL
+        # rather than carrying the bytes: a PNG of the dashboard is around 20KB,
+        # and pushing that through the broker retained on every capture, to show
+        # something that only changes when asked, is a poor trade.
+        #
+        # The URL is on the device port rather than the editor's, because Home
+        # Assistant fetches it itself and the editor is behind ingress.
+        (
+            "image",
+            "screen",
+            {
+                "name": "Screen",
+                "url_topic": topics.screenshot,
+                "entity_category": "diagnostic",
+            },
+        ),
+        (
+            "button",
+            "screenshot",
+            {
+                "name": "Take a screenshot",
+                "command_topic": topics.command,
+                "payload_press": json.dumps({"action": "screenshot"}),
+                "entity_category": "config",
+            },
+        ),
+        (
+            "button",
+            "send_logs",
+            {
+                "name": "Send the log",
+                "command_topic": topics.command,
+                "payload_press": json.dumps({"action": "logs"}),
+                "entity_category": "config",
+            },
+        ),
     ]
 
     # A select rather than a button per page: the pages are a list of one thing

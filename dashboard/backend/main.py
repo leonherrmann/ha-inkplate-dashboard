@@ -1,5 +1,6 @@
 """FastAPI app: serves the editor and exposes the device to it."""
 
+import asyncio
 import logging
 import os
 import time
@@ -13,6 +14,7 @@ from fastapi.staticfiles import StaticFiles
 
 import firmware
 import images
+import reports
 import store
 from ha_bridge import bridge
 from history import history
@@ -89,6 +91,39 @@ async def publish_images() -> None:
     link.publish_images(images.manifest(base))
 
 
+async def watch_screenshots() -> None:
+    """Tell Home Assistant when a new screenshot has arrived.
+
+    The device uploads to the other uvicorn process, which shares nothing with
+    this one but the data directory -- so the file's timestamp is the signal.
+    Polled rather than watched: this is one stat() every few seconds against a
+    picture that is only ever taken on request.
+
+    The URL carries the capture time as a query, which is what makes it a *new*
+    URL. Without it Home Assistant is being handed the same string it already
+    has, and whether that counts as a change is its business rather than ours.
+    """
+    last: float | None = None
+    while True:
+        try:
+            held = reports.screenshot()
+            taken = held.get("taken_at") if held else None
+            if taken and taken != last:
+                base = await image_base_url()
+                if base:
+                    link.publish_screenshot(f"{base}/device/screenshot.png?t={int(taken)}")
+                    log.info("Published a new screenshot to Home Assistant")
+                last = taken
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            # A watcher that dies takes the image entity with it, silently, and
+            # the fault would show up as "screenshots stopped working" weeks
+            # later. Log it and keep going.
+            log.exception("Screenshot watcher stumbled")
+        await asyncio.sleep(3)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     link.start()
@@ -104,7 +139,9 @@ async def lifespan(app: FastAPI):
     await publish_images()
     firmware.store.start(publish_firmware)
     await publish_firmware()
+    watcher = asyncio.create_task(watch_screenshots())
     yield
+    watcher.cancel()
     await firmware.store.stop()
     await weather.stop()
     await bridge.stop()
@@ -238,6 +275,62 @@ async def show_device_info() -> dict[str, Any]:
 async def show_page(page_id: str) -> dict[str, Any]:
     """Put a specific page up now. The device still rotates on from it."""
     link.publish_command("page", page=page_id)
+    return {"ok": True}
+
+
+# --- what the device sends back about itself --------------------------------
+#
+# Uploads land in the *other* process, on the plain device port, and the two
+# share only the data directory. So these read files rather than hold state:
+# what is on disk is whatever the panel last sent.
+
+
+@app.post("/api/screenshot")
+async def ask_for_screenshot() -> dict[str, Any]:
+    """Ask the panel for a picture of what it is showing.
+
+    On request only. The framebuffer is already in the device's memory so a
+    capture costs it nothing but the upload -- but an e-ink dashboard changes
+    slowly, and a picture on a timer would mostly be the same picture again.
+    """
+    link.publish_command("screenshot")
+    return {"ok": True}
+
+
+@app.get("/api/screenshot")
+async def get_screenshot() -> dict[str, Any]:
+    held = reports.screenshot()
+    return {"held": bool(held), **(held or {})}
+
+
+@app.get("/api/screenshot.png")
+async def get_screenshot_png() -> FileResponse:
+    if not reports.screenshot():
+        raise HTTPException(status_code=404, detail="No screenshot held")
+    # Never cached: the URL does not change when a new picture arrives, and a
+    # stale screenshot of a dashboard looks exactly like a current one.
+    return FileResponse(
+        reports.SCREENSHOT_PATH,
+        media_type="image/png",
+        headers={"Cache-Control": "no-store"},
+    )
+
+
+@app.post("/api/logs")
+async def ask_for_logs() -> dict[str, Any]:
+    """Ask the panel for its log ring."""
+    link.publish_command("logs")
+    return {"ok": True}
+
+
+@app.get("/api/logs")
+async def get_logs() -> dict[str, Any]:
+    return reports.device_log()
+
+
+@app.delete("/api/logs")
+async def delete_logs() -> dict[str, Any]:
+    reports.clear_log()
     return {"ok": True}
 
 

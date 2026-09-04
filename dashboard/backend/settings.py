@@ -76,6 +76,11 @@ class Topics:
         # Assistant's update entity wants. Written by the add-on for Home
         # Assistant; the device neither publishes nor reads it.
         self.firmware_state = f"{self.root}/firmware/state"
+        # Where the newest screenshot can be fetched. Written by the add-on for
+        # Home Assistant's image entity, which follows a URL rather than taking
+        # the bytes -- 20KB of PNG through the broker on every capture, retained,
+        # is a great deal of traffic for a picture that changes when asked.
+        self.screenshot = f"{self.root}/screenshot"
 
     def state(self, entity_id: str, attribute: str | None = None) -> str:
         if attribute:

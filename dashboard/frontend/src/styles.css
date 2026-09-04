@@ -1839,6 +1839,48 @@ main {
   margin-top: 10px;
 }
 
+.report-age {
+  align-self: center;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  opacity: 0.6;
+}
+
+/* A picture of a screen that can only do black on white, so it keeps its own
+   colours in either theme -- the same reasoning as .panel on the canvas. The
+   border is what stops a white panel dissolving into a light background. */
+.screenshot {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-top: 12px;
+  background: #ffffff;
+  border: var(--rule) solid var(--ink);
+  box-shadow: var(--shadow-sm);
+  /* Crisp rather than smoothed: this is 1-bit art shown below its own size, and
+     interpolation turns the dither patterns into grey mush. */
+  image-rendering: pixelated;
+}
+
+.device-log {
+  margin-top: 12px;
+  max-height: 320px;
+  overflow: auto;
+  padding: 12px;
+  background: var(--grey);
+  border: var(--rule) solid var(--ink);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  line-height: 1.5;
+  /* Long lines wrap rather than scrolling sideways: a log is read top to
+     bottom, and a horizontal scrollbar hides the ends of exactly the lines
+     that are long because something went wrong. */
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 .custom-size {
   display: flex;
   gap: var(--gap);
