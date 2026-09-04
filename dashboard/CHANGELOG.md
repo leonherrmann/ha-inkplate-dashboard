@@ -1,5 +1,26 @@
 # Changelog
 
+## 2026.9.10
+
+- **The panel can send you a picture of its screen.** The Device tab has a
+  Screen section with a button that asks for one, and it arrives as the panel
+  drew it. It is also a **Screen** entity in Home Assistant, so a captured
+  picture can sit on a dashboard there, with a button beside it to take a fresh
+  one.
+- **And its log.** The panel keeps its last few kilobytes of output and sends
+  them when asked — and **once on its own after every boot**, which is the copy
+  worth having: a slow WiFi start or a broker refusing the password happens
+  during startup, long before anyone thinks to look. Read it in the Device tab
+  under Log.
+- Every line the panel prints now carries a timestamp: the time of day once its
+  clock is set, and seconds since it started up before that.
+- Needs firmware **v2026.9.10**.
+
+> Both uploads arrive on the add-on's plain device port — the same one the panel
+> already fetches images from — and are **not authenticated**. Anything on your
+> network could post a screenshot or a page of log and the add-on would believe
+> it.
+
 ## 2026.9.9
 
 - **Undo and redo.** `⌘Z` and `⇧⌘Z` — or `Ctrl+Z` and `Ctrl+Y` — take back any
