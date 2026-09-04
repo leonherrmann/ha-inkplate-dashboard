@@ -10,6 +10,7 @@ import QueueTab from "./QueueTab.jsx";
 import ThemeToggle from "./ThemeToggle.jsx";
 import { paletteShot } from "./widgetShots.js";
 import * as api from "./api.js";
+import { useHistory } from "./history.js";
 import {
   CHIP_ROW_POSITIONS,
   DEFAULT_CHIP_ROW,
@@ -28,9 +29,15 @@ import {
   placeChipX,
   placeWidget,
   regridY,
+  reorder,
   widgetSize,
   widgetType,
 } from "./layout.js";
+
+// Only for labelling the shortcut hints. Getting it wrong shows the wrong
+// modifier on two buttons; both keys are bound regardless of platform.
+const APPLE = typeof navigator !== "undefined" && /Mac|iP(hone|ad|od)/.test(navigator.platform || navigator.userAgent);
+const MOD = APPLE ? "⌘" : "Ctrl+";
 
 const TABS = [
   { id: "design", label: "Design" },
@@ -115,6 +122,7 @@ function useStatus() {
 
 export default function App() {
   const { status, error: statusError } = useStatus();
+  const history = useHistory();
   const [layout, setLayout] = useState(null);
   const [entities, setEntities] = useState([]);
   const [devices, setDevices] = useState([]);
@@ -169,14 +177,27 @@ export default function App() {
     api.getImages().then((data) => setUploads(data.images || [])).catch(() => setUploads([]));
   }, []);
 
-  const persist = useCallback(async (next) => {
-    setLayout(next);
-    try {
-      await api.saveLayout(next);
-    } catch (problem) {
-      setMessage(problem.message);
-    }
-  }, []);
+  // Every layout change funnels through here, which is what makes undo a single
+  // line rather than an inverse per kind of edit: the layout as it stands is
+  // put on the history stack before the new one replaces it.
+  //
+  // record:false is for changes that are not the user's edit -- the two
+  // restores below, which are the history moving rather than a new step, and
+  // the rescue of stranded widgets. Recording the rescue would offer to undo
+  // back to a layout the editor cannot reach a widget in, and the effect would
+  // simply rescue it again.
+  const persist = useCallback(
+    async (next, { record = true } = {}) => {
+      if (record) history.record(layout);
+      setLayout(next);
+      try {
+        await api.saveLayout(next);
+      } catch (problem) {
+        setMessage(problem.message);
+      }
+    },
+    [history, layout]
+  );
 
   // Widget edits always apply to the page being edited.
   //
@@ -248,8 +269,23 @@ export default function App() {
         ? "A widget was off the panel and has been moved back to the top left."
         : `${rescued} widgets were off the panel and have been moved back to the top left.`
     );
-    persist(next);
+    persist(next, { record: false });
   }, [layout, manifest, uploads, panel.width, panel.height, grid.gap, persist]);
+
+  // Undo and redo restore a whole layout, so the selection can be pointing at a
+  // widget that no longer exists -- undoing an add, or a chip row turned off.
+  // Left alone, the inspector would edit a widget that is not in the layout and
+  // every change would be dropped by updateWidgets' map.
+  const restore = (next, label) => {
+    if (!next) return;
+    persist(next, { record: false });
+    const page = next.pages?.find((one) => one.id === activePage?.id) || next.pages?.[0];
+    if (!(page?.widgets || []).some((widget) => widget.id === selectedId)) setSelectedId(null);
+    setMessage(label);
+  };
+
+  const undo = () => restore(history.undo(layout), "Undone");
+  const redo = () => restore(history.redo(layout), "Redone");
 
   const addWidget = (type) => {
     // Lands on the first cell rather than the very corner, so a new widget is
@@ -294,8 +330,9 @@ export default function App() {
     if (next === chipRow || !activePage) return;
 
     // Chips are deleted rather than hidden, because a widget that cannot be
-    // seen or selected is one the editor offers no way back to. There is no
-    // undo yet, so this cannot be taken back -- hence the confirm.
+    // seen or selected is one the editor offers no way back to. Undo covers it
+    // now, which is what the confirm says; it is still worth asking, since the
+    // chips go without being the thing that was clicked.
     const doomed = hasChipRow(next)
       ? []
       : (activePage.widgets || []).filter((widget) =>
@@ -304,7 +341,7 @@ export default function App() {
     if (doomed.length > 0) {
       const what =
         doomed.length === 1 ? "the chip on this page" : `all ${doomed.length} chips on this page`;
-      if (!window.confirm(`Turning the chip row off deletes ${what}. This cannot be undone.`)) {
+      if (!window.confirm(`Turning the chip row off deletes ${what}. Undo will bring them back.`)) {
         return;
       }
     }
@@ -336,6 +373,46 @@ export default function App() {
     updateWidgets((current) => current.filter((widget) => widget.id !== id));
     setSelectedId(null);
   };
+
+  // A copy beside the original, not on top of it: two widgets at the same
+  // pixels look like one, and the top one is the only one a click can reach.
+  //
+  // The step is the widget's own footprint plus a gap, which in grid mode lands
+  // exactly on the next free cell -- a span of n cells is n*unit_w + (n-1)*gap
+  // wide, so adding a gap gives n whole pitches. One offset serves both modes.
+  const duplicateWidget = (id) => {
+    const source = widgets.find((widget) => widget.id === id);
+    if (!source) return;
+
+    const copy = { ...structuredClone(source), id: newId() };
+    const size = widgetSize(manifest, copy, uploads, chipRow);
+    const isChip = isChipType(widgetType(manifest, copy));
+    const others = otherChips(widgets, manifest, uploads, copy.id);
+
+    // Right, then down, then back the other way. Each is clamped to the panel,
+    // so at the far edge the offset is undone and the spot comes back equal to
+    // the original's -- which is what makes trying the next direction the test.
+    const spots = [
+      { x: size.width + grid.gap, y: 0 },
+      { x: 0, y: size.height + grid.gap },
+      { x: -(size.width + grid.gap), y: 0 },
+      { x: 0, y: -(size.height + grid.gap) },
+      // Nowhere free: on top of the original, which is at least selectable,
+      // since the copy is appended and so draws last.
+      { x: 0, y: 0 },
+    ].map((delta) =>
+      placeWidget(copy, delta, snapMode, grid, size, panel, { chipRow, isChip, others })
+    );
+
+    const placed =
+      spots.find((spot) => spot.x !== source.x || spot.y !== source.y) || spots[spots.length - 1];
+
+    updateWidgets((current) => [...current, { ...copy, ...placed }]);
+    setSelectedId(copy.id);
+  };
+
+  // Draw order is array order, on the panel as on the canvas -- see reorder().
+  const setLayer = (id, move) => updateWidgets((current) => reorder(current, id, move));
 
   const setOption = (id, key, value) =>
     updateWidgets((current) =>
@@ -390,6 +467,35 @@ export default function App() {
     setActivePageId(id);
     setSelectedId(null);
   };
+
+  // Bound on the window rather than on the canvas: the canvas is not focusable,
+  // and undo covers page and device settings too, not only what is on it.
+  // Re-bound on every render, which is what keeps the handlers current without
+  // a ref -- adding and removing one listener costs nothing beside a re-render.
+  useEffect(() => {
+    const onKey = (event) => {
+      if (!(event.metaKey || event.ctrlKey) || event.altKey) return;
+      // Cmd+Z belongs to whatever is being typed in first; taking it here would
+      // undo a layout edit instead of the half-written name in the field.
+      if (event.target?.closest?.("input, textarea, select, [contenteditable]")) return;
+
+      const key = event.key.toLowerCase();
+      if (key === "z") {
+        event.preventDefault();
+        (event.shiftKey ? redo : undo)();
+      } else if (key === "y") {
+        // Windows' redo. Shift+Cmd+Z is the one advertised.
+        event.preventDefault();
+        redo();
+      } else if (key === "d" && selectedId) {
+        event.preventDefault();
+        duplicateWidget(selectedId);
+      }
+    };
+
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
 
   const push = async () => {
     try {
@@ -485,6 +591,29 @@ export default function App() {
           <div className="workspace">
             <main>
               <div className="toolbar">
+                {/* Leftmost, where the eye goes first: this is the button you
+                    want when something has just gone wrong. */}
+                <div className="toolbar-group">
+                  <span className="toolbar-label">Edit</span>
+                  <button className="chip" onClick={undo} disabled={!history.canUndo}>
+                    Undo
+                    <small>{MOD}Z</small>
+                  </button>
+                  <button className="chip" onClick={redo} disabled={!history.canRedo}>
+                    Redo
+                    <small>⇧{MOD}Z</small>
+                  </button>
+                  <button
+                    className="chip"
+                    onClick={() => duplicateWidget(selectedId)}
+                    disabled={!selected}
+                    title={selected ? undefined : "Select a widget first"}
+                  >
+                    Duplicate
+                    <small>{MOD}D</small>
+                  </button>
+                </div>
+
                 <div className="toolbar-group">
                   <span className="toolbar-label">Snap</span>
                   {SNAP_MODES.map(({ id, label, hint }) => (
@@ -538,6 +667,7 @@ export default function App() {
                 selectedId={selectedId}
                 onSelect={setSelectedId}
                 onMove={moveWidget}
+                onResize={setSize}
                 snapMode={snapMode}
                 grid={grid}
                 chipRow={chipRow}
@@ -593,9 +723,13 @@ export default function App() {
               devices={devices}
               areas={areas}
               uploads={uploads}
+              layer={widgets.findIndex((one) => one.id === selected?.id)}
+              layerCount={widgets.length}
               onSetOption={setOption}
               onSetOptions={setOptions}
               onSetSize={setSize}
+              onSetLayer={setLayer}
+              onDuplicate={duplicateWidget}
               onRemove={removeWidget}
               onClose={() => setSelectedId(null)}
             />

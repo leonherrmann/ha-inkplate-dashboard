@@ -39,6 +39,20 @@ No reflash and no device restart — the firmware rebuilds its screen in place.
 Everything is published retained, so a device that reboots or receives a new layout renders
 real values immediately rather than waiting for the next change.
 
+## Editing the canvas
+
+- **Drag** a widget to move it; **Snap** decides whether it lands on a cell, on 20px, or
+  anywhere. Drag the **red corner** of a selected widget to change its size — a widget can
+  only be one of the sizes the firmware offers, so the outline snaps between them and names
+  the one it would become.
+- **Layer** in the inspector is which of two overlapping widgets the panel draws on top. It
+  is the layout's own order, so the canvas shows the same answer the device will.
+- **Undo** (`⌘Z` / `Ctrl+Z`) and **redo** (`⇧⌘Z`) cover every edit to the layout, including
+  page settings, the queue, and the chips deleted by turning a page's chip row off. It is
+  the draft that is undone, not what the device is showing: press Push to send the result.
+- **Duplicate** (`⌘D`) copies the selected widget, its size and its options onto the next
+  free cell.
+
 ## Development on a laptop
 
 The add-on runs outside Home Assistant, minus the state bridge (no `SUPERVISOR_TOKEN`, so

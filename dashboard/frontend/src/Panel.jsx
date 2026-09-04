@@ -15,11 +15,18 @@ import {
   gridPitch,
   hasChipRow,
   isChipType,
+  nearestVariant,
   otherChips,
   placeWidget,
+  variantFootprint,
   widgetSize,
   widgetType,
+  widgetVariant,
 } from "./layout.js";
+
+// The resize handle is a second draggable on the same widget, so the two are
+// told apart by their id. Widget ids are hex, so nothing can collide with this.
+const RESIZE = "resize:";
 
 // The real cells, as rectangles with the gap between them, rather than rules
 // drawn on the cell boundaries. The old backgroundSize trick could only ever
@@ -94,18 +101,87 @@ function useAvailableWidth() {
   return [ref, width];
 }
 
-function DraggableWidget({ widget, size, selected, onSelect, scale, uploads, tall }) {
+// A widget is resized by dragging its corner between the sizes the firmware
+// offers -- there is no free resizing to be had, since a widget's footprint is
+// the manifest's and the device would ignore anything else. So the drag picks
+// the nearest variant and the ghost shows which one, rather than the box
+// following the pointer to a size nothing can draw.
+function ResizeHandle({ listeners, attributes, setNodeRef }) {
+  // The widget itself is draggable, and this sits inside it: without stopping
+  // the gesture here, taking hold of the corner would start a move as well as a
+  // resize. Every listener is wrapped rather than onPointerDown alone, because
+  // which one dnd-kit uses depends on the sensor -- mouse and touch differ.
+  const guarded = Object.fromEntries(
+    Object.entries(listeners || {}).map(([name, handler]) => [
+      name,
+      (event) => {
+        event.stopPropagation();
+        handler(event);
+      },
+    ])
+  );
+
+  return (
+    <button
+      ref={setNodeRef}
+      className="resize-handle"
+      aria-label="Resize"
+      onClick={(event) => event.stopPropagation()}
+      {...attributes}
+      {...guarded}
+    />
+  );
+}
+
+function DraggableWidget({
+  widget,
+  size,
+  type,
+  chipRow,
+  selected,
+  onSelect,
+  scale,
+  uploads,
+  tall,
+}) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: widget.id,
   });
 
+  // Only where there is more than one footprint to choose between: a chip and
+  // an image have none to offer, an image being the size of the picture chosen.
+  //
+  // Self-sizing variants are filtered out rather than counted, so the text
+  // widget's "auto" is not something a drag can land on -- it has no box to be
+  // near. Its fixed sizes are draggable; the inspector is the way back to auto.
+  const variants = (type?.sizes || []).filter((variant) => variantFootprint(variant, chipRow));
+  const resizable = selected && variants.length > 1;
+  const resize = useDraggable({ id: `${RESIZE}${widget.id}`, disabled: !resizable });
+
   // Pointer deltas are screen pixels; the panel is scaled, so convert back
   const offset = transform ? { x: transform.x / scale, y: transform.y / scale } : { x: 0, y: 0 };
+
+  // What the corner is currently over, drawn as an outline while the drag is in
+  // hand. Without it the gesture is blind: the widget cannot follow the pointer
+  // (it can only be one of a handful of sizes) so nothing else would move.
+  const pending = resize.transform
+    ? nearestVariant(
+        type,
+        {
+          width: size.width + resize.transform.x / scale,
+          height: size.height + resize.transform.y / scale,
+        },
+        chipRow
+      )
+    : null;
+  const ghost = pending ? variantFootprint(pending, chipRow) : null;
 
   return (
     <div
       ref={setNodeRef}
-      className={`widget${selected ? " selected" : ""}${isDragging ? " dragging" : ""}`}
+      className={`widget${selected ? " selected" : ""}${isDragging ? " dragging" : ""}${
+        resize.isDragging ? " resizing" : ""
+      }`}
       style={{
         left: widget.x,
         top: widget.y,
@@ -125,6 +201,26 @@ function DraggableWidget({ widget, size, selected, onSelect, scale, uploads, tal
         sizeId={widget.size}
         tall={tall}
       />
+
+      {/* Named as the inspector names it, plus the cells it covers: the labels
+          are words like "Large", which say which of the sizes this is but not
+          how big it is against the grid you are dragging over. */}
+      {ghost && (
+        <div className="resize-ghost" style={{ width: ghost.width, height: ghost.height }}>
+          <span>
+            {pending.label}
+            {pending.cols > 0 && pending.rows > 0 ? ` ${pending.cols}×${pending.rows}` : ""}
+          </span>
+        </div>
+      )}
+
+      {resizable && (
+        <ResizeHandle
+          listeners={resize.listeners}
+          attributes={resize.attributes}
+          setNodeRef={resize.setNodeRef}
+        />
+      )}
     </div>
   );
 }
@@ -137,6 +233,7 @@ export default function Panel({
   selectedId,
   onSelect,
   onMove,
+  onResize,
   snapMode,
   grid,
   chipRow,
@@ -159,10 +256,35 @@ export default function Panel({
     useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } })
   );
 
+  const handleResizeEnd = (widget, delta) => {
+    const type = widgetType(manifest, widget);
+    const size = widgetSize(manifest, widget, uploads, chipRow);
+    const variant = nearestVariant(
+      type,
+      { width: size.width + delta.x, height: size.height + delta.y },
+      chipRow
+    );
+    // A drag that lands back on the size it started from is not an edit. Saying
+    // so here rather than in App keeps it off the undo stack as well.
+    if (variant && variant.id !== widgetVariant(type, widget)?.id) {
+      onResize(widget.id, variant.id);
+    }
+  };
+
   const handleDragEnd = (event) => {
-    const widget = widgets.find((candidate) => candidate.id === event.active.id);
+    const active = String(event.active.id);
+    const resizing = active.startsWith(RESIZE);
+    const widget = widgets.find(
+      (candidate) => candidate.id === (resizing ? active.slice(RESIZE.length) : active)
+    );
     if (!widget) return;
     const delta = { x: event.delta.x / scale, y: event.delta.y / scale };
+
+    if (resizing) {
+      handleResizeEnd(widget, delta);
+      return;
+    }
+
     onMove(
       widget.id,
       placeWidget(widget, delta, snapMode, grid, widgetSize(manifest, widget, uploads, chipRow), panel, {
@@ -213,6 +335,8 @@ export default function Panel({
                   key={widget.id}
                   widget={widget}
                   size={widgetSize(manifest, widget, uploads, chipRow)}
+                  type={widgetType(manifest, widget)}
+                  chipRow={chipRow}
                   selected={widget.id === selectedId}
                   onSelect={onSelect}
                   scale={scale}
