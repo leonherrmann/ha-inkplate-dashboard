@@ -24,6 +24,28 @@ export default function DeviceTab({
   const [firmware, setFirmware] = useState(null);
   const [busy, setBusy] = useState("");
 
+  // Confirmed, because it takes the dashboard away until somebody walks to the
+  // panel. Nothing is erased -- the wording says so, since "set up again" reads
+  // like a factory reset and is not one.
+  const sendToSetup = async () => {
+    if (!window.confirm(
+      "The panel will restart and put up its own WiFi network so it can be " +
+      "set up again.\n\nIt will stop showing the dashboard until someone " +
+      "completes the form on its screen. Nothing is erased: it keeps its " +
+      "layout and its current network until new details are saved."
+    )) {
+      return;
+    }
+    setBusy("onboard");
+    try {
+      await api.sendToSetup();
+    } catch (problem) {
+      window.alert(problem.message);
+    } finally {
+      setBusy("");
+    }
+  };
+
   // Only fetched when this tab is opened; it is not needed to edit a layout
   useEffect(() => {
     api.getHistory().then((data) => setSamples(data.samples)).catch(() => setSamples([]));
@@ -262,6 +284,18 @@ export default function DeviceTab({
         <section className="group">
           <button onClick={onRefresh}>Force a full refresh</button>
           <p className="hint">Redraws the whole panel, clearing any e-ink ghosting.</p>
+
+          <button disabled={busy !== ""} onClick={sendToSetup}>
+            Set this panel up again
+          </button>
+          <p className="hint">
+            Restarts it into its own WiFi network so it can be pointed at a
+            different one — after moving, or replacing a router. Reach for this
+            when the panel is happily connected to a network you no longer have:
+            nothing is broken from its point of view, so it will never work that
+            out by itself. Its layout and current settings are kept until the
+            setup form is completed.
+          </p>
 
           <button onClick={onShowInfo}>Show device info on the panel</button>
           <p className="hint">
