@@ -258,6 +258,23 @@ async def refresh_device() -> dict[str, Any]:
     return {"ok": True}
 
 
+@app.post("/api/onboard")
+async def send_to_setup() -> dict[str, Any]:
+    """Restart the panel into its own access point so it can be set up again.
+
+    The way to move a panel to a different network. Its credentials are not
+    wrong -- they join something perfectly well -- so nothing on the device
+    notices, and the editor is on the network it can no longer see. This is the
+    only way in.
+
+    Nothing is erased. The panel keeps its layout and its current credentials
+    until somebody completes the form, so a command sent by accident costs a
+    restart and a walk to the panel rather than a reconfiguration.
+    """
+    link.publish_command("onboard")
+    return {"ok": True}
+
+
 @app.post("/api/device-info")
 async def show_device_info() -> dict[str, Any]:
     """Put the device's own diagnostics on the panel for a minute.
