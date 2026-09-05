@@ -1,5 +1,32 @@
 # Changelog
 
+## 2026.9.14
+
+- **A photo can be framed before it is uploaded.** Choosing one now opens an
+  editor: the target shape is a fixed window, the photo drags and zooms behind
+  it, and the black-and-white preview beside it is exactly what the panel will
+  draw — dithered live as you move, not after the fact. Before this, an upload
+  was cropped from the centre and you found out afterwards.
+- **Brightness and contrast, applied before the dither.** On a screen with no
+  grey these matter more than the framing does: a slightly dark photo turns to
+  mud, and a nudge of contrast often rescues one that looked hopeless.
+- **A choice of dither.** Atkinson stays the default and is the right one for
+  photographs. The one worth knowing about is **No dither** — a logo, a QR code
+  or line art turns to noise under any of the others, and previously the only
+  way to get a clean one was to draw it at exactly the right size and upload it
+  as Pixel accurate. Now it can be scaled like anything else.
+- **Rotate and mirror**, for the picture that is nearly right.
+- **Photos from a phone are no longer sideways.** A picture taken in portrait
+  records that fact separately from the pixels, and the add-on was ignoring it
+  and cropping along the wrong axis. Reported from a real upload.
+- **The widget pictures in the editor are redrawn** for the outline icons in
+  firmware v2026.9.14, so the couch, humidity and heat glyphs on the canvas
+  match the ones on the panel again.
+- **Room cards in the palette show their thermostat.** They had been drawing an
+  empty badge reading "--" since the room card's settings were reworked.
+- Needs firmware **v2026.9.14** for the icons to match. Everything else here
+  works with any firmware that supports images.
+
 ## 2026.9.12
 
 - **Picking a room fills the whole card in.** The temperature, humidity, PM2.5,
