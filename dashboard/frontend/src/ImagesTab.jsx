@@ -1,6 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import * as api from "./api.js";
+import ImageEditor from "./ImageEditor.jsx";
+import { DITHERS } from "./dither.js";
 
 // Two kinds of upload, because they want opposite treatment. Art drawn to match
 // the UI must not be touched at all; a photograph has to be cropped to the space
@@ -79,6 +81,23 @@ export default function ImagesTab({ grid, panel, onMessage }) {
   // corners. Only meaningful for a photo -- "exact" exists so that what was
   // drawn is what is drawn.
   const [rounded, setRounded] = useState(true);
+  // Applied before the dither, in the browser. On a panel with no grey these
+  // matter more than the crop does: a slightly dark photo turns to mud, and a
+  // nudge of contrast often rescues one that looked hopeless.
+  const [brightness, setBrightness] = useState(0);
+  const [contrast, setContrast] = useState(0);
+  const [ditherName, setDitherName] = useState("atkinson");
+  // The editor hands back a function that renders the upload, rather than the
+  // bytes, so dragging does not encode a PNG on every frame.
+  //
+  // A ref and not state, for two reasons that are both easy to get wrong here:
+  // useState treats a function argument as an updater and would call it instead
+  // of storing it, and a setter passed straight down would change identity every
+  // render and spin the editor's effect.
+  const renderUpload = useRef(null);
+  const onEditorReady = useCallback((render) => {
+    renderUpload.current = render;
+  }, []);
   const [cols, setCols] = useState(2);
   const [rows, setRows] = useState(1);
   const [sizeMode, setSizeMode] = useState("grid"); // grid | full | custom
@@ -128,17 +147,28 @@ export default function ImagesTab({ grid, panel, onMessage }) {
     if (!file) return;
     setBusy(true);
     try {
+      // A photo goes up as the greyscale the editor rendered and previewed, so
+      // what ships is dithered from exactly those pixels. "Pixel accurate" has
+      // no geometry to decide and goes up as the file itself.
+      const prepared = mode === "photo" && Boolean(renderUpload.current);
+      const payload = prepared ? await renderUpload.current() : file;
+      if (!payload) throw new Error("The editor has nothing to upload yet.");
+
       const entry = await api.uploadImage({
-        file,
+        file: payload,
         name,
         mode,
         width: target.width,
         height: target.height,
         rounded: mode === "photo" && rounded,
+        dither: ditherName,
+        prepared,
       });
       onMessage(`Uploaded ${entry.name} (${entry.width}×${entry.height})`);
       setFile(null);
       setName("");
+      setBrightness(0);
+      setContrast(0);
       if (fileInput.current) fileInput.current.value = "";
       reload();
     } catch (problem) {
@@ -280,11 +310,66 @@ export default function ImagesTab({ grid, panel, onMessage }) {
               </div>
             )}
 
-            <p className="hint">
-              {target.width}×{target.height} px. Anything that does not fit this shape is
-              cropped from the centre.
-            </p>
           </label>
+        )}
+
+        {mode === "photo" && file && (
+          <>
+            <ImageEditor
+              file={file}
+              target={target}
+              ditherName={ditherName}
+              brightness={brightness}
+              contrast={contrast}
+              onReady={onEditorReady}
+            />
+
+            <label>
+              <span>Brightness</span>
+              <input
+                type="range"
+                min="-100"
+                max="100"
+                value={brightness}
+                onChange={(event) => setBrightness(Number(event.target.value))}
+              />
+            </label>
+
+            <label>
+              <span>Contrast</span>
+              <input
+                type="range"
+                min="-100"
+                max="100"
+                value={contrast}
+                onChange={(event) => setContrast(Number(event.target.value))}
+              />
+            </label>
+
+            {/* A div and not a <label>, deliberately. A label names a single
+                control, so wrapping a group of buttons in one hands every
+                button the whole label's text as its accessible name: the
+                Atkinson button came out called "Dither Floyd-Steinberg No
+                dither". Caught by a WebKit pass here, and the same mistake the
+                editor's own button groups were fixed for once already. */}
+            <div className="field" role="group" aria-label="Dither">
+              <span>Dither</span>
+              <div className="size-picker">
+                {Object.entries(DITHERS).map(([id, entry]) => (
+                  <button
+                    key={id}
+                    type="button"
+                    className={ditherName === id ? "chip active" : "chip"}
+                    onClick={() => setDitherName(id)}
+                    title={entry.hint}
+                  >
+                    {entry.label}
+                  </button>
+                ))}
+              </div>
+              <p className="hint">{DITHERS[ditherName].hint}</p>
+            </div>
+          </>
         )}
 
         {mode === "photo" && (

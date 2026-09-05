@@ -85,14 +85,20 @@ def _pack(image: Image.Image) -> bytes:
     return bytes(out)
 
 
-def _atkinson(image: Image.Image) -> Image.Image:
-    """Grayscale to 1-bit with Atkinson dithering.
+# The three dithers, and the contract they are written to.
+#
+# Each is mirrored pixel for pixel in the frontend's dither.js, because the
+# editor previews the 1-bit result live while you drag. That preview is only
+# honest if the two agree exactly, so both walk a flat float array in raster
+# order, use the same neighbour offsets, and do the arithmetic in the same
+# order -- IEEE doubles either side, so the results are identical rather than
+# merely close. tools/dithercheck.py asserts that on real images.
+#
+# Anything added here has to be added there, and to DITHERS below.
 
-    PIL's own convert('1') is Floyd-Steinberg, which spreads all of the error and
-    goes muddy on a display with no grey. Atkinson propagates only 3/4 of it,
-    which clips highlights and shadows to solid black and white and reads far
-    better on e-ink.
-    """
+
+def _diffuse(image: Image.Image, taps: tuple, divisor: float) -> Image.Image:
+    """Error diffusion in raster order, for the two dithers that use it."""
     width, height = image.size
     pixels = [float(value) for value in image.getdata()]
 
@@ -102,18 +108,63 @@ def _atkinson(image: Image.Image) -> Image.Image:
             old = pixels[index]
             new = 255.0 if old >= 128.0 else 0.0
             pixels[index] = new
-            error = (old - new) / 8.0
+            error = old - new
             if error == 0.0:
                 continue
-            # (+1,0) (+2,0) (-1,+1) (0,+1) (+1,+1) (0,+2)
-            for dx, dy in ((1, 0), (2, 0), (-1, 1), (0, 1), (1, 1), (0, 2)):
+            for dx, dy, weight in taps:
                 nx, ny = x + dx, y + dy
                 if 0 <= nx < width and 0 <= ny < height:
-                    pixels[ny * width + nx] += error
+                    pixels[ny * width + nx] += error * weight / divisor
 
     out = Image.new("1", (width, height))
     out.putdata([255 if value >= 128.0 else 0 for value in pixels])
     return out
+
+
+def _atkinson(image: Image.Image) -> Image.Image:
+    """The default, and the right one for photographs on e-ink.
+
+    PIL's own convert('1') is Floyd-Steinberg, which spreads all of the error and
+    goes muddy on a display with no grey. Atkinson propagates only 3/4 of it,
+    which clips highlights and shadows to solid black and white and reads far
+    better on e-ink.
+    """
+    taps = ((1, 0, 1.0), (2, 0, 1.0), (-1, 1, 1.0), (0, 1, 1.0), (1, 1, 1.0), (0, 2, 1.0))
+    return _diffuse(image, taps, 8.0)
+
+
+def _floyd_steinberg(image: Image.Image) -> Image.Image:
+    """All of the error, spread over four neighbours.
+
+    Holds detail better than Atkinson in the midtones and is the better choice
+    for a picture that is mostly texture, at the cost of muddier extremes.
+    """
+    taps = ((1, 0, 7.0), (-1, 1, 3.0), (0, 1, 5.0), (1, 1, 1.0))
+    return _diffuse(image, taps, 16.0)
+
+
+def _threshold(image: Image.Image) -> Image.Image:
+    """No diffusion at all: every pixel picks a side on its own.
+
+    Wrong for a photograph and exactly right for a logo, a QR code or line art,
+    where a dither turns flat areas into noise and thin strokes into dashes.
+    Before this existed, such an image had to go through "Pixel accurate" mode
+    and could not be scaled at all.
+    """
+    return image.point(lambda value: 0 if value < 128 else 255, mode="1")
+
+
+DITHERS = {
+    "atkinson": _atkinson,
+    "floyd_steinberg": _floyd_steinberg,
+    "threshold": _threshold,
+}
+
+
+def _dither(image: Image.Image, name: str) -> Image.Image:
+    if name not in DITHERS:
+        raise ImageError(f"Unknown dither '{name}'. Use one of {', '.join(sorted(DITHERS))}.")
+    return DITHERS[name](image)
 
 
 def _cover(image: Image.Image, width: int, height: int) -> Image.Image:
@@ -145,12 +196,61 @@ def _round_corners(bitmap: Image.Image, radius: int) -> Image.Image:
     return Image.composite(bitmap, Image.new("1", (width, height), 1), mask)
 
 
+def _finish(bitmap: Image.Image, rounded: bool) -> tuple[bytes, bytes, int, int]:
+    """A 1-bit image to (blob, preview_png, width, height)."""
+    if rounded:
+        bitmap = _round_corners(bitmap, CORNER_RADIUS)
+    width, height = bitmap.size
+    payload = _pack(bitmap)
+    blob = HEADER.pack(MAGIC, VERSION, 0, width, height) + payload
+
+    preview = io.BytesIO()
+    bitmap.convert("L").save(preview, format="PNG", optimize=True)
+    return blob, preview.getvalue(), width, height
+
+
+def convert_prepared(
+    data: bytes,
+    dither: str = "atkinson",
+    rounded: bool = True,
+) -> tuple[bytes, bytes, int, int]:
+    """A greyscale bitmap already at its final size, dithered and packed.
+
+    This is what the crop editor uploads. Everything geometric -- orientation,
+    rotation, crop, scaling, brightness and contrast -- has already happened in
+    the browser, which is deliberate: the editor shows a live 1-bit preview, and
+    the only way that preview can be honest is if the pixels it dithered are the
+    same pixels this dithers. Re-deriving them here from the original would put
+    two different resamplers in the path and the preview would quietly disagree
+    with what shipped.
+
+    So the browser owns the geometry, this owns the dither, and the two share
+    nothing that can drift except the dither itself -- which tools/dithercheck.py
+    proves identical.
+    """
+    try:
+        source = Image.open(io.BytesIO(data))
+        source.load()
+    except Exception as error:
+        raise ImageError(f"The prepared bitmap is not readable ({error}).") from error
+
+    width, height = source.size
+    if not (0 < width <= MAX_WIDTH) or not (0 < height <= MAX_HEIGHT):
+        raise ImageError(
+            f"A prepared bitmap has to fit the panel: {width}x{height} is larger "
+            f"than {MAX_WIDTH}x{MAX_HEIGHT}."
+        )
+
+    return _finish(_dither(source.convert("L"), dither), rounded)
+
+
 def convert(
     data: bytes,
     mode: str,
     width: int = 0,
     height: int = 0,
     rounded: bool = True,
+    dither: str = "atkinson",
 ) -> tuple[bytes, bytes, int, int]:
     """Uploaded bytes to (blob, preview_png, width, height).
 
@@ -167,6 +267,13 @@ def convert(
         source.load()
     except Exception as error:
         raise ImageError(f"That file is not an image PIL can read ({error}).") from error
+
+    # A photograph from a phone is almost never stored the way up it was taken:
+    # the sensor's own orientation is recorded in an EXIF tag and every viewer
+    # applies it on the way out. PIL does not, so without this a picture taken
+    # in portrait arrives here in landscape and is cropped along the wrong axis.
+    # Reported from a real upload, 2026-09-05.
+    source = ImageOps.exif_transpose(source)
 
     # Flatten transparency onto white, or RGBA turns into black boxes
     if source.mode in ("RGBA", "LA", "P"):
@@ -191,18 +298,13 @@ def convert(
             raise ImageError(
                 f"A photo needs a target size within {MAX_WIDTH}x{MAX_HEIGHT}, got {width}x{height}."
             )
-        bitmap = _atkinson(_cover(source.convert("L"), width, height))
-        if rounded:
-            bitmap = _round_corners(bitmap, CORNER_RADIUS)
+        bitmap = _dither(_cover(source.convert("L"), width, height), dither)
     else:
         raise ImageError(f"Unknown mode '{mode}'. Use 'exact' or 'photo'.")
 
-    payload = _pack(bitmap)
-    blob = HEADER.pack(MAGIC, VERSION, 0, width, height) + payload
-
-    preview = io.BytesIO()
-    bitmap.convert("L").save(preview, format="PNG", optimize=True)
-    return blob, preview.getvalue(), width, height
+    # "exact" never rounds: it exists precisely so that what was drawn is what
+    # is drawn, and quietly eating its corners would break that promise.
+    return _finish(bitmap, rounded and mode == "photo")
 
 
 # --- stored set -------------------------------------------------------------
@@ -240,9 +342,14 @@ def store(
     width: int = 0,
     height: int = 0,
     rounded: bool = True,
+    dither: str = "atkinson",
+    prepared: bool = False,
 ) -> dict[str, Any]:
     name = normalise_name(name)
-    blob, preview, width, height = convert(data, mode, width, height, rounded)
+    if prepared:
+        blob, preview, width, height = convert_prepared(data, dither, rounded)
+    else:
+        blob, preview, width, height = convert(data, mode, width, height, rounded, dither)
 
     os.makedirs(IMAGES_DIR, exist_ok=True)
     with open(blob_path(name), "wb") as handle:
@@ -256,6 +363,9 @@ def store(
         # Recorded so the editor can show the toggle in the state it was
         # uploaded with, rather than snapping back to the default
         "rounded": bool(rounded) and mode == "photo",
+        # Recorded for the same reason as `rounded`: so re-opening the editor
+        # shows the settings this was made with rather than the defaults.
+        "dither": dither if mode == "photo" else "threshold",
         "width": width,
         "height": height,
         "bytes": len(blob),

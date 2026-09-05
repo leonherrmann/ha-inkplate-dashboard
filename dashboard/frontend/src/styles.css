@@ -1703,7 +1703,11 @@ main {
   align-content: start;
 }
 
-.upload label {
+.upload label,
+/* Groups of buttons use .field rather than a label: a label names one control,
+   and wrapping several in one gives each of them the whole label as its
+   accessible name. */
+.upload .field {
   display: grid;
   gap: 6px;
   margin-bottom: var(--gap);
@@ -2028,4 +2032,56 @@ main {
 
 .device-entity-order button:active {
   transform: none;
+}
+
+/* --- the image editor ---------------------------------------------------- */
+
+.image-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* The window the photo is dragged behind. Its aspect ratio is set inline from
+   the chosen target, so the box on screen is the shape the panel will show. */
+.editor-stage {
+  position: relative;
+  width: 100%;
+  max-width: 520px;
+  overflow: hidden;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  /* A checkerboard would suggest transparency, which the panel does not have.
+     Plain paper is the honest backdrop. */
+  background: #fff;
+  cursor: grab;
+  touch-action: none; /* or a drag scrolls the page on a touchscreen */
+}
+
+.editor-stage:active {
+  cursor: grabbing;
+}
+
+/* The preview canvas is the panel's own pixels, so it must not be smoothed on
+   the way up to CSS size -- a blurred dither looks like grey, which is exactly
+   the thing this panel cannot do. */
+.editor-preview {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
+.editor-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.editor-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }

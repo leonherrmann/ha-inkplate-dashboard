@@ -52,9 +52,23 @@ export const checkFirmware = () => request("firmware/check", { method: "POST" })
 export const updateFirmware = () => request("firmware/update", { method: "POST" });
 
 // The boundary is left to the browser, so no Content-Type header here
-export const uploadImage = ({ file, name, mode, width, height, rounded }) => {
+export const uploadImage = ({
+  file,
+  name,
+  mode,
+  width,
+  height,
+  rounded,
+  dither = "atkinson",
+  prepared = false,
+}) => {
   const form = new FormData();
-  form.append("file", file);
+  // A prepared upload is a greyscale PNG the editor rendered, not the file the
+  // user chose, so it needs a filename of its own -- FormData will not infer
+  // one from a Blob, and passing undefined as the third argument is not the
+  // same as omitting it: the spec stringifies it to "undefined".
+  if (prepared) form.append("file", file, `${name || "image"}.png`);
+  else form.append("file", file);
   form.append("name", name || "");
   form.append("mode", mode);
   form.append("width", String(width || 0));
@@ -62,6 +76,8 @@ export const uploadImage = ({ file, name, mode, width, height, rounded }) => {
   // FastAPI parses "true"/"false" for a bool form field; a bare boolean would
   // arrive as the string "undefined" when it is false.
   form.append("rounded", rounded ? "true" : "false");
+  form.append("dither", dither);
+  form.append("prepared", prepared ? "true" : "false");
   return request("images", { method: "POST", body: form });
 };
 
