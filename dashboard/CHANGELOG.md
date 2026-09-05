@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026.9.16
+
+- **A button to send the panel back to setup**, on the Device tab. It restarts
+  into its own WiFi network so it can be pointed at a different one — after
+  moving, or replacing a router. This is the one fault nothing else can reach:
+  the panel's credentials are perfectly valid and simply join the wrong
+  network, so it will never work that out by itself, and this page is on the
+  network it can no longer see.
+- Nothing is erased. The panel keeps its layout and its current settings until
+  somebody completes the setup form on its screen, and the confirmation says
+  so — "set up again" reads like a factory reset and is not one.
+- Needs firmware **v2026.9.15** or newer. On anything older the panel simply
+  logs the command as unknown.
+
 ## 2026.9.14
 
 - **A photo can be framed before it is uploaded.** Choosing one now opens an
