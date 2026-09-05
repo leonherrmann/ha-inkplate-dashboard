@@ -67,11 +67,22 @@ DEFAULT_REFRESH: dict[str, Any] = {
     "ghost_percent": 12,
 }
 
+# Which way up the panel is hung, in degrees: 0 as it comes, 180 turned over.
+# Not the same thing as "rotation" above, which is the slideshow through the
+# pages -- the two words are unavoidably close, so the key is deliberately not
+# spelled "rotation" and the firmware reads them from different places.
+#
+# Only 0 and 180. Quarter turns would swap the panel's width and height, and
+# every widget fixes its box in pixels when it is built, so that is a far bigger
+# change than turning the picture over.
+DEFAULT_ORIENTATION = 0
+
 EMPTY_LAYOUT: dict[str, Any] = {
     "version": 0,
     "sleep": dict(DEFAULT_SLEEP),
     "rotation": dict(DEFAULT_ROTATION),
     "refresh": dict(DEFAULT_REFRESH),
+    "orientation": DEFAULT_ORIENTATION,
     "grid_generation": 2,
     # chip_row is per page: top, bottom or off. The firmware draws widgets at
     # the pixels it is given and never derives a row, but it does read this to
@@ -137,6 +148,7 @@ def _migrate(layout: dict[str, Any]) -> dict[str, Any]:
     layout.setdefault("sleep", dict(DEFAULT_SLEEP))
     layout.setdefault("rotation", dict(DEFAULT_ROTATION))
     layout.setdefault("refresh", dict(DEFAULT_REFRESH))
+    layout.setdefault("orientation", DEFAULT_ORIENTATION)
     _migrate_to_chip_row_grid(layout)
     return layout
 

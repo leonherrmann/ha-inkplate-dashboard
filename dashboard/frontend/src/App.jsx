@@ -769,6 +769,8 @@ export default function App() {
           onSleepChange={(next) => persist({ ...layout, sleep: next })}
           refresh={layout.refresh}
           onRefreshChange={(next) => persist({ ...layout, refresh: next })}
+          orientation={layout.orientation}
+          onOrientationChange={(next) => persist({ ...layout, orientation: next })}
           onRefresh={() => api.refreshDevice().then(() => setMessage("Refresh sent"))}
           onShowInfo={() => api.showDeviceInfo().then(() => setMessage("Device info sent to the panel"))}
         />
