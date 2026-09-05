@@ -1,5 +1,24 @@
 # Changelog
 
+## 2026.9.19
+
+- **The panel can be turned upside down**, from the Device tab. For a screen
+  mounted the other way up: the dashboard is drawn the other way round and the
+  layout is untouched, so every widget stays exactly where it was put.
+- Only normal and upside down. A quarter turn would swap the panel's width and
+  height, and widgets are placed in pixels against a 1280x720 grid, so it would
+  not be one setting -- it would be a second grid and a second size for every
+  widget.
+- The screen flashes once when it changes. Every pixel means something
+  different afterwards, so a quick update would leave the old picture ghosted
+  through the new one the wrong way up.
+- Screenshots stay the right way up either way: the panel reports which way it
+  is drawing and the add-on turns the picture back.
+- Existing dashboards are unaffected -- they read as normal, which is how they
+  already look.
+- Needs firmware **v2026.9.19** or newer. Older firmware ignores the setting
+  and keeps drawing the way it always has.
+
 ## 2026.9.16
 
 - **A button to send the panel back to setup**, on the Device tab. It restarts

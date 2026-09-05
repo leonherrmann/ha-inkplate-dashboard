@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 import SleepSettings from "./SleepSettings.jsx";
 import RefreshSettings from "./RefreshSettings.jsx";
+import OrientationSettings from "./OrientationSettings.jsx";
 import DeviceReports from "./DeviceReports.jsx";
 import Sparkline from "./Sparkline.jsx";
 import * as api from "./api.js";
@@ -17,6 +18,8 @@ export default function DeviceTab({
   onSleepChange,
   refresh,
   onRefreshChange,
+  orientation,
+  onOrientationChange,
   onRefresh,
   onShowInfo,
 }) {
@@ -280,6 +283,11 @@ export default function DeviceTab({
         <SleepSettings sleep={sleep} onChange={onSleepChange} />
 
         <RefreshSettings refresh={refresh} onChange={onRefreshChange} />
+
+        <OrientationSettings
+          orientation={orientation}
+          onChange={onOrientationChange}
+        />
 
         <section className="group">
           <button onClick={onRefresh}>Force a full refresh</button>
