@@ -360,6 +360,8 @@ async def post_image(
     width: int = Form(0),
     height: int = Form(0),
     rounded: bool = Form(True),
+    dither: str = Form("atkinson"),
+    prepared: bool = Form(False),
 ) -> dict[str, Any]:
     """Convert and store an upload, then tell the device about it.
 
@@ -369,10 +371,17 @@ async def post_image(
     "rounded" rounds a photo's corners to the widgets' radius, on by default
     because a photo among widgets looks like a mistake with square corners. It
     does not apply to "exact", where the point is fidelity to what was drawn.
+
+    "prepared" says the upload is already a greyscale bitmap at its final size,
+    which is what the crop editor sends: it has done the orientation, rotation,
+    crop, scaling and levels itself so that the 1-bit preview it showed while
+    you dragged is made of the very pixels dithered here. width and height are
+    then taken from the bitmap and ignored if given.
     """
     try:
         entry = images.store(
-            name or file.filename or "image", await file.read(), mode, width, height, rounded
+            name or file.filename or "image", await file.read(), mode, width, height,
+            rounded, dither, prepared,
         )
     except images.ImageError as error:
         raise HTTPException(status_code=400, detail=str(error))
