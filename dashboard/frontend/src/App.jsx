@@ -5,19 +5,16 @@ import DeviceTab from "./DeviceTab.jsx";
 import ImagesTab from "./ImagesTab.jsx";
 import Inspector from "./Inspector.jsx";
 import Panel from "./Panel.jsx";
-import PageTabs from "./PageTabs.jsx";
-import QueueTab from "./QueueTab.jsx";
+import PageBar from "./PageBar.jsx";
+import PagesTab from "./PagesTab.jsx";
 import ThemeToggle from "./ThemeToggle.jsx";
-import { paletteShot } from "./widgetShots.js";
+import WidgetPicker from "./WidgetPicker.jsx";
 import * as api from "./api.js";
 import { useHistory } from "./history.js";
 import {
-  CHIP_ROW_POSITIONS,
   DEFAULT_CHIP_ROW,
   DEFAULT_SNAP,
   FALLBACK_GRID,
-  SNAP_MODES,
-  ZOOM_LEVELS,
   chipRowTop,
   defaultPosition,
   hasChipRow,
@@ -41,7 +38,7 @@ const MOD = APPLE ? "⌘" : "Ctrl+";
 
 const TABS = [
   { id: "design", label: "Design" },
-  { id: "queue", label: "Queue" },
+  { id: "pages", label: "Pages" },
   { id: "images", label: "Images" },
   { id: "device", label: "Device" },
 ];
@@ -120,6 +117,26 @@ function useStatus() {
   return { status, error };
 }
 
+// Messages used to be a full-width bar between the tabs and the canvas, so
+// every "Sent to the device" pushed the whole editor down by 67px and let it
+// spring back seconds later. A toast says the same thing without moving
+// anything, which on a phone was the difference between six stacked bars and
+// five.
+function useToast() {
+  const [message, setMessage] = useState(null);
+
+  useEffect(() => {
+    if (!message) return undefined;
+    const timer = setTimeout(() => setMessage(null), 6000);
+    return () => clearTimeout(timer);
+  }, [message]);
+
+  // Re-shown rather than ignored when the same text arrives twice: pressing
+  // Push twice should acknowledge twice, and an object identity is what makes
+  // the second one restart the timer.
+  return [message, (text) => setMessage(text ? { text, at: Date.now() } : null)];
+}
+
 export default function App() {
   const { status, error: statusError } = useStatus();
   const history = useHistory();
@@ -133,7 +150,8 @@ export default function App() {
   const [selectedId, setSelectedId] = useState(null);
   const [snapMode, setSnapMode] = useState(DEFAULT_SNAP);
   const [zoom, setZoom] = useState("fit");
-  const [message, setMessage] = useState(null);
+  const [adding, setAdding] = useState(false);
+  const [message, setMessage] = useToast();
 
   const manifest = status?.manifest;
   const panel = manifest?.display || { width: 1280, height: 720 };
@@ -146,6 +164,15 @@ export default function App() {
 
   const pages = layout?.pages || [];
   const activePage = pages.find((page) => page.id === activePageId) || pages[0] || null;
+
+  // Pinned as soon as there is a layout, rather than left to fall back to
+  // pages[0] on every render. Reordering in the Pages tab rewrites the array,
+  // so an unpinned selection followed a page it had never been pointed at:
+  // dragging a page to the top silently changed what the Design tab was
+  // editing, and the widget you went back for was not there.
+  useEffect(() => {
+    if (!activePageId && activePage) setActivePageId(activePage.id);
+  }, [activePageId, activePage]);
   const widgets = activePage?.widgets || [];
   // Where the chip row sits, or whether the page has one at all, is a layout
   // choice and a *per page* one -- the firmware draws at the pixels it is given
@@ -292,7 +319,7 @@ export default function App() {
     // already grid-aligned and inside the edge gap. A chip lands in the chip
     // row, which is the only row it can occupy.
     const isChip = isChipType(type);
-    // The palette disables these, so this is the belt to that pair of braces: a
+    // The picker disables these, so this is the belt to that pair of braces: a
     // chip on a page with no row would have nowhere legal to sit.
     if (isChip && !hasChipRow(chipRow)) return;
     const widget = {
@@ -324,10 +351,14 @@ export default function App() {
   // every row 34px taller, so the pitch changes and a widget has to be put back
   // on the row it was on rather than nudged by a constant. regridY does that.
   //
-  // Only the page being edited changes: the setting is per page, which is the
-  // point of it.
-  const setChipRow = (next) => {
-    if (next === chipRow || !activePage) return;
+  // Takes the page id rather than assuming the one being edited: the setting
+  // now lives in the Pages tab, where any page's row can be changed without
+  // first navigating to it.
+  const setChipRow = (pageId, next) => {
+    const page = pages.find((one) => one.id === pageId);
+    if (!page) return;
+    const from = page.chip_row || DEFAULT_CHIP_ROW;
+    if (next === from) return;
 
     // Chips are deleted rather than hidden, because a widget that cannot be
     // seen or selected is one the editor offers no way back to. Undo covers it
@@ -335,32 +366,33 @@ export default function App() {
     // chips go without being the thing that was clicked.
     const doomed = hasChipRow(next)
       ? []
-      : (activePage.widgets || []).filter((widget) =>
-          isChipType(widgetType(manifest, widget))
-        );
+      : (page.widgets || []).filter((widget) => isChipType(widgetType(manifest, widget)));
     if (doomed.length > 0) {
       const what =
-        doomed.length === 1 ? "the chip on this page" : `all ${doomed.length} chips on this page`;
+        doomed.length === 1
+          ? `the chip on "${page.name || page.id}"`
+          : `all ${doomed.length} chips on "${page.name || page.id}"`;
       if (!window.confirm(`Turning the chip row off deletes ${what}. Undo will bring them back.`)) {
         return;
       }
     }
 
-    const chipY = chipRowTop(grid, panel, next);
+    const fromGrid = pageGrid(deviceGrid, next);
+    const chipY = chipRowTop(fromGrid, panel, next);
     const moved = structuredClone(layout);
-    const page = moved.pages.find((candidate) => candidate.id === activePage.id);
-    if (!page) return;
+    const target = moved.pages.find((candidate) => candidate.id === pageId);
+    if (!target) return;
 
-    page.chip_row = next;
-    page.widgets = (page.widgets || [])
+    target.chip_row = next;
+    target.widgets = (target.widgets || [])
       .filter((widget) => !doomed.some((one) => one.id === widget.id))
       .map((widget) =>
         isChipType(widgetType(manifest, widget))
           ? { ...widget, y: chipY }
-          : { ...widget, y: regridY(widget.y, deviceGrid, chipRow, next) }
+          : { ...widget, y: regridY(widget.y, deviceGrid, from, next) }
       );
 
-    if (doomed.length > 0) setSelectedId(null);
+    if (doomed.some((one) => one.id === selectedId)) setSelectedId(null);
     persist(moved);
   };
 
@@ -466,6 +498,7 @@ export default function App() {
     persist({ ...layout, pages: [...pages, page] });
     setActivePageId(id);
     setSelectedId(null);
+    return id;
   };
 
   // Bound on the window rather than on the canvas: the canvas is not focusable,
@@ -521,6 +554,11 @@ export default function App() {
 
   return (
     <div className="app">
+      {/* One row at every width. The device summary used to take a row of its
+          own on a phone and the actions another, which put three bands above
+          the tabs before anything was edited. The summary is a button to the
+          Device tab, so on a narrow screen it collapses to its dot and the tab
+          it leads to carries the rest. */}
       <header>
         <div className="brand">
           <span className="brand-mark" aria-hidden="true" />
@@ -539,6 +577,8 @@ export default function App() {
 
         <div className="actions">
           <ThemeToggle />
+          {/* The state is the button's own caption on a narrow screen, where
+              a separate chip for it was a third of the row. */}
           <span className={`sync ${sync.tone}`} title={sync.detail}>
             {sync.label}
           </span>
@@ -562,12 +602,6 @@ export default function App() {
         ))}
       </nav>
 
-      {message && (
-        <div className="banner" onClick={() => setMessage(null)} role="status">
-          {message}
-        </div>
-      )}
-
       {!manifest && (
         <div className="banner">
           Waiting for the device to publish its widget manifest. It does that at boot, so
@@ -577,7 +611,7 @@ export default function App() {
 
       {tab === "design" && (
         <>
-          <PageTabs
+          <PageBar
             pages={pages}
             activeId={activePage?.id}
             currentPageId={status?.current_page}
@@ -585,80 +619,19 @@ export default function App() {
               setActivePageId(id);
               setSelectedId(null);
             }}
-            onAdd={addPage}
+            onAddWidget={() => setAdding(true)}
+            canAddWidget={Boolean(manifest)}
+            undo={undo}
+            redo={redo}
+            duplicate={() => duplicateWidget(selectedId)}
+            canUndo={history.canUndo}
+            canRedo={history.canRedo}
+            canDuplicate={Boolean(selected)}
+            mod={MOD}
           />
 
           <div className="workspace">
             <main>
-              <div className="toolbar">
-                {/* Leftmost, where the eye goes first: this is the button you
-                    want when something has just gone wrong. */}
-                <div className="toolbar-group">
-                  <span className="toolbar-label">Edit</span>
-                  <button className="chip" onClick={undo} disabled={!history.canUndo}>
-                    Undo
-                    <small>{MOD}Z</small>
-                  </button>
-                  <button className="chip" onClick={redo} disabled={!history.canRedo}>
-                    Redo
-                    <small>⇧{MOD}Z</small>
-                  </button>
-                  <button
-                    className="chip"
-                    onClick={() => duplicateWidget(selectedId)}
-                    disabled={!selected}
-                    title={selected ? undefined : "Select a widget first"}
-                  >
-                    Duplicate
-                    <small>{MOD}D</small>
-                  </button>
-                </div>
-
-                <div className="toolbar-group">
-                  <span className="toolbar-label">Snap</span>
-                  {SNAP_MODES.map(({ id, label, hint }) => (
-                    <button
-                      key={id}
-                      className={id === snapMode ? "chip active" : "chip"}
-                      onClick={() => setSnapMode(id)}
-                    >
-                      {label}
-                      <small>{hint}</small>
-                    </button>
-                  ))}
-                </div>
-
-                {/* Per page, not per dashboard: turning it off gives this
-                    page's cards the row's height, and a full-screen clock page
-                    can drop it while a dashboard page keeps it. */}
-                <div className="toolbar-group" title="Applies to this page only">
-                  <span className="toolbar-label">Chip row</span>
-                  {CHIP_ROW_POSITIONS.map(({ id, label }) => (
-                    <button
-                      key={id}
-                      className={id === chipRow ? "chip active" : "chip"}
-                      onClick={() => setChipRow(id)}
-                    >
-                      {label}
-                      {id === "off" && <small>taller rows</small>}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="toolbar-group">
-                  <span className="toolbar-label">Zoom</span>
-                  {ZOOM_LEVELS.map(({ label, value }) => (
-                    <button
-                      key={label}
-                      className={value === zoom ? "chip active" : "chip"}
-                      onClick={() => setZoom(value)}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
               <Panel
                 panel={panel}
                 widgets={widgets}
@@ -672,48 +645,10 @@ export default function App() {
                 grid={grid}
                 chipRow={chipRow}
                 zoom={zoom}
+                onZoom={setZoom}
+                onSnap={setSnapMode}
               />
             </main>
-
-            <aside className="palette">
-              <h2>Add widget</h2>
-              <div className="palette-items">
-                {(manifest?.widgets || []).map((type) => {
-                  const shot = paletteShot(type.type);
-                  // A chip needs a chip row to sit in. On a page with none it is
-                  // shown but not addable, rather than dropped from the list --
-                  // the reason it is unavailable is then visible.
-                  const needsRow = isChipType(type) && !hasChipRow(chipRow);
-                  return (
-                    <button
-                      key={type.type}
-                      onClick={() => addWidget(type)}
-                      disabled={needsRow}
-                      title={needsRow ? "This page has no chip row" : undefined}
-                    >
-                      {/* A widget a newer firmware offers but that has no
-                          render yet still lists, just without a picture. */}
-                      {shot && (
-                        <img
-                          className="palette-shot"
-                          src={shot.url}
-                          alt=""
-                          draggable={false}
-                        />
-                      )}
-                      <span className="palette-text">
-                        <span>{type.label}</span>
-                        <small>
-                          {type.size_from || !type.width
-                            ? "varies"
-                            : `${type.width}×${type.height}`}
-                        </small>
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </aside>
 
             <Inspector
               widget={selected}
@@ -734,17 +669,40 @@ export default function App() {
               onClose={() => setSelectedId(null)}
             />
           </div>
+
+          {adding && (
+            <WidgetPicker
+              manifest={manifest}
+              chipRow={chipRow}
+              onAdd={addWidget}
+              onClose={() => setAdding(false)}
+            />
+          )}
         </>
       )}
 
-      {tab === "queue" && (
-        <QueueTab
+      {tab === "pages" && (
+        <PagesTab
           layout={layout}
           currentPageId={status?.current_page}
           onChange={persist}
-          onShowPage={(id) =>
-            api.showPage(id).then(() => setMessage(`Showing ${id} on the device`))
-          }
+          onSetChipRow={setChipRow}
+          onAddPage={addPage}
+          onEditPage={(id) => {
+            setActivePageId(id);
+            setSelectedId(null);
+            setTab("design");
+          }}
+          onShowPage={(id) => {
+            // The page's *name*, not its id. The id is a hash the editor makes
+            // up and never shows anywhere else, so "Showing page_a3f9c1" named
+            // something the reader had no way to recognise.
+            const page = pages.find((one) => one.id === id);
+            api
+              .showPage(id)
+              .then(() => setMessage(`Showing “${page?.name || id}” on the device`))
+              .catch((problem) => setMessage(problem.message));
+          }}
         />
       )}
 
@@ -772,8 +730,16 @@ export default function App() {
           orientation={layout.orientation}
           onOrientationChange={(next) => persist({ ...layout, orientation: next })}
           onRefresh={() => api.refreshDevice().then(() => setMessage("Refresh sent"))}
-          onShowInfo={() => api.showDeviceInfo().then(() => setMessage("Device info sent to the panel"))}
+          onShowInfo={() =>
+            api.showDeviceInfo().then(() => setMessage("Device info sent to the panel"))
+          }
         />
+      )}
+
+      {message && (
+        <div className="toast" role="status" onClick={() => setMessage(null)}>
+          {message.text}
+        </div>
       )}
     </div>
   );

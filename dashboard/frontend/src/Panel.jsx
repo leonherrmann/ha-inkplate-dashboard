@@ -10,6 +10,8 @@ import {
 
 import WidgetPreview from "./WidgetPreview.jsx";
 import {
+  SNAP_MODES,
+  ZOOM_LEVELS,
   cardBandTop,
   chipRowTop,
   gridPitch,
@@ -238,6 +240,8 @@ export default function Panel({
   grid,
   chipRow,
   zoom,
+  onZoom,
+  onSnap,
 }) {
   const [rulerRef, available] = useAvailableWidth();
 
@@ -348,6 +352,39 @@ export default function Panel({
           </DndContext>
         </div>
       </div>
+
+      {/* Docked to the canvas rather than sitting in a toolbar above it. Snap
+          and zoom describe how this view behaves and change nothing that gets
+          pushed to the panel, so they belong to the canvas rather than to the
+          bar of things that edit the layout. As two of four groups in a shared
+          toolbar they were also the two most often scrolled off a phone. */}
+      {onZoom && (
+        <div className="canvas-dock">
+          <div className="dock-group" role="group" aria-label="Snap">
+            {SNAP_MODES.map(({ id, label, hint }) => (
+              <button
+                key={id}
+                className={id === snapMode ? "chip active" : "chip"}
+                onClick={() => onSnap(id)}
+                title={`Snap to ${hint}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <div className="dock-group" role="group" aria-label="Zoom">
+            {ZOOM_LEVELS.map(({ label, value }) => (
+              <button
+                key={label}
+                className={value === zoom ? "chip active" : "chip"}
+                onClick={() => onZoom(value)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

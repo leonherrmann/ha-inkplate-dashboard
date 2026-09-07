@@ -89,7 +89,13 @@ class Registry:
         self.time_zone: str | None = None
 
     async def entities(self, states: list[dict[str, Any]]) -> list[dict[str, str]]:
-        """Entities from `states`, annotated with domain and area name."""
+        """Entities from `states`, annotated with domain, area name and class.
+
+        `device_class` is what lets the editor's picker offer "Temperature"
+        rather than "sensor". The domain alone barely narrows anything: sensor
+        is the bucket most of a Home Assistant install lands in, so a step that
+        only splits by domain leaves the user scrolling the same long list.
+        """
         snapshot = await self._load()
         areas_by_entity = snapshot["areas_by_entity"]
 
@@ -99,6 +105,7 @@ class Registry:
                 "name": (state.get("attributes") or {}).get("friendly_name", state["entity_id"]),
                 "domain": state["entity_id"].split(".", 1)[0],
                 "area": areas_by_entity.get(state["entity_id"], ""),
+                "device_class": (state.get("attributes") or {}).get("device_class") or "",
             }
             for state in states
         ]

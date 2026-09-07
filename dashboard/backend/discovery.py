@@ -57,6 +57,38 @@ def _device(running: str | None) -> dict[str, Any]:
     return device
 
 
+def _page_names(pages: list[dict[str, Any]]) -> dict[str, str]:
+    """Page id -> the name to show for it, every name distinct.
+
+    A select's options are also its states, so two pages sharing a name would
+    make one of them unreachable and the other ambiguous. Rather than refuse to
+    list a page, the second "Kitchen" becomes "Kitchen (2)" -- visibly clumsy,
+    which is the right amount of pressure to rename it, and better than a page
+    silently missing from the dropdown.
+    """
+    names: dict[str, str] = {}
+    taken: set[str] = set()
+
+    for page in pages:
+        page_id = str(page.get("id") or "")
+        if not page_id:
+            continue
+        # An unnamed page falls back to its id, which is at least unique.
+        # Braces go: both names end up inside a Jinja template below, and a page
+        # called "{{ x }}" would otherwise be rendered rather than looked up,
+        # taking the whole select down with it.
+        wanted = str(page.get("name") or "").replace("{", "").replace("}", "").strip() or page_id
+        name = wanted
+        suffix = 2
+        while name in taken:
+            name = f"{wanted} ({suffix})"
+            suffix += 1
+        taken.add(name)
+        names[page_id] = name
+
+    return names
+
+
 def _entities(pages: list[dict[str, Any]], running: str | None) -> list[tuple[str, str, dict[str, Any]]]:
     """(component, object_id, config) for everything worth exposing."""
     stats = topics.stats
@@ -200,18 +232,34 @@ def _entities(pages: list[dict[str, Any]], running: str | None) -> list[tuple[st
 
     # A select rather than a button per page: the pages are a list of one thing
     # at a time, which is what a select is, and it shows which one is up.
-    page_ids = [str(page["id"]) for page in pages if page.get("id")]
-    if page_ids:
+    #
+    # The options are the pages' *names*. Their ids are what travels on the bus
+    # -- the device knows nothing else -- so the two templates below carry a
+    # generated lookup each way. Before this the dropdown listed things like
+    # "page_a3f9c1", which is the id the editor makes up and never shows.
+    names_by_id = _page_names(pages)
+    if names_by_id:
+        ids_by_name = {name: page_id for page_id, name in names_by_id.items()}
         entities.append(
             (
                 "select",
                 "page",
                 {
                     "name": "Page",
-                    "options": page_ids,
+                    "options": list(ids_by_name),
                     "state_topic": topics.page,
+                    # A page the panel is on but that has since been deleted
+                    # leaves value unmapped; passing it through unchanged makes
+                    # Home Assistant show it as unknown, which is the truth.
+                    "value_template": (
+                        "{{ " + json.dumps(names_by_id) + ".get(value, value) }}"
+                    ),
                     "command_topic": topics.command,
-                    "command_template": '{"action": "page", "page": "{{ value }}"}',
+                    "command_template": (
+                        '{"action": "page", "page": "{{ '
+                        + json.dumps(ids_by_name)
+                        + '.get(value, value) }}"}'
+                    ),
                 },
             )
         )

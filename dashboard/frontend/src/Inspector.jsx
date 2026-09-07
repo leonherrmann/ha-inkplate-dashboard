@@ -339,23 +339,43 @@ export default function Inspector({
         </div>
       )}
 
-      {options.map((option) => (
-        <label key={option.key}>
-          <span>{option.label}</span>
-          <Option
-            option={option}
-            widget={widget}
-            value={widget.options?.[option.key]}
-            entities={entities}
-            devices={devices}
-            areas={areas}
-            uploads={uploads}
-            capacity={capacity}
-            onChange={(next) => onSetOption(widget.id, option.key, next)}
-            onChangeMany={(patch) => onSetOptions(widget.id, patch)}
-          />
-        </label>
-      ))}
+      {options.map((option) => {
+        // An option whose control is a *button* cannot sit in a <label>. A
+        // control inside one takes its accessible name from the label, so the
+        // entity trigger announced as "Light" -- the field's name -- rather
+        // than as the entity it is showing, and a screen reader had no way to
+        // hear what was chosen. Safari also forwards a click anywhere in a
+        // label to the first labelable descendant, which is the same trap the
+        // pickers are portalled out of the tree for.
+        //
+        // This is the third time this defect has been fixed in this file: the
+        // size picker and the layer buttons already moved to .field-block for
+        // it. The rule is simply that a label may only wrap one real form
+        // control, and these three option types wrap a button instead.
+        const isButton = ["entity", "device", "area"].includes(option.type);
+        const Wrapper = isButton ? "div" : "label";
+        return (
+          <Wrapper
+            key={option.key}
+            className={isButton ? "field-block" : undefined}
+            {...(isButton ? { role: "group", "aria-label": option.label } : {})}
+          >
+            <span>{option.label}</span>
+            <Option
+              option={option}
+              widget={widget}
+              value={widget.options?.[option.key]}
+              entities={entities}
+              devices={devices}
+              areas={areas}
+              uploads={uploads}
+              capacity={capacity}
+              onChange={(next) => onSetOption(widget.id, option.key, next)}
+              onChangeMany={(patch) => onSetOptions(widget.id, patch)}
+            />
+          </Wrapper>
+        );
+      })}
 
       {/* The room's counted list, after the readings rather than among them.
           The band's entities are each one field; this is a list, and it is what

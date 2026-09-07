@@ -2,22 +2,31 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import * as api from "./api.js";
 import ImageEditor from "./ImageEditor.jsx";
+import GridSizePicker from "./GridSizePicker.jsx";
 import { DITHERS } from "./dither.js";
+
+// Uploading a picture to the panel.
+//
+// The form used to ask everything at once, in whatever order the options were
+// written: kind, then five "N wide" chips, then three "N tall" chips, then the
+// editor, then brightness, contrast, dither and corners, then Upload. Nothing
+// said which of those questions mattered before you had chosen a file, and the
+// size was asked as two numbers when it is one rectangle.
+//
+// It is three steps now, and a step that cannot be answered yet is not shown.
 
 // Two kinds of upload, because they want opposite treatment. Art drawn to match
 // the UI must not be touched at all; a photograph has to be cropped to the space
 // it occupies and dithered, because the panel has no grey.
 const MODES = [
-  {
-    id: "exact",
-    label: "Pixel accurate",
-    hint: "Kept at its own size, no dithering",
-  },
-  {
-    id: "photo",
-    label: "Photo",
-    hint: "Cropped to fill, then dithered",
-  },
+  { id: "photo", label: "Photo", hint: "Cropped to fill, then dithered" },
+  { id: "exact", label: "Pixel accurate", hint: "Kept at its own size, no dithering" },
+];
+
+const SIZE_MODES = [
+  { id: "grid", label: "On the grid" },
+  { id: "full", label: "Full screen" },
+  { id: "custom", label: "Custom" },
 ];
 
 // Same arithmetic as the firmware's Grid.h, driven by the manifest so the two
@@ -100,7 +109,7 @@ export default function ImagesTab({ grid, panel, onMessage }) {
   }, []);
   const [cols, setCols] = useState(2);
   const [rows, setRows] = useState(1);
-  const [sizeMode, setSizeMode] = useState("grid"); // grid | full | custom
+  const [sizeMode, setSizeMode] = useState("grid");
   const [customWidth, setCustomWidth] = useState(400);
   const [customHeight, setCustomHeight] = useState(300);
   const [busy, setBusy] = useState(false);
@@ -143,6 +152,14 @@ export default function ImagesTab({ grid, panel, onMessage }) {
     if (chosen && !name) setName(chosen.name.replace(/\.[^.]+$/, ""));
   };
 
+  const reset = () => {
+    setFile(null);
+    setName("");
+    setBrightness(0);
+    setContrast(0);
+    if (fileInput.current) fileInput.current.value = "";
+  };
+
   const upload = async () => {
     if (!file) return;
     setBusy(true);
@@ -165,11 +182,7 @@ export default function ImagesTab({ grid, panel, onMessage }) {
         prepared,
       });
       onMessage(`Uploaded ${entry.name} (${entry.width}×${entry.height})`);
-      setFile(null);
-      setName("");
-      setBrightness(0);
-      setContrast(0);
-      if (fileInput.current) fileInput.current.value = "";
+      reset();
       reload();
     } catch (problem) {
       onMessage(problem.message);
@@ -179,6 +192,7 @@ export default function ImagesTab({ grid, panel, onMessage }) {
   };
 
   const remove = async (image) => {
+    if (!window.confirm(`Delete "${image.name}"? Any widget showing it will go blank.`)) return;
     try {
       await api.deleteImage(image.name);
       onMessage(`Deleted ${image.name}`);
@@ -189,221 +203,260 @@ export default function ImagesTab({ grid, panel, onMessage }) {
   };
 
   return (
-    <div className="images-tab">
-      {baseUrl ? (
-        // Worth stating even when it works: it is the one piece of this that
-        // depends on your network rather than on the add-on.
-        <p className="hint">
-          The panel downloads images from <code>{baseUrl}</code>.
-        </p>
-      ) : (
+    <div className="tab-panel images-tab">
+      {!baseUrl && (
         <div className="banner">
-          <strong>The panel cannot download images yet.</strong> The add-on could not
-          work out your Home Assistant address by itself. Open this add-on's{" "}
-          <em>Configuration</em> tab and set <code>image_base_url</code> to the same
-          address you use to reach Home Assistant, with port 8098 — for example{" "}
-          <code>http://192.168.1.50:8098</code> — then restart the add-on. Uploading
-          and previewing work regardless; only the download to the panel is affected.
+          <strong>The panel cannot download images yet.</strong> The add-on could not work
+          out your Home Assistant address by itself. Open this add-on's{" "}
+          <em>Configuration</em> tab and set <code>image_base_url</code> to the address you
+          use to reach Home Assistant, with port 8098 — for example{" "}
+          <code>http://192.168.1.50:8098</code> — then restart the add-on. Uploading and
+          previewing work regardless; only the download to the panel is affected.
         </div>
       )}
 
       <section className="card upload">
         <h2>Add an image</h2>
 
-        <label>
-          <span>File</span>
-          <input
-            ref={fileInput}
-            type="file"
-            accept="image/*"
-            onChange={(event) => pick(event.target.files?.[0] || null)}
-          />
-        </label>
-
-        <label>
-          <span>Name</span>
-          <input
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            placeholder="hallway"
-          />
-        </label>
-
-        <label>
-          <span>Kind</span>
-          <div className="size-picker">
-            {MODES.map((entry) => (
-              <button
-                key={entry.id}
-                className={mode === entry.id ? "chip active" : "chip"}
-                onClick={() => setMode(entry.id)}
-              >
-                {entry.label}
-                <small>{entry.hint}</small>
-              </button>
-            ))}
+        {/* Step one. Everything below it depends on there being a file, so
+            until there is one this is the only thing on screen. */}
+        <div className="step">
+          <span className="step-mark">1</span>
+          <div className="step-body">
+            <label className="field">
+              <span>Picture</span>
+              <input
+                ref={fileInput}
+                type="file"
+                accept="image/*"
+                onChange={(event) => pick(event.target.files?.[0] || null)}
+              />
+            </label>
+            {file && (
+              <label className="field">
+                <span>Name</span>
+                <input
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                  placeholder="hallway"
+                />
+              </label>
+            )}
           </div>
-        </label>
+        </div>
 
-        {/* Only photos get scaled, so only photos need a target size */}
-        {mode === "photo" && (
-          <label>
-            <span>Size</span>
-            <div className="size-picker">
-              {Array.from({ length: grid.cols }, (_, index) => index + 1).map((candidate) => (
-                <button
-                  key={`c${candidate}`}
-                  className={sizeMode === "grid" && cols === candidate ? "chip active" : "chip"}
-                  onClick={() => {
-                    setSizeMode("grid");
-                    setCols(candidate);
-                  }}
-                >
-                  {candidate} wide
-                </button>
-              ))}
+        {file && (
+          <>
+            <div className="step">
+              <span className="step-mark">2</span>
+              <div className="step-body">
+                {/* A div and not a <label>, deliberately. A label names a
+                    single control, so wrapping a group of buttons in one hands
+                    every button the whole label's text as its accessible name.
+                    The dither group was fixed for exactly this once already;
+                    these two had the same fault and kept it. */}
+                <div className="field" role="group" aria-label="Kind of picture">
+                  <span>Kind</span>
+                  {/* Two cards rather than two chips: each carries a sentence
+                      explaining what it does to the picture, and a chip lays
+                      its label and its hint on one line -- which ran them
+                      together as "PhotoCropped to fill, then dithered" and
+                      made each one wide enough to take a row of its own. */}
+                  <div className="choice-cards">
+                    {MODES.map((entry) => (
+                      <button
+                        key={entry.id}
+                        type="button"
+                        className={mode === entry.id ? "choice-card active" : "choice-card"}
+                        onClick={() => setMode(entry.id)}
+                      >
+                        <b>{entry.label}</b>
+                        <small>{entry.hint}</small>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Only photos get scaled, so only photos need a target size */}
+                {mode === "photo" ? (
+                  <div className="field" role="group" aria-label="Size on the panel">
+                    <span>Size</span>
+                    <div className="size-picker">
+                      {SIZE_MODES.map((entry) => (
+                        <button
+                          key={entry.id}
+                          type="button"
+                          className={sizeMode === entry.id ? "chip active" : "chip"}
+                          onClick={() => setSizeMode(entry.id)}
+                        >
+                          {entry.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    {sizeMode === "grid" && (
+                      <GridSizePicker
+                        grid={grid}
+                        cols={cols}
+                        rows={rows}
+                        onChange={(nextCols, nextRows) => {
+                          setCols(nextCols);
+                          setRows(nextRows);
+                        }}
+                      />
+                    )}
+
+                    {sizeMode === "full" && (
+                      <p className="hint">
+                        The whole panel, {panel.width}×{panel.height}.
+                      </p>
+                    )}
+
+                    {/* The API has always taken any size; only this form was
+                        limited to the grid presets. Sliders rather than number
+                        fields: the useful gesture here is "a bit wider", and
+                        the readout carries the exact number for when it is not. */}
+                    {sizeMode === "custom" && (
+                      <div className="custom-size">
+                        <label className="field">
+                          <span>
+                            Width <b>{target.width} px</b>
+                          </span>
+                          <input
+                            type="range"
+                            min="16"
+                            max={panel.width}
+                            step="2"
+                            value={customWidth}
+                            onChange={(event) => setCustomWidth(Number(event.target.value))}
+                          />
+                        </label>
+                        <label className="field">
+                          <span>
+                            Height <b>{target.height} px</b>
+                          </span>
+                          <input
+                            type="range"
+                            min="16"
+                            max={panel.height}
+                            step="2"
+                            value={customHeight}
+                            onChange={(event) => setCustomHeight(Number(event.target.value))}
+                          />
+                        </label>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <p className="hint">
+                    Uploaded as-is at its own pixel size, with anything darker than
+                    mid-grey becoming black. Draw it at the size you want it drawn.
+                  </p>
+                )}
+              </div>
             </div>
-            <div className="size-picker">
-              {Array.from({ length: grid.rows }, (_, index) => index + 1).map((candidate) => (
-                <button
-                  key={`r${candidate}`}
-                  className={sizeMode === "grid" && rows === candidate ? "chip active" : "chip"}
-                  onClick={() => {
-                    setSizeMode("grid");
-                    setRows(candidate);
-                  }}
-                >
-                  {candidate} tall
-                </button>
-              ))}
-              <button
-                className={sizeMode === "full" ? "chip active" : "chip"}
-                onClick={() => setSizeMode("full")}
-              >
-                Full screen
-              </button>
-              <button
-                className={sizeMode === "custom" ? "chip active" : "chip"}
-                onClick={() => setSizeMode("custom")}
-              >
-                Custom
-              </button>
-            </div>
-            {/* The API has always taken any size; only this form was limited
-                to the grid presets. */}
-            {sizeMode === "custom" && (
-              <div className="custom-size">
-                <label>
-                  <span>Width</span>
-                  <input
-                    type="number" min="1" max={panel.width} value={customWidth}
-                    onChange={(event) => setCustomWidth(Number(event.target.value))}
-                  />
-                </label>
-                <label>
-                  <span>Height</span>
-                  <input
-                    type="number" min="1" max={panel.height} value={customHeight}
-                    onChange={(event) => setCustomHeight(Number(event.target.value))}
-                  />
-                </label>
+
+            {mode === "photo" && (
+              <div className="step">
+                <span className="step-mark">3</span>
+                <div className="step-body">
+                  <span className="field-title">Framing and tone</span>
+                  <div className="editor-split">
+                    <ImageEditor
+                      file={file}
+                      target={target}
+                      ditherName={ditherName}
+                      brightness={brightness}
+                      contrast={contrast}
+                      onReady={onEditorReady}
+                    />
+
+                    <div className="editor-knobs">
+                      <label className="field">
+                        <span>
+                          Brightness <b>{brightness > 0 ? `+${brightness}` : brightness}</b>
+                        </span>
+                        <input
+                          type="range"
+                          min="-100"
+                          max="100"
+                          value={brightness}
+                          onChange={(event) => setBrightness(Number(event.target.value))}
+                        />
+                      </label>
+
+                      <label className="field">
+                        <span>
+                          Contrast <b>{contrast > 0 ? `+${contrast}` : contrast}</b>
+                        </span>
+                        <input
+                          type="range"
+                          min="-100"
+                          max="100"
+                          value={contrast}
+                          onChange={(event) => setContrast(Number(event.target.value))}
+                        />
+                      </label>
+
+                      <div className="field" role="group" aria-label="Dither">
+                        <span>Dither</span>
+                        <div className="size-picker">
+                          {Object.entries(DITHERS).map(([id, entry]) => (
+                            <button
+                              key={id}
+                              type="button"
+                              className={ditherName === id ? "chip active" : "chip"}
+                              onClick={() => setDitherName(id)}
+                              title={entry.hint}
+                            >
+                              {entry.label}
+                            </button>
+                          ))}
+                        </div>
+                        <p className="hint">{DITHERS[ditherName].hint}</p>
+                      </div>
+
+                      <label className="toggle">
+                        <input
+                          type="checkbox"
+                          checked={rounded}
+                          onChange={(event) => setRounded(event.target.checked)}
+                        />
+                        <span>
+                          Round the corners
+                          <small>
+                            To a widget's radius, so the photo sits among them. The corners
+                            become white, not transparent — the panel has no alpha.
+                          </small>
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
 
-          </label>
-        )}
-
-        {mode === "photo" && file && (
-          <>
-            <ImageEditor
-              file={file}
-              target={target}
-              ditherName={ditherName}
-              brightness={brightness}
-              contrast={contrast}
-              onReady={onEditorReady}
-            />
-
-            <label>
-              <span>Brightness</span>
-              <input
-                type="range"
-                min="-100"
-                max="100"
-                value={brightness}
-                onChange={(event) => setBrightness(Number(event.target.value))}
-              />
-            </label>
-
-            <label>
-              <span>Contrast</span>
-              <input
-                type="range"
-                min="-100"
-                max="100"
-                value={contrast}
-                onChange={(event) => setContrast(Number(event.target.value))}
-              />
-            </label>
-
-            {/* A div and not a <label>, deliberately. A label names a single
-                control, so wrapping a group of buttons in one hands every
-                button the whole label's text as its accessible name: the
-                Atkinson button came out called "Dither Floyd-Steinberg No
-                dither". Caught by a WebKit pass here, and the same mistake the
-                editor's own button groups were fixed for once already. */}
-            <div className="field" role="group" aria-label="Dither">
-              <span>Dither</span>
-              <div className="size-picker">
-                {Object.entries(DITHERS).map(([id, entry]) => (
-                  <button
-                    key={id}
-                    type="button"
-                    className={ditherName === id ? "chip active" : "chip"}
-                    onClick={() => setDitherName(id)}
-                    title={entry.hint}
-                  >
-                    {entry.label}
-                  </button>
-                ))}
-              </div>
-              <p className="hint">{DITHERS[ditherName].hint}</p>
+            <div className="upload-actions">
+              <button className="primary" disabled={busy} onClick={upload}>
+                {busy ? "Converting…" : `Upload ${target.width}×${target.height}`}
+              </button>
+              <button onClick={reset} disabled={busy}>
+                Cancel
+              </button>
             </div>
           </>
         )}
-
-        {mode === "photo" && (
-          <label className="toggle">
-            <input
-              type="checkbox"
-              checked={rounded}
-              onChange={(event) => setRounded(event.target.checked)}
-            />
-            <span>
-              Round the corners
-              <small>
-                To the same radius as a widget, so the photo sits among them rather than
-                on top of them. The corners become white, not transparent — the panel has
-                no alpha.
-              </small>
-            </span>
-          </label>
-        )}
-
-        {mode === "exact" && (
-          <p className="hint">
-            Uploaded as-is at its own pixel size, with anything darker than mid-grey
-            becoming black. Draw it at the size you want it drawn.
-          </p>
-        )}
-
-        <button className="primary" disabled={!file || busy} onClick={upload}>
-          {busy ? "Converting…" : "Upload"}
-        </button>
       </section>
 
       <section className="card">
-        <h2>Images ({images.length})</h2>
+        <div className="card-head">
+          <h2>Images ({images.length})</h2>
+          {baseUrl && (
+            <small className="hint">
+              The panel downloads from <code>{baseUrl}</code>
+            </small>
+          )}
+        </div>
         {images.length === 0 && <p className="hint">Nothing uploaded yet.</p>}
 
         <div className="image-grid">
