@@ -1,5 +1,48 @@
 # Changelog
 
+## 2026.9.20
+
+The editor, redesigned. It had grown by accretion: on a phone the Design tab
+stacked six full-width bands before the canvas, and two of the toolbar's four
+groups sat off-screen with nothing saying so.
+
+- **Three bars instead of six.** The header holds one row at every width. The
+  toolbar is gone: the chip row is a page setting and moved to the Pages tab,
+  snap and zoom describe the canvas and are docked to it, and undo, redo and
+  duplicate are buttons on the page bar. Messages are a toast now, so sending a
+  layout no longer shoves the editor down and lets it spring back.
+- **Choosing an entity is a browser, not a list.** Room, then what kind of
+  thing, then the entity -- and typing at any point searches everything and
+  skips the steps, because if you know the name you should not have to walk
+  them. A step with only one answer is skipped rather than asked.
+- **The kinds are things, not domains.** Temperature, Humidity, Air quality,
+  Lights, Doors and windows. Sorting by Home Assistant's domains barely helped:
+  most of an install is `sensor`.
+- **Adding a widget is a picker** with search, groups and a picture of each
+  widget, replacing the rail down the side of the workspace. The groups come
+  from the panel, so a widget added in a future firmware arrives already filed.
+- **Queue is now Pages**, which is what it always was -- the old name was a
+  checkbox on a page rather than the page itself. Reorder by dragging the
+  handle; it was two arrow buttons per row, which is eleven clicks to move the
+  last page to the front. Works by keyboard too.
+- **Forcing a page names it.** It said "Showing page_a3f9c1" -- an id the editor
+  makes up and shows nowhere else. The Page control in Home Assistant listed
+  those ids as its options; it lists names now.
+- **The Device tab is four sections** -- Status, Display, Firmware,
+  Diagnostics -- and several hundred words of explanation are gone. Most of it
+  was only true when something was wrong, and is shown then.
+- **Images asks in three steps**, and a step it cannot ask yet is not shown.
+  The size is a small picture of the panel's grid that you sweep the shape out
+  of, instead of a row of "1 wide, 2 wide..." and another of "1 tall, 2
+  tall..." -- two numbers for one rectangle, picturing neither. Custom sizes
+  are sliders with the pixel count beside them.
+- Fixed: picking an entity announced the field's name rather than the entity to
+  a screen reader; dragging a page to the top quietly changed which page the
+  Design tab was editing.
+
+Needs firmware v2026.9.20 for the widget groups. Without it the picker still
+works and shows one list.
+
 ## 2026.9.19
 
 - **The panel can be turned upside down**, from the Device tab. For a screen
