@@ -1,11 +1,16 @@
-import { useEffect, useMemo, useState } from "react";
-import { createPortal } from "react-dom";
+import { useMemo, useState } from "react";
 
-// Picking an *area* for the room widget. Same shape as DevicePicker, and for
-// the same reason: Home Assistant's area registry is websocket-only and the
-// panel has no credentials for it, so the editor resolves an area to its
-// entities here and writes plain entity ids into the layout. `area` travels
-// alongside purely so the editor can re-resolve it later.
+import { Picker, PickerSearch, PickerTiles } from "./Picker.jsx";
+
+// Picking an *area* for the room widget. Home Assistant's area registry is
+// websocket-only and the panel has no credentials for it, so the editor
+// resolves an area to its entities here and writes plain entity ids into the
+// layout. `area` travels alongside purely so the editor can re-resolve it.
+//
+// Tiles rather than the other pickers' rows, and no steps at all: rooms are the
+// step everything else is filtered by, so there is nothing above them to filter
+// by in turn, and a house has a dozen of them rather than a hundred. A grid
+// shows the whole house at once where a list would need scrolling.
 
 // What picking an area fills in, before the user prunes it by hand. The room
 // card aggregates rather than lists, so this is a subscription budget, not a
@@ -13,74 +18,37 @@ import { createPortal } from "react-dom";
 // every room size's capacity.
 export const MAX_ROOM_ENTITIES = 12;
 
-function Modal({ areas, value, onPick, onClose }) {
+function Body({ areas, value, onPick }) {
   const [query, setQuery] = useState("");
-
-  useEffect(() => {
-    const onKey = (event) => event.key === "Escape" && onClose();
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
 
   const matching = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    if (!needle) return areas;
-    return areas.filter((area) => area.name.toLowerCase().includes(needle));
+    const pool = needle ? areas.filter((area) => area.name.toLowerCase().includes(needle)) : areas;
+    return pool.map((area) => ({
+      id: area.id,
+      label: area.name,
+      // The count says whether this room is worth a card at all
+      count: area.entities.length,
+      area,
+    }));
   }, [areas, query]);
 
-  // Portalled for the reason EntityPicker.jsx explains at length: the
-  // Inspector wraps every option in a <label>, and Safari forwards a click
-  // anywhere inside a label to the first labelable descendant.
-  return createPortal(
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" onClick={(event) => event.stopPropagation()}>
-        <div className="modal-head">
-          <h2>Choose room</h2>
-          <button className="icon-button" onClick={onClose} aria-label="Close">
-            ×
-          </button>
-        </div>
+  return (
+    <>
+      <PickerSearch value={query} onChange={setQuery} placeholder="Search rooms…" />
 
-        <input
-          autoFocus
-          className="modal-search"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search by name…"
-        />
+      {matching.length > 0 ? (
+        <PickerTiles items={matching} onPick={(item) => onPick(item.area)} />
+      ) : (
+        <p className="hint picker-empty">Nothing matches that search.</p>
+      )}
 
-        <div className="modal-list">
-          <button
-            className={!value ? "entity-row active" : "entity-row"}
-            onClick={() => onPick(null)}
-          >
-            <span className="entity-row-name">— none —</span>
-          </button>
-
-          {matching.map((area) => (
-            <button
-              key={area.id}
-              className={area.id === value ? "entity-row active" : "entity-row"}
-              onClick={() => onPick(area)}
-            >
-              <span className="entity-row-name">{area.name}</span>
-              <span className="entity-row-meta">
-                {/* The count says whether this area is worth a card at all */}
-                {area.entities.length}{" "}
-                {area.entities.length === 1 ? "entity" : "entities"}
-              </span>
-            </button>
-          ))}
-
-          {matching.length === 0 && <p className="hint">Nothing matches.</p>}
-        </div>
-
-        <div className="modal-foot">
-          {matching.length} of {areas.length}
-        </div>
-      </div>
-    </div>,
-    document.body
+      {value && (
+        <button className="picker-clear" onClick={() => onPick(null)}>
+          Clear the room
+        </button>
+      )}
+    </>
   );
 }
 
@@ -109,30 +77,29 @@ export default function AreaPicker({ areas, value, chosen, onChange }) {
       {missing && (
         <div className="hint">
           Home Assistant no longer lists this room. The card still draws the{" "}
-          {chosen?.length || 0} entities already chosen; pick it again to refresh
-          them.
+          {chosen?.length || 0} entities already chosen; pick it again to refresh them.
         </div>
       )}
 
       {areas.length === 0 && (
         <div className="hint">
-          No rooms. The add-on reads them from Home Assistant, which only works
-          when it runs as an add-on rather than on a laptop.
+          No rooms. The add-on reads them from Home Assistant, which only works when it
+          runs as an add-on rather than on a laptop.
         </div>
       )}
 
       {open && (
-        <Modal
-          areas={areas}
-          value={value}
-          onClose={() => setOpen(false)}
-          onPick={(area) => {
-            // Closed before the change is applied, not after -- see
-            // EntityPicker.jsx for why that order matters.
-            setOpen(false);
-            onChange(area);
-          }}
-        />
+        <Picker title="Choose room" onClose={() => setOpen(false)}>
+          <Body
+            areas={areas}
+            value={value}
+            onPick={(area) => {
+              // Closed before the change is applied -- see EntityPicker.jsx.
+              setOpen(false);
+              onChange(area);
+            }}
+          />
+        </Picker>
       )}
     </>
   );
