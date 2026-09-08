@@ -3,11 +3,13 @@ import { useEffect, useState } from "react";
 import SleepSettings from "./SleepSettings.jsx";
 import RefreshSettings from "./RefreshSettings.jsx";
 import OrientationSettings from "./OrientationSettings.jsx";
+import TimerSettings from "./TimerSettings.jsx";
 import DeviceReports from "./DeviceReports.jsx";
 import Sparkline from "./Sparkline.jsx";
 import * as api from "./api.js";
 import { Battery, formatAge, formatUptime, signalLabel } from "./DeviceStats.jsx";
 import { ORIENTATIONS } from "./OrientationSettings.jsx";
+import { TIMER_TICKS } from "./TimerSettings.jsx";
 import { REFRESH_LEVELS } from "./RefreshSettings.jsx";
 
 // Settings somebody changed with the three buttons on the panel that this
@@ -35,6 +37,12 @@ function DeviceOverrides({ overrides }) {
   if (set.ghost_percent !== undefined) {
     const match = REFRESH_LEVELS.find((one) => one.percent === set.ghost_percent);
     entries.push(`Screen refresh: ${match ? match.label : `${set.ghost_percent}%`}`);
+  }
+  if (set.timer_tick_seconds !== undefined) {
+    const match = TIMER_TICKS.find((one) => one.seconds === set.timer_tick_seconds);
+    entries.push(
+      `Timer updates: ${match ? match.label : `every ${set.timer_tick_seconds}s`}`
+    );
   }
   if (set.sleep_enabled !== undefined) {
     entries.push(`Night sleep: ${set.sleep_enabled ? "On" : "Off"}`);
@@ -96,6 +104,8 @@ export default function DeviceTab({
   onRefreshChange,
   orientation,
   onOrientationChange,
+  timerTickSeconds,
+  onTimerTickChange,
   onRefresh,
   onShowInfo,
 }) {
@@ -282,6 +292,7 @@ export default function DeviceTab({
           <DeviceOverrides overrides={status?.device_overrides} />
           <OrientationSettings orientation={orientation} onChange={onOrientationChange} />
           <RefreshSettings refresh={refresh} onChange={onRefreshChange} />
+          <TimerSettings tickSeconds={timerTickSeconds} onChange={onTimerTickChange} />
           <SleepSettings sleep={sleep} onChange={onSleepChange} />
         </section>
       )}
