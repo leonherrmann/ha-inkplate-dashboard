@@ -13,6 +13,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 import firmware
+import ha_timer
 import images
 import reports
 import store
@@ -138,11 +139,21 @@ async def lifespan(app: FastAPI):
     # is available rather than waiting for the next upload.
     await publish_images()
     firmware.store.start(publish_firmware)
+
+    # The helper that mirrors the panel's timer. It is handed a way to command
+    # the device, because a change made in Home Assistant has to reach the
+    # panel that actually owns the timer.
+    ha_timer.mirror.start(
+        lambda command: link.publish_command(
+            command.pop("action"), **command
+        )
+    )
     await publish_firmware()
     watcher = asyncio.create_task(watch_screenshots())
     yield
     watcher.cancel()
     await firmware.store.stop()
+    await ha_timer.mirror.stop()
     await weather.stop()
     await bridge.stop()
     link.stop()

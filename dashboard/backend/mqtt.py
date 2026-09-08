@@ -17,7 +17,9 @@ import adopt
 import firmware
 import store
 from discovery import discovery
-from history import history
+from history import ha_timer
+import ha_timer
+import history
 from settings import (
     MQTT_HOST,
     MQTT_PASSWORD,
@@ -88,6 +90,7 @@ class DeviceLink:
                 (topics.stats, 0),
                 (topics.page, 0),
                 (topics.settings, 0),
+                (topics.timer, 0),
             ]
         )
         # Before the retained messages land, so Home Assistant has the entities
@@ -128,6 +131,10 @@ class DeviceLink:
             log.info("Device reports applied layout: %s", self.applied)
         elif message.topic == topics.page:
             self.current_page = payload.strip()
+        elif message.topic == topics.timer:
+            # Straight on to the mirror. The panel owns the timer, so this is
+            # the truth and the helper follows it.
+            ha_timer.mirror.on_panel_timer(payload)
         elif message.topic == topics.settings:
             self.overrides = self._parse(payload, "device settings") or {}
             self._adopt_overrides(self.overrides)

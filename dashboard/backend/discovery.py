@@ -218,6 +218,87 @@ def _entities(pages: list[dict[str, Any]], running: str | None) -> list[tuple[st
                 "entity_category": "config",
             },
         ),
+        # --- the plain timer ---------------------------------------------
+        #
+        # Not a Home Assistant `timer` entity: MQTT discovery has no such
+        # platform, and a timer helper is a config entry rather than something
+        # an add-on can publish into being. These are the parts of one, and
+        # ha_timer.py keeps a real helper in step with them for the sake of the
+        # timer card.
+        #
+        # The panel owns the timer. Everything here is a request; what comes
+        # back on the timer topic is the truth.
+        (
+            "sensor",
+            "timer_state",
+            {
+                "name": "Timer",
+                "state_topic": topics.timer,
+                "value_template": "{{ value_json.state }}",
+            },
+        ),
+        (
+            "sensor",
+            "timer_remaining",
+            {
+                "name": "Timer remaining",
+                "state_topic": topics.timer,
+                "value_template": "{{ value_json.remaining }}",
+                "unit_of_measurement": "s",
+                "device_class": "duration",
+            },
+        ),
+        (
+            "number",
+            "timer_minutes",
+            {
+                "name": "Timer duration",
+                "state_topic": topics.timer,
+                # The dialled-in preset, not what is left of a running timer:
+                # this box is what the next start will use.
+                "value_template": "{{ (value_json.preset / 60) | round(0) }}",
+                "command_topic": topics.command,
+                "command_template": (
+                    '{"action": "timer_set", "seconds": {{ (value | float * 60)'
+                    " | round(0) }}}"
+                ),
+                "min": 1,
+                "max": 180,
+                "step": 1,
+                "unit_of_measurement": "min",
+                "mode": "box",
+                "entity_category": "config",
+            },
+        ),
+        (
+            "button",
+            "timer_start",
+            {
+                "name": "Start the timer",
+                "command_topic": topics.command,
+                # No seconds, so the panel uses whatever is dialled in -- on the
+                # panel or in the box above, whichever was set last.
+                "payload_press": json.dumps({"action": "timer_start"}),
+            },
+        ),
+        (
+            "button",
+            "timer_pause",
+            {
+                "name": "Pause or resume the timer",
+                "command_topic": topics.command,
+                "payload_press": json.dumps({"action": "timer_pause"}),
+            },
+        ),
+        (
+            "button",
+            "timer_cancel",
+            {
+                "name": "Cancel the timer",
+                "command_topic": topics.command,
+                "payload_press": json.dumps({"action": "timer_cancel"}),
+            },
+        ),
         (
             "button",
             "send_logs",

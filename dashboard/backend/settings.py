@@ -77,6 +77,9 @@ class Topics:
         self.charging = f"{self.root}/charging"
         # The page the device is currently showing
         self.page = f"{self.root}/page"
+        # The plain timer: what it is doing, how long it was set for, and when
+        # it ends. Retained, and written only when it changes.
+        self.timer = f"{self.root}/timer"
         # Settings somebody changed on the panel itself, using the three
         # buttons on the case. Retained, and only ever the values the device is
         # *overriding* -- an empty object means it is doing exactly what the
