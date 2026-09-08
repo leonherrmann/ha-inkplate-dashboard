@@ -10,9 +10,12 @@
 // would not be a setting -- it would be a second grid, a second set of widget
 // sizes, and a second version of every layout anyone has already built.
 
+// 180 is "Normal" because that is the way up the panel is actually hung. Only
+// the words changed -- the degrees are still the degrees, so stored layouts
+// need no migration.
 export const ORIENTATIONS = [
-  { degrees: 0, label: "Normal", hint: "The way it comes" },
-  { degrees: 180, label: "Upside down", hint: "Turned over, for hanging the other way up" },
+  { degrees: 180, label: "Normal", hint: "The usual way up" },
+  { degrees: 0, label: "Upside down", hint: "Turned the other way up" },
 ];
 
 export const DEFAULT_ORIENTATION = 0;
