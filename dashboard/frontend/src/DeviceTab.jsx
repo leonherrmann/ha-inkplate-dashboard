@@ -38,10 +38,10 @@ function DeviceOverrides({ overrides }) {
     const match = REFRESH_LEVELS.find((one) => one.percent === set.ghost_percent);
     entries.push(`Screen refresh: ${match ? match.label : `${set.ghost_percent}%`}`);
   }
-  if (set.timer_tick_seconds !== undefined) {
-    const match = TIMER_TICKS.find((one) => one.seconds === set.timer_tick_seconds);
+  if (set.timer_tick_ms !== undefined) {
+    const match = TIMER_TICKS.find((one) => one.ms === set.timer_tick_ms);
     entries.push(
-      `Timer updates: ${match ? match.label : `every ${set.timer_tick_seconds}s`}`
+      `Timer updates: ${match ? match.label : `every ${set.timer_tick_ms / 1000}s`}`
     );
   }
   if (set.pomodoro_auto_start !== undefined) {
@@ -109,7 +109,7 @@ export default function DeviceTab({
   onRefreshChange,
   orientation,
   onOrientationChange,
-  timerTickSeconds,
+  timerTickMs,
   onTimerTickChange,
   pomodoroAutoStart,
   onPomodoroAutoStartChange,
@@ -300,7 +300,7 @@ export default function DeviceTab({
           <OrientationSettings orientation={orientation} onChange={onOrientationChange} />
           <RefreshSettings refresh={refresh} onChange={onRefreshChange} />
           <TimerSettings
-            tickSeconds={timerTickSeconds}
+            tickMs={timerTickMs}
             onChange={onTimerTickChange}
             autoStart={pomodoroAutoStart}
             onAutoStartChange={onPomodoroAutoStartChange}

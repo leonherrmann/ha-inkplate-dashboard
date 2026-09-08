@@ -4,16 +4,21 @@
 // would be one the device could show but never be set back to from its own
 // buttons, so the editor and the panel would stop being able to agree.
 
+// In milliseconds, because 2.5s is one of them.
+//
+// A one-second option existed in 2026.9.26 and has been withdrawn: the panel
+// cannot watch its buttons while it redraws, and at that rate it was redrawing
+// more than half the time, so presses went missing.
 export const TIMER_TICKS = [
-  { seconds: 5, label: "Every 5 seconds", hint: "Fewer refreshes, kinder over a long block" },
-  { seconds: 1, label: "Every second", hint: "Smoothest to watch up close" },
+  { ms: 5000, label: "Every 5 seconds", hint: "Fewest refreshes, and the most responsive buttons" },
+  { ms: 2500, label: "Every 2.5 seconds", hint: "Livelier, and still leaves the panel time to watch its buttons" },
 ];
 
-export const DEFAULT_TIMER_TICK = 5;
+export const DEFAULT_TIMER_TICK_MS = 5000;
 
-export default function TimerSettings({ tickSeconds, onChange, autoStart, onAutoStartChange }) {
-  const seconds = Number(tickSeconds ?? DEFAULT_TIMER_TICK);
-  const chosen = TIMER_TICKS.find((one) => one.seconds === seconds);
+export default function TimerSettings({ tickMs, onChange, autoStart, onAutoStartChange }) {
+  const ms = Number(tickMs ?? DEFAULT_TIMER_TICK_MS);
+  const chosen = TIMER_TICKS.find((one) => one.ms === ms);
 
   return (
     <section className="group">
@@ -25,11 +30,11 @@ export default function TimerSettings({ tickSeconds, onChange, autoStart, onAuto
       <div className="field" role="group" aria-label="Timer update rate">
         <span>Redraw</span>
         <select
-          value={String(seconds)}
+          value={String(ms)}
           onChange={(event) => onChange(Number(event.target.value))}
         >
           {TIMER_TICKS.map((option) => (
-            <option key={option.seconds} value={String(option.seconds)}>
+            <option key={option.ms} value={String(option.ms)}>
               {option.label}
             </option>
           ))}

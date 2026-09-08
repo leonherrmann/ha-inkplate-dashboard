@@ -729,13 +729,15 @@ export default function App() {
           onRefreshChange={(next) => persist({ ...layout, refresh: next })}
           orientation={layout.orientation}
           onOrientationChange={(next) => persist({ ...layout, orientation: next })}
-          timerTickSeconds={layout.timer_tick_seconds}
+          timerTickMs={layout.timer_tick_ms ?? (layout.timer_tick_seconds
+            ? layout.timer_tick_seconds * 1000
+            : undefined)}
           pomodoroAutoStart={layout.pomodoro_auto_start}
           onPomodoroAutoStartChange={(next) =>
             persist({ ...layout, pomodoro_auto_start: next })
           }
           onTimerTickChange={(next) =>
-            persist({ ...layout, timer_tick_seconds: next })
+            persist({ ...layout, timer_tick_ms: next, timer_tick_seconds: undefined })
           }
           onRefresh={() => api.refreshDevice().then(() => setMessage("Refresh sent"))}
           onShowInfo={() =>
