@@ -67,6 +67,12 @@ class Topics:
         self.charging = f"{self.root}/charging"
         # The page the device is currently showing
         self.page = f"{self.root}/page"
+        # Settings somebody changed on the panel itself, using the three
+        # buttons on the case. Retained, and only ever the values the device is
+        # *overriding* -- an empty object means it is doing exactly what the
+        # layout told it. See backend/adopt.py for why they need adopting and
+        # why that ends rather than looping.
+        self.settings = f"{self.root}/settings"
         # Retained list of uploaded images and where to fetch them, so a
         # rebooting device knows what to pull without asking
         self.images_manifest = f"{self.root}/images/manifest"

@@ -7,6 +7,55 @@ import DeviceReports from "./DeviceReports.jsx";
 import Sparkline from "./Sparkline.jsx";
 import * as api from "./api.js";
 import { Battery, formatAge, formatUptime, signalLabel } from "./DeviceStats.jsx";
+import { ORIENTATIONS } from "./OrientationSettings.jsx";
+import { REFRESH_LEVELS } from "./RefreshSettings.jsx";
+
+// Settings somebody changed with the three buttons on the panel that this
+// layout does not agree with.
+//
+// Normally there are none, and normally there are none within a second of one
+// appearing: the panel publishes what it overrode, the add-on writes it into
+// the layout and pushes, and the panel drops the override as soon as that
+// arrives. So this is not the usual way to see a change made on the panel --
+// the settings below are, because by then they carry the panel's own value.
+//
+// It shows when the two genuinely disagree, which happens if the add-on was
+// down when the button was pressed and is still catching up, or if the panel
+// is on a newer firmware that sends something this add-on does not understand.
+// Without it, the controls below would show a value the panel is quietly
+// ignoring, which is the worst of both.
+function DeviceOverrides({ overrides }) {
+  const entries = [];
+  const set = overrides || {};
+
+  if (set.orientation !== undefined) {
+    const match = ORIENTATIONS.find((one) => one.degrees === set.orientation);
+    entries.push(`Orientation: ${match ? match.label : `${set.orientation}°`}`);
+  }
+  if (set.ghost_percent !== undefined) {
+    const match = REFRESH_LEVELS.find((one) => one.percent === set.ghost_percent);
+    entries.push(`Screen refresh: ${match ? match.label : `${set.ghost_percent}%`}`);
+  }
+  if (set.sleep_enabled !== undefined) {
+    entries.push(`Night sleep: ${set.sleep_enabled ? "On" : "Off"}`);
+  }
+  if (set.pages) {
+    const off = Object.entries(set.pages)
+      .filter(([, queued]) => !queued)
+      .map(([id]) => id);
+    if (off.length) entries.push(`Pages turned off: ${off.join(", ")}`);
+  }
+
+  if (!entries.length) return null;
+
+  return (
+    <div className="banner">
+      Set on the panel itself, and not yet in this layout: {entries.join(" · ")}.
+      The panel is doing these rather than what is below. Push, and it will hand
+      them back.
+    </div>
+  );
+}
 
 // Everything about the device rather than the layout.
 //
@@ -230,6 +279,7 @@ export default function DeviceTab({
 
       {tab === "display" && (
         <section className="card">
+          <DeviceOverrides overrides={status?.device_overrides} />
           <OrientationSettings orientation={orientation} onChange={onOrientationChange} />
           <RefreshSettings refresh={refresh} onChange={onRefreshChange} />
           <SleepSettings sleep={sleep} onChange={onSleepChange} />

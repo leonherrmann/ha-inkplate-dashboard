@@ -190,6 +190,13 @@ async def get_status() -> dict[str, Any]:
         "pushed_version": pushed_version,
         "draft_pushed": draft_pushed,
         "bridge_enabled": bool(SUPERVISOR_TOKEN),
+        # Settings somebody changed with the buttons on the panel that this
+        # layout does not yet agree with. Normally empty and normally empty
+        # within a second of arriving, because the add-on adopts them and
+        # pushes -- see backend/adopt.py. It stays filled only when the two
+        # genuinely disagree, which is worth saying out loud rather than
+        # leaving the editor showing a value the panel is ignoring.
+        "device_overrides": link.overrides,
     }
 
 

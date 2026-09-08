@@ -13,6 +13,7 @@ from typing import Any, Callable
 
 import paho.mqtt.client as mqtt
 
+import adopt
 import firmware
 import store
 from discovery import discovery
@@ -41,6 +42,9 @@ class DeviceLink:
         # None while there is not yet enough history to tell
         self.charging: bool | None = None
         self.current_page: str | None = None
+        # Settings the panel is overriding, from its own menu. Empty is the
+        # normal state and means it is doing what the layout says.
+        self.overrides: dict[str, Any] = {}
         # Unix time of the last message from the device. Retained messages
         # replay on connect, so this starts as "when we first heard it" rather
         # than being truly live -- close enough to answer "is it still there".
@@ -83,6 +87,7 @@ class DeviceLink:
                 (topics.status, 0),
                 (topics.stats, 0),
                 (topics.page, 0),
+                (topics.settings, 0),
             ]
         )
         # Before the retained messages land, so Home Assistant has the entities
@@ -123,6 +128,9 @@ class DeviceLink:
             log.info("Device reports applied layout: %s", self.applied)
         elif message.topic == topics.page:
             self.current_page = payload.strip()
+        elif message.topic == topics.settings:
+            self.overrides = self._parse(payload, "device settings") or {}
+            self._adopt_overrides(self.overrides)
         elif message.topic == topics.stats:
             self.stats = self._parse(payload, "stats")
             if self.stats:
@@ -138,6 +146,39 @@ class DeviceLink:
 
         if self.on_change:
             self.on_change()
+
+    def _adopt_overrides(self, overrides: dict[str, Any]) -> None:
+        """Write what was changed on the panel into the layout, and push it.
+
+        The push is what ends the override: the firmware drops it the moment a
+        layout arrives already carrying the value, and ownership of the setting
+        comes back here. Until that happens the panel keeps overruling us, which
+        is the intended behaviour and not a fault -- see backend/adopt.py.
+
+        adopt() returns None when the layout already agrees, which is the normal
+        case: this topic is retained and replays on every reconnect, and a push
+        on every reconnect would be a version bump for nothing.
+        """
+        try:
+            layout = adopt.adopt(overrides)
+        except Exception as error:  # a bad payload must not cost the link
+            log.warning("Could not adopt the panel's settings: %s", error)
+            return
+
+        if layout is None:
+            return
+
+        # Bumped and recorded exactly as /api/push does. Without the bump the
+        # firmware's crash guard, which refuses a version it died on, would be
+        # looking at a number that never moves.
+        layout["version"] = int(layout.get("version", 0)) + 1
+        store.save(layout)
+        if self.publish_layout(layout):
+            store.record_pushed(layout)
+
+        # The Page select in Home Assistant lists the pages that rotate, and
+        # this may have just turned one off.
+        self.announce()
 
     @staticmethod
     def _parse(payload: str, what: str) -> dict[str, Any] | None:
