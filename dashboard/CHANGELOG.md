@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026.9.28
+
+- **The one-second timer update is gone; 2.5 seconds takes its place.** The
+  panel cannot watch its buttons while it redraws the screen, and at one
+  second it was redrawing more than half the time, so presses went missing.
+  A layout still set to one second moves to 2.5.
+
+Firmware 2026.9.28 also reworks setting a time on the panel: left and right
+walk between hours, minutes and seconds, the middle button starts and stops
+changing the number under the cursor, and holding left or right moves it by
+ten.
+
 ## 2026.9.26
 
 - **Pomodoro auto-start.** On the Display tab, beside the timer redraw rate.
