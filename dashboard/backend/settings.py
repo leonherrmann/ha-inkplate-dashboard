@@ -32,7 +32,17 @@ IMAGE_BASE_URL = os.environ.get("IMAGE_BASE_URL", "").strip()
 # Releases of the firmware repo are watched here rather than by the device: they
 # are served over HTTPS, and the device has no TLS stack by design.
 FIRMWARE_REPO = os.environ.get("FIRMWARE_REPO", "").strip()
-FIRMWARE_POLL_HOURS = float(os.environ.get("FIRMWARE_POLL_HOURS", "6"))
+# How often the releases API is asked. Five minutes is twelve calls an hour
+# against GitHub's unauthenticated limit of sixty per address -- comfortable,
+# and it is only one call: the binary is downloaded solely when the version has
+# actually changed.
+#
+# The old FIRMWARE_POLL_HOURS still wins if it is set, so a deliberate override
+# is not silently sped up to five minutes. Nothing in run.sh sets either; both
+# exist for someone debugging with a shell in the container.
+FIRMWARE_POLL_MINUTES = float(os.environ.get("FIRMWARE_POLL_MINUTES", "5"))
+if os.environ.get("FIRMWARE_POLL_HOURS"):
+    FIRMWARE_POLL_MINUTES = float(os.environ["FIRMWARE_POLL_HOURS"]) * 60
 
 # Only needed for a private repo, where the releases API answers 404 without
 # one. A fine-grained token with read access to that repo's contents is enough.

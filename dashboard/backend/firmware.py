@@ -5,8 +5,10 @@ stack into the firmware for that would cost more flash than its entire icon set.
 So the add-on does the part that needs TLS, caches the binary, and re-serves it
 on the same plain-HTTP port the device already uses for images.
 
-Unauthenticated GitHub API calls are limited to 60 an hour per address, which a
-six-hourly poll plus the occasional manual check stays well inside.
+Unauthenticated GitHub API calls are limited to 60 an hour per address. The
+five-minute poll spends twelve of those, and each poll is one call: the release
+listing. The binary is only fetched when the version in it has actually
+changed, so a panel already up to date costs nothing but that one request.
 """
 
 import asyncio
@@ -18,7 +20,7 @@ from typing import Any
 
 import aiohttp
 
-from settings import DATA_DIR, FIRMWARE_REPO, FIRMWARE_POLL_HOURS, FIRMWARE_TOKEN
+from settings import DATA_DIR, FIRMWARE_REPO, FIRMWARE_POLL_MINUTES, FIRMWARE_TOKEN
 
 log = logging.getLogger(__name__)
 
@@ -77,7 +79,7 @@ class FirmwareStore:
                 raise
             except Exception as error:  # a poll failing must not stop the add-on
                 log.warning("Firmware check failed: %s", error)
-            await asyncio.sleep(FIRMWARE_POLL_HOURS * 3600)
+            await asyncio.sleep(FIRMWARE_POLL_MINUTES * 60)
 
     # -- the work ----------------------------------------------------------
 
