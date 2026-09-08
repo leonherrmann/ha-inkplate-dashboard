@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026.9.23
+
+- **"Normal" is now the way the panel actually hangs.** The two orientations
+  swapped names: what was called Upside down is Normal, and the other way
+  round. Only the words changed — the stored value is the same, so no layout
+  needs touching and nothing on the panel moves.
+
+Firmware 2026.9.23 adds a timer and a pomodoro to the panel's own buttons,
+reachable from the menu. Nothing in the editor configures them: the durations
+are dialled in on the panel, which is the point of them.
+
 ## 2026.9.21
 
 The three buttons on the panel do something. Until now the only way to change
