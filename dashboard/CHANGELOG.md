@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026.9.24
+
+- **New firmware is noticed within five minutes.** The releases check ran every
+  six hours, so a new version could sit there most of a day unless you pressed
+  Check now. Each poll is a single request and the binary is only downloaded
+  when the version has actually changed, so an up-to-date panel costs nothing.
+
+No firmware change in this one; 2026.9.23 is still current.
+
 ## 2026.9.23
 
 - **"Normal" is now the way the panel actually hangs.** The two orientations
