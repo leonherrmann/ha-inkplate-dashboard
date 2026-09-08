@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026.9.25
+
+- **Choose how often a running timer redraws.** On the Display tab: every
+  second, or every five. It can also be changed on the panel itself, and
+  whichever you use, the other one follows.
+
+Firmware 2026.9.25 goes with it: the countdown now lands on whole numbers
+rather than counting in fives from wherever it started, the pomodoro's blocks
+before a long break can be set, and the button legend from the timer screens
+is now on the menu and settings too.
+
 ## 2026.9.24
 
 - **New firmware is noticed within five minutes.** The releases check ran every
