@@ -64,6 +64,11 @@ def merge(layout: dict[str, Any], overrides: dict[str, Any]) -> list[str]:
         layout["timer_tick_seconds"] = tick
         changed.append(f"timer update every {tick}s")
 
+    auto = overrides.get("pomodoro_auto_start")
+    if isinstance(auto, bool) and layout.get("pomodoro_auto_start") != auto:
+        layout["pomodoro_auto_start"] = auto
+        changed.append("pomodoro auto-start " + ("on" if auto else "off"))
+
     sleeping = overrides.get("sleep_enabled")
     if isinstance(sleeping, bool):
         sleep = layout.setdefault("sleep", dict(store.DEFAULT_SLEEP))

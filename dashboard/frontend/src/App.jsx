@@ -730,6 +730,10 @@ export default function App() {
           orientation={layout.orientation}
           onOrientationChange={(next) => persist({ ...layout, orientation: next })}
           timerTickSeconds={layout.timer_tick_seconds}
+          pomodoroAutoStart={layout.pomodoro_auto_start}
+          onPomodoroAutoStartChange={(next) =>
+            persist({ ...layout, pomodoro_auto_start: next })
+          }
           onTimerTickChange={(next) =>
             persist({ ...layout, timer_tick_seconds: next })
           }

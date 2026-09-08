@@ -11,7 +11,7 @@ export const TIMER_TICKS = [
 
 export const DEFAULT_TIMER_TICK = 5;
 
-export default function TimerSettings({ tickSeconds, onChange }) {
+export default function TimerSettings({ tickSeconds, onChange, autoStart, onAutoStartChange }) {
   const seconds = Number(tickSeconds ?? DEFAULT_TIMER_TICK);
   const chosen = TIMER_TICKS.find((one) => one.seconds === seconds);
 
@@ -37,6 +37,23 @@ export default function TimerSettings({ tickSeconds, onChange }) {
       </div>
 
       <p className="hint">{chosen ? chosen.hint : ""}</p>
+
+      <div className="field" role="group" aria-label="Pomodoro auto-start">
+        <span>Pomodoro</span>
+        <label className="switch">
+          <input
+            type="checkbox"
+            checked={autoStart !== false}
+            onChange={(event) => onAutoStartChange(event.target.checked)}
+          />
+          <span>Start the next block by itself</span>
+        </label>
+      </div>
+
+      <p className="hint">
+        Off means a focus block or break ends and waits on the panel until you
+        press the middle button.
+      </p>
     </section>
   );
 }

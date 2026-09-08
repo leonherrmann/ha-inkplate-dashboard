@@ -44,6 +44,11 @@ function DeviceOverrides({ overrides }) {
       `Timer updates: ${match ? match.label : `every ${set.timer_tick_seconds}s`}`
     );
   }
+  if (set.pomodoro_auto_start !== undefined) {
+    entries.push(
+      `Pomodoro auto-start: ${set.pomodoro_auto_start ? "On" : "Off"}`
+    );
+  }
   if (set.sleep_enabled !== undefined) {
     entries.push(`Night sleep: ${set.sleep_enabled ? "On" : "Off"}`);
   }
@@ -106,6 +111,8 @@ export default function DeviceTab({
   onOrientationChange,
   timerTickSeconds,
   onTimerTickChange,
+  pomodoroAutoStart,
+  onPomodoroAutoStartChange,
   onRefresh,
   onShowInfo,
 }) {
@@ -292,7 +299,12 @@ export default function DeviceTab({
           <DeviceOverrides overrides={status?.device_overrides} />
           <OrientationSettings orientation={orientation} onChange={onOrientationChange} />
           <RefreshSettings refresh={refresh} onChange={onRefreshChange} />
-          <TimerSettings tickSeconds={timerTickSeconds} onChange={onTimerTickChange} />
+          <TimerSettings
+            tickSeconds={timerTickSeconds}
+            onChange={onTimerTickChange}
+            autoStart={pomodoroAutoStart}
+            onAutoStartChange={onPomodoroAutoStartChange}
+          />
           <SleepSettings sleep={sleep} onChange={onSleepChange} />
         </section>
       )}
