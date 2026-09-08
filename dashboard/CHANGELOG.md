@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026.9.26
+
+- **Pomodoro auto-start.** On the Display tab, beside the timer redraw rate.
+  Turn it off and a focus block or break ends and waits on the panel until you
+  press the middle button. Changeable on the panel too, either way round.
+
+Firmware 2026.9.26 goes with it: skip a phase by holding the right button,
+dial a time in by holding to count up rather than pressing forty-five times,
+and the buttons no longer go unresponsive when the timer is set to update
+every second.
+
 ## 2026.9.25
 
 - **Choose how often a running timer redraws.** On the Display tab: every
