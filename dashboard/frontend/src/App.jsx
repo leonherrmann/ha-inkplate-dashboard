@@ -729,6 +729,10 @@ export default function App() {
           onRefreshChange={(next) => persist({ ...layout, refresh: next })}
           orientation={layout.orientation}
           onOrientationChange={(next) => persist({ ...layout, orientation: next })}
+          timerTickSeconds={layout.timer_tick_seconds}
+          onTimerTickChange={(next) =>
+            persist({ ...layout, timer_tick_seconds: next })
+          }
           onRefresh={() => api.refreshDevice().then(() => setMessage("Refresh sent"))}
           onShowInfo={() =>
             api.showDeviceInfo().then(() => setMessage("Device info sent to the panel"))

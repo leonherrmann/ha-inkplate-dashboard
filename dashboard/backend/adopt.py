@@ -56,6 +56,14 @@ def merge(layout: dict[str, Any], overrides: dict[str, Any]) -> list[str]:
             refresh["ghost_percent"] = ghost
             changed.append(f"screen refresh {ghost}%")
 
+    tick = overrides.get("timer_tick_seconds")
+    # Only the two the panel's own settings screen offers. A value from a newer
+    # firmware would be adopted into a layout this add-on cannot then show, and
+    # the editor would silently disagree with the device about it.
+    if tick in (1, 5) and layout.get("timer_tick_seconds") != tick:
+        layout["timer_tick_seconds"] = tick
+        changed.append(f"timer update every {tick}s")
+
     sleeping = overrides.get("sleep_enabled")
     if isinstance(sleeping, bool):
         sleep = layout.setdefault("sleep", dict(store.DEFAULT_SLEEP))
