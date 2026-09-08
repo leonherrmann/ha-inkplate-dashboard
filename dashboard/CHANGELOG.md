@@ -1,5 +1,24 @@
 # Changelog
 
+## 2026.9.21
+
+The three buttons on the panel do something. Until now the only way to change
+anything was the editor, which is no use when the broker is down — which is
+exactly when you walk over to the panel.
+
+- **Left and right turn the page, and the middle button opens a menu.** From
+  there: settings, the page list, and a diagnostics screen. Holding the middle
+  button clears the panel, holding the left one sends a screenshot to Home
+  Assistant, and holding left anywhere below the dashboard goes back.
+- **Settings changed on the panel win, and are told to the add-on.** Orientation,
+  refresh mode and night sleep can all be changed by hand. The panel publishes
+  what it is overriding, the add-on merges it into the stored layout, and the
+  panel then drops the override — so a later change in the editor is still
+  obeyed. Without that last step the layout is retained and would have undone
+  the change within seconds of the next reconnect.
+- The editor shows a note on the Display tab when the panel is overriding a
+  setting, so the two do not silently disagree.
+
 ## 2026.9.20
 
 The editor, redesigned. It had grown by accretion: on a phone the Design tab
