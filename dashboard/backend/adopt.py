@@ -56,13 +56,16 @@ def merge(layout: dict[str, Any], overrides: dict[str, Any]) -> list[str]:
             refresh["ghost_percent"] = ghost
             changed.append(f"screen refresh {ghost}%")
 
-    tick = overrides.get("timer_tick_seconds")
+    tick = overrides.get("timer_tick_ms")
     # Only the two the panel's own settings screen offers. A value from a newer
     # firmware would be adopted into a layout this add-on cannot then show, and
     # the editor would silently disagree with the device about it.
-    if tick in (1, 5) and layout.get("timer_tick_seconds") != tick:
-        layout["timer_tick_seconds"] = tick
-        changed.append(f"timer update every {tick}s")
+    if tick in (2500, 5000) and layout.get("timer_tick_ms") != tick:
+        layout["timer_tick_ms"] = tick
+        # The key this replaced, dropped so the two cannot drift apart and
+        # leave the firmware reading a stale fallback.
+        layout.pop("timer_tick_seconds", None)
+        changed.append(f"timer update every {tick / 1000:g}s")
 
     auto = overrides.get("pomodoro_auto_start")
     if isinstance(auto, bool) and layout.get("pomodoro_auto_start") != auto:
