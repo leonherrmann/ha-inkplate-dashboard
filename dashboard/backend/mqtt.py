@@ -17,9 +17,8 @@ import adopt
 import firmware
 import store
 from discovery import discovery
-from history import ha_timer
+from history import history
 import ha_timer
-import history
 from settings import (
     MQTT_HOST,
     MQTT_PASSWORD,

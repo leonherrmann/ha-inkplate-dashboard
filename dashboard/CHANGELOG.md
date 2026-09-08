@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026.9.30
+
+- **Fixes 2026.9.29, which could not start at all.** A broken import crashed
+  the add-on on boot and it restarted in a loop. If you are on 2026.9.29,
+  this is the fix; nothing else has changed.
+
 ## 2026.9.29
 
 - **The panel's timer, in Home Assistant.** Set a duration, start, pause and
