@@ -1,5 +1,25 @@
 # Changelog
 
+## 2026.9.29
+
+- **The panel's timer, in Home Assistant.** Set a duration, start, pause and
+  cancel it, and see what it is doing -- from a dashboard, an automation, or
+  the panel itself. Whichever you use, the other follows.
+- **A real timer helper**, `timer.inkplate5v2_timer`, created for you and kept
+  in step, so the timer card and `timer.finished` work as they would for any
+  other timer.
+- To start one from an automation in a single step, publish
+  `{"action": "timer_start", "seconds": 1500}` to `inkplate5v2/command`.
+
+The panel owns the timer: Home Assistant asks, the panel decides and says what
+happened. So it keeps working with Home Assistant switched off, and nothing is
+lost if the add-on restarts mid-countdown.
+
+The pomodoro is not exposed. It and the timer share one clock on the panel, so
+starting a timer from Home Assistant stops a pomodoro that was running.
+
+Needs firmware 2026.9.29.
+
 ## 2026.9.28
 
 - **The one-second timer update is gone; 2.5 seconds takes its place.** The
