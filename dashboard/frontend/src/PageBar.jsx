@@ -14,6 +14,7 @@ export default function PageBar({
   pages,
   activeId,
   currentPageId,
+  pageLocked,
   onSelect,
   onAddWidget,
   canAddWidget,
@@ -47,8 +48,15 @@ export default function PageBar({
           </select>
         </label>
         {active?.id === currentPageId && (
-          <span className="pagebar-live" title="On the device now">
-            live
+          <span
+            className="pagebar-live"
+            title={
+              pageLocked
+                ? "On the device now, and held there: somebody has locked the panel to this page. Hold the right button on the panel to release it."
+                : "On the device now"
+            }
+          >
+            {pageLocked ? "live · locked" : "live"}
           </span>
         )}
       </div>

@@ -43,6 +43,10 @@ class DeviceLink:
         # None while there is not yet enough history to tell
         self.charging: bool | None = None
         self.current_page: str | None = None
+        # Whether the panel is holding that page rather than rotating on. Set
+        # from the panel's buttons only; the editor shows it and does not offer
+        # to change it.
+        self.page_locked: bool = False
         # Settings the panel is overriding, from its own menu. Empty is the
         # normal state and means it is doing what the layout says.
         self.overrides: dict[str, Any] = {}
@@ -88,6 +92,7 @@ class DeviceLink:
                 (topics.status, 0),
                 (topics.stats, 0),
                 (topics.page, 0),
+                (topics.lock, 0),
                 (topics.settings, 0),
                 (topics.timer, 0),
             ]
@@ -130,6 +135,8 @@ class DeviceLink:
             log.info("Device reports applied layout: %s", self.applied)
         elif message.topic == topics.page:
             self.current_page = payload.strip()
+        elif message.topic == topics.lock:
+            self.page_locked = payload.strip() == "on"
         elif message.topic == topics.timer:
             # Straight on to the mirror. The panel owns the timer, so this is
             # the truth and the helper follows it.

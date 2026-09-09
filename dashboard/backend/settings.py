@@ -77,6 +77,11 @@ class Topics:
         self.charging = f"{self.root}/charging"
         # The page the device is currently showing
         self.page = f"{self.root}/page"
+        # "on" while somebody has held the right button to pin the panel to the
+        # page it is showing. Deliberately not part of the settings below: the
+        # panel keeps this in RAM and loses it on a reboot, so adopting it into
+        # the layout would make a lock outlive the panel that set it.
+        self.lock = f"{self.root}/lock"
         # The plain timer: what it is doing, how long it was set for, and when
         # it ends. Retained, and written only when it changes.
         self.timer = f"{self.root}/timer"
