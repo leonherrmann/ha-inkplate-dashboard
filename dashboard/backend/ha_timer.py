@@ -53,6 +53,11 @@ CONTEXT_MEMORY = 32
 class TimerMirror:
     def __init__(self) -> None:
         self._task: asyncio.Task | None = None
+        # The loop the add-on runs on. on_panel_timer is called from paho's
+        # own network thread, where asyncio.create_task raises "no running
+        # event loop" -- so the loop is captured here and work is handed to it
+        # with run_coroutine_threadsafe instead.
+        self._loop: asyncio.AbstractEventLoop | None = None
         self._ours: list[str] = []
         self._last_panel: dict[str, Any] = {}
         self._publish_command = None
@@ -64,6 +69,7 @@ class TimerMirror:
             log.info("No SUPERVISOR_TOKEN, so the timer helper is not mirrored")
             return
         self._publish_command = publish_command
+        self._loop = asyncio.get_running_loop()
         self._task = asyncio.create_task(self._run())
 
     async def stop(self) -> None:
@@ -86,8 +92,12 @@ class TimerMirror:
         if state == self._last_panel:
             return
         self._last_panel = state
-        if self._task:
-            asyncio.create_task(self._mirror_to_helper(state))
+        if self._loop:
+            # From paho's thread onto the add-on's loop. create_task here threw
+            # every time, so the helper never followed the panel at all.
+            asyncio.run_coroutine_threadsafe(
+                self._mirror_to_helper(state), self._loop
+            )
 
     async def _mirror_to_helper(self, state: dict[str, Any]) -> None:
         what = state.get("state")
@@ -108,6 +118,9 @@ class TimerMirror:
                 await self._call("timer.cancel", {})
         except Exception as error:  # a mirror failing must not stop the add-on
             log.warning("Could not mirror the timer to Home Assistant: %s", error)
+
+    def _log_panel(self, state: dict[str, Any]) -> None:
+        log.info("Panel timer is %s", state.get("state"))
 
     # -- Home Assistant's side ---------------------------------------------
 
@@ -197,10 +210,13 @@ class TimerMirror:
             command = {"action": "timer_start"}
             if remaining:
                 command["seconds"] = remaining
+            log.info("Home Assistant started the timer; telling the panel")
             self._publish_command(command)
         elif what == "paused":
+            log.info("Home Assistant paused the timer; telling the panel")
             self._publish_command({"action": "timer_pause"})
         elif what == "idle":
+            log.info("Home Assistant cancelled the timer; telling the panel")
             self._publish_command({"action": "timer_cancel"})
 
     async def _call(self, service: str, data: dict[str, Any]) -> None:
