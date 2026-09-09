@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026.9.32
+
+- **Holding the right button on the panel now locks the page it is showing**,
+  and holding it again lets the rotation run on. A dot in the bottom right
+  corner says the lock is on; the panel forgets it on a reboot.
+- **The editor says so too**: the page bar reads "live · locked", the Pages
+  list marks the page, and the Rotation settings admit the cycle is paused
+  rather than describing one that is not running.
+- Holding the right button used to send the log. That is still on the Home
+  Assistant command and still sent on every boot.
+
+Needs firmware 2026.9.32.
+
 ## 2026.9.31
 
 - **The timer helper now follows the panel.** Starting a timer on the panel
