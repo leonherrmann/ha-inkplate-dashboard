@@ -195,6 +195,7 @@ async def get_status() -> dict[str, Any]:
         "stats": link.stats,
         "charging": link.charging,
         "current_page": link.current_page,
+        "page_locked": link.page_locked,
         "last_seen": link.last_seen,
         "server_time": time.time(),
         "draft_version": layout.get("version", 0),

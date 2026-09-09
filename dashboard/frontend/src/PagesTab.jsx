@@ -39,7 +39,7 @@ const DWELLS = [
   { value: 900, label: "15 minutes" },
 ];
 
-function Row({ page, index, count, currentPageId, onSet, onShow, onRemove, onEdit }) {
+function Row({ page, index, count, currentPageId, pageLocked, onSet, onShow, onRemove, onEdit }) {
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } =
     useSortable({ id: page.id });
 
@@ -77,7 +77,9 @@ function Row({ page, index, count, currentPageId, onSet, onShow, onRemove, onEdi
         />
         <div className="page-row-meta">
           {page.widgets?.length || 0} {page.widgets?.length === 1 ? "widget" : "widgets"}
-          {page.id === currentPageId && <b> · on the device now</b>}
+          {page.id === currentPageId && (
+            <b> · on the device now{pageLocked ? ", locked there" : ""}</b>
+          )}
         </div>
       </div>
 
@@ -147,6 +149,7 @@ function Row({ page, index, count, currentPageId, onSet, onShow, onRemove, onEdi
 export default function PagesTab({
   layout,
   currentPageId,
+  pageLocked,
   onChange,
   onShowPage,
   onEditPage,
@@ -219,6 +222,7 @@ export default function PagesTab({
                   index={index}
                   count={pages.length}
                   currentPageId={currentPageId}
+                  pageLocked={pageLocked}
                   onSet={(changes) =>
                     changes.chip_row
                       ? onSetChipRow(page.id, changes.chip_row)
@@ -268,6 +272,17 @@ export default function PagesTab({
           </label>
         )}
 
+        {/* First, and before anything describing the cycle: with the panel
+            held, none of what follows is happening, and settings that quietly
+            describe something that is not running are how an evening gets
+            spent looking for a fault that is not there. */}
+        {rotation.enabled && pageLocked && (
+          <p className="hint">
+            <b>The panel is locked on the page it is showing</b>, so the rotation is
+            paused. Hold the right button on the panel to release it — it is not
+            something the editor can undo, and the panel forgets it on a reboot.
+          </p>
+        )}
         {rotation.enabled && queued.length < 2 && (
           <p className="hint">
             Rotation needs at least two pages in it; with one it simply stays put.

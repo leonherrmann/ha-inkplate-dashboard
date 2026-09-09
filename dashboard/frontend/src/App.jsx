@@ -615,6 +615,7 @@ export default function App() {
             pages={pages}
             activeId={activePage?.id}
             currentPageId={status?.current_page}
+            pageLocked={Boolean(status?.page_locked)}
             onSelect={(id) => {
               setActivePageId(id);
               setSelectedId(null);
@@ -685,6 +686,7 @@ export default function App() {
         <PagesTab
           layout={layout}
           currentPageId={status?.current_page}
+          pageLocked={Boolean(status?.page_locked)}
           onChange={persist}
           onSetChipRow={setChipRow}
           onAddPage={addPage}
