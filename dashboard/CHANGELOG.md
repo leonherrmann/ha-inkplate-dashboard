@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026.9.31
+
+- **The timer helper now follows the panel.** Starting a timer on the panel
+  had no effect in Home Assistant: the mirror was trying to do its work on the
+  wrong thread and threw every time.
+- **The panel no longer publishes its timer state every second**, and the
+  finish time it sends is no longer truncated -- it was malformed, which is
+  what stopped Home Assistant reading any of it.
+
+Needs firmware 2026.9.31.
+
 ## 2026.9.30
 
 - **Fixes 2026.9.29, which could not start at all.** A broken import crashed
