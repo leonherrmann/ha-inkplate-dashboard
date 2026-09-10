@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026.9.35
+
+- **Fixes the panel's timer restarting itself.** Pausing did not stop it, the
+  duration under the count kept changing and the ring kept resetting. The
+  timer helper and the panel were starting each other: Home Assistant emits a
+  state change before it answers the call that caused it, so the add-on's own
+  `timer.start` came back looking like somebody else's and was sent on to the
+  panel as a start. A start restarts a running timer, and the seconds it
+  carries become the new duration.
+- **The helper is no longer restarted twice a minute.** The panel republishes
+  its timer every 30 seconds to keep the retained message fresh; each of those
+  was being mirrored as a fresh `timer.start`.
+
+Numbered to match the firmware it belongs with. Needs firmware 2026.9.35.
+
 ## 2026.9.32
 
 - **Holding the right button on the panel now locks the page it is showing**,
