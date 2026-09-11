@@ -4,6 +4,8 @@ import AreaPicker, { MAX_ROOM_ENTITIES } from "./AreaPicker.jsx";
 import DeviceEntities from "./DeviceEntities.jsx";
 import { imagePreviewUrl } from "./api.js";
 import { LAYER_MOVES, widgetSize, widgetType } from "./layout.js";
+import { categoryLabel, categoryTone } from "./format.js";
+import { HomeIcon } from "./Icons.jsx";
 
 // The room card's band readings, and how to find each one in an area.
 //
@@ -261,7 +263,7 @@ export default function Inspector({
   if (!widget) {
     return (
       <aside className="inspector">
-        <h2>Options</h2>
+        <div className="eyebrow">Options</div>
         <p className="hint">Tap a widget on the panel to edit it.</p>
       </aside>
     );
@@ -296,16 +298,33 @@ export default function Inspector({
   // thermostat among the plugs is how the old arrangement went wrong.
   const takenByBand = ROOM_ROLES.map((role) => widget.options?.[role.key]).filter(Boolean);
 
+  // What kind of thing this is, in the category's own words
+  const group = categoryLabel(manifest, type?.category);
+
   return (
     <aside className="inspector open">
       <div className="inspector-head">
-        <h2>{type?.label || widget.type}</h2>
-        <button className="icon-button" onClick={onClose} aria-label="Close">
+        {/* The accent is the widget's category, which the manifest names and
+            orders, so a category added in a later firmware arrives with a tone
+            rather than with none. */}
+        <span className={`token lg ${categoryTone(type?.category)}`}>
+          <HomeIcon size={19} />
+        </span>
+        <div style={{ minWidth: 0 }}>
+          <div className="inspector-meta">
+            {group ? `${group} · ` : ""}
+            {type?.label || widget.type}
+          </div>
+          {/* The name the user gave it leads: on a page of six room cards
+              "Room" is the one thing that does not tell them apart. */}
+          <h2>{widget.options?.name || type?.label || widget.type}</h2>
+        </div>
+        <button className="icon-button plain" onClick={onClose} aria-label="Close">
           ×
         </button>
       </div>
 
-      <div className="inspector-meta">
+      <div className="hint">
         {widget.x}, {widget.y} · {size.width}×{size.height}
       </div>
 
@@ -326,13 +345,11 @@ export default function Inspector({
                 }
                 onClick={() => onSetSize(widget.id, option.id)}
               >
-                {option.label}
-                {/* A self-sizing variant has no cell count worth showing */}
-                {option.cols > 0 && option.rows > 0 && (
-                  <small>
-                    {option.cols}×{option.rows}
-                  </small>
-                )}
+                {/* A self-sizing variant has no cell count worth showing, so
+                    it falls back to the name the firmware gave it. */}
+                {option.cols > 0 && option.rows > 0
+                  ? `${option.cols}×${option.rows}`
+                  : option.label}
               </button>
             ))}
           </div>

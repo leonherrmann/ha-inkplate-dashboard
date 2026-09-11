@@ -1,70 +1,81 @@
-/* Bauhaus: black, red, yellow, blue, white. Heavy rules, hard offset shadows,
-   square corners, circles and arcs as the only curves.
+/* Floating glass panels, Bauhaus colour, soft depth.
 
-   Layout is grouped by what things are for: the header is identity and device
-   state, the toolbar is view controls and sits with the canvas it acts on, the
-   palette only adds widgets, the inspector only edits the selected one, and
-   anything about the device itself lives in the device modal. */
+   Cards are translucent white over a warm ground, lifted by a soft shadow and a
+   bright inset top edge rather than outlined. Colour arrives as a tint plus a
+   darkened text colour from the same hue, never as a flat block; the one solid
+   fill is the blue-to-violet gradient, reserved for the single primary action in
+   view. Corners are round throughout, pills for anything selectable.
+
+   Light only, deliberately. The tokens below are the whole palette, so a dark
+   counterpart is a second :root block and nothing else — no rule here reaches
+   for a literal colour that a theme would have to override.
+
+   One thing does not follow any of it: the canvas. It is a picture of a physical
+   e-ink screen, so it stays black on white whatever the interface does. See the
+   .panel rule, which resets its own tokens for exactly that reason. */
+
+@import "@fontsource/space-grotesk/400.css";
+@import "@fontsource/space-grotesk/500.css";
+@import "@fontsource/space-grotesk/600.css";
+@import "@fontsource/space-grotesk/700.css";
 
 :root {
   color-scheme: light;
 
-  --ink: #14110f;
-  --red: #e63946;
-  --blue: #1d3557;
-  --yellow: #f4b942;
-  --paper: #ffffff;
-  --grey: #f2efe9;
+  --ink: #1b1a1f;
+  --ink-60: rgba(27, 26, 31, 0.62);
+  --ink-40: rgba(27, 26, 31, 0.42);
+  --ink-12: rgba(27, 26, 31, 0.12);
+  --ink-06: rgba(27, 26, 31, 0.06);
+  --ground: #efece6;
 
-  /* Ink at low strength: hairlines between list rows, the sparkline's gaps, and
-     the scrim behind a modal. Written out per theme rather than mixed from
-     --ink, because in the dark theme these have to darken, not lighten. */
-  --ink-line: rgba(20, 17, 15, 0.18);
-  --ink-faint: rgba(20, 17, 15, 0.1);
-  --scrim: rgba(20, 17, 15, 0.6);
+  --blue: #2f5bd8;
+  --red: #e2402c;
+  --yellow: #f2b333;
+  --teal: #12a3a0;
+  --violet: #7a5af5;
 
-  /* The hard offset shadow gets its own colour. Inverting the interface must
-     not invert this into a bright block behind every card on the page. */
-  --shadow-ink: var(--ink);
+  /* Each accent twice: a tint to sit on, and a darkened version of the same hue
+     to write on it. Picking text off the accent itself fails contrast on every
+     one of these -- the yellow badly. */
+  --tint-blue: rgba(47, 91, 216, 0.12);
+  --tint-red: rgba(226, 64, 44, 0.1);
+  --tint-yellow: rgba(242, 179, 51, 0.22);
+  --tint-teal: rgba(18, 163, 160, 0.16);
+  --tint-violet: rgba(122, 90, 245, 0.16);
 
-  /* What goes on top of a solid block of colour. The three accents keep their
-     values in both themes — a Bauhaus yellow that dims is not the yellow — so
-     what sits on them is fixed too, and only --on-ink flips with the theme. */
-  --on-ink: #ffffff;
-  --on-accent: #ffffff;
-  --on-yellow: #14110f;
+  --on-blue: #22409b;
+  --on-red: #a52a1a;
+  --on-yellow: #6b4c05;
+  --on-teal: #0a6d6b;
+  --on-violet: #4b30c2;
 
-  --rule: 3px;
-  --shadow: 6px 6px 0 var(--shadow-ink);
-  --shadow-sm: 4px 4px 0 var(--shadow-ink);
+  --glass: rgba(255, 255, 255, 0.74);
+
+  /* The inset white line on top is what reads as glass; without it the card is
+     just a translucent rectangle. The wide, offset-down shadow does the lifting
+     and the tight one grounds it. */
+  --lift: 0 1px 0 rgba(255, 255, 255, 0.9) inset, 0 18px 34px -20px rgba(27, 26, 31, 0.45),
+    0 2px 6px -2px rgba(27, 26, 31, 0.18);
+  --lift-sm: 0 1px 0 rgba(255, 255, 255, 0.85) inset, 0 8px 18px -12px rgba(27, 26, 31, 0.4);
+
+  --grad: linear-gradient(140deg, var(--blue), var(--violet));
+  --grad-lift: 0 12px 22px -12px rgba(47, 91, 216, 0.95);
+  --grad-lift-sm: 0 8px 16px -10px rgba(47, 91, 216, 0.9);
+
+  /* The recessed tray the canvas and the crop previews sit in. Pressed into the
+     ground rather than lifted off it, so the panel reads as a thing set into the
+     desk rather than another card. */
+  --well: #e6e2db;
+  --well-inset: inset 0 2px 10px rgba(27, 26, 31, 0.18), inset 0 0 0 1px rgba(27, 26, 31, 0.07);
+
+  --r: 20px;
+  --r-sm: 12px;
+  --r-card: 16px;
 
   --gap: 16px;
-  --font: "Helvetica Neue", Helvetica, Arial, system-ui, sans-serif;
-}
-
-/* Paper and ground swap ends: the page becomes the darkest thing, cards sit
-   above it, and the ink drawing every rule becomes the light colour. The rules,
-   the blocks and the offset shadows are all still there, just the other way up.
-
-   Only the two real themes live here. "Follow the system" is resolved to one of
-   them in theme.js and written to <html data-theme>, so this block does not
-   have to be repeated behind a prefers-color-scheme query. */
-:root[data-theme="dark"] {
-  color-scheme: dark;
-
-  --ink: #ece7dd;
-  --paper: #241f1b;
-  --grey: #17140f;
-  /* Lifted off the navy, which as a solid block is invisible on this ground */
-  --blue: #3d6ea8;
-
-  --ink-line: rgba(236, 231, 221, 0.22);
-  --ink-faint: rgba(236, 231, 221, 0.12);
-  --scrim: rgba(0, 0, 0, 0.72);
-
-  --shadow-ink: #000000;
-
-  --on-ink: #17140f;
+  --font: "Space Grotesk", system-ui, -apple-system, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 * {
@@ -74,748 +85,50 @@
 html,
 body {
   margin: 0;
-  background: var(--grey);
   color: var(--ink);
   font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
   overscroll-behavior: none;
 }
 
-.app {
-  padding: 20px;
-  max-width: 1700px;
-  margin: 0 auto;
+/* Three washes of accent over the ground, fixed so they sit behind the whole
+   app rather than scrolling with it. */
+body {
+  min-height: 100vh;
+  background-color: var(--ground);
+  background-image: radial-gradient(120% 90% at 8% -10%, rgba(122, 90, 245, 0.2), transparent 60%),
+    radial-gradient(90% 80% at 100% 0%, rgba(242, 179, 51, 0.28), transparent 58%),
+    radial-gradient(100% 100% at 60% 110%, rgba(18, 163, 160, 0.18), transparent 62%);
+  background-attachment: fixed;
 }
 
-/* ---------- shared controls ---------- */
-
-button {
-  font: inherit;
+h1,
+h2,
+h3,
+h4 {
+  margin: 0;
   font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  padding: 12px 20px;
-  border: var(--rule) solid var(--ink);
-  background: var(--paper);
-  color: var(--ink);
-  box-shadow: var(--shadow-sm);
-  cursor: pointer;
-  min-height: 46px;
+  letter-spacing: -0.02em;
 }
 
-button:active {
-  transform: translate(4px, 4px);
-  box-shadow: none;
+a {
+  color: var(--blue);
+  text-decoration: none;
 }
 
-button.primary {
-  background: var(--red);
-  color: var(--on-accent);
+a:hover {
+  color: var(--violet);
 }
 
-button.nudge {
-  animation: nudge 1.6s ease-in-out infinite;
+code {
+  font-family: var(--mono);
+  font-size: 0.92em;
+  background: var(--ink-06);
+  border-radius: 5px;
+  padding: 1px 5px;
 }
 
-@keyframes nudge {
-  0%,
-  92%,
-  100% {
-    box-shadow: var(--shadow-sm);
-  }
-  96% {
-    box-shadow: 4px 4px 0 var(--blue);
-  }
-}
-
-button.danger {
-  background: var(--ink);
-  color: var(--on-ink);
-  width: 100%;
-  margin-top: 20px;
-}
-
-.icon-button {
-  padding: 0;
-  width: 38px;
-  min-height: 38px;
-  font-size: 22px;
-  line-height: 1;
-  box-shadow: none;
-  background: transparent;
-  border: none;
-}
-
-.icon-button:active {
-  transform: none;
-}
-
-input,
-select {
-  font: inherit;
-  width: 100%;
-  min-width: 0; /* stops time and select inputs pushing their container wider */
-  padding: 10px;
-  border: var(--rule) solid var(--ink);
-  background: var(--paper);
-  color: var(--ink);
-  min-height: 44px;
-}
-
-select[size] {
-  min-height: 0;
-}
-
-.hint {
-  font-size: 12px;
-  opacity: 0.7;
-  line-height: 1.5;
-  margin: 8px 0 0;
-}
-
-/* ---------- header ---------- */
-
-header {
-  display: flex;
-  align-items: stretch;
-  gap: var(--gap);
-  flex-wrap: wrap;
-  margin-bottom: var(--gap);
-}
-
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  background: var(--yellow);
-  color: var(--on-yellow);
-  border: var(--rule) solid var(--ink);
-  box-shadow: var(--shadow);
-  padding: 10px 16px;
-  flex: 0 0 auto;
-}
-
-/* Quarter-circle on a square: the Bauhaus motif */
-.brand-mark {
-  width: 26px;
-  height: 26px;
-  background: var(--red);
-  border: var(--rule) solid var(--ink);
-  border-radius: 26px 0 0 0;
-  flex: 0 0 auto;
-}
-
-.brand h1 {
-  margin: 0;
-  font-size: 19px;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-.brand h1 em {
-  font-style: normal;
-  font-weight: 400;
-  display: block;
-  font-size: 11px;
-  letter-spacing: 0.34em;
-}
-
-/* One button summarising the device, opening the full panel */
-.device-summary {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 10px 18px;
-  box-shadow: var(--shadow);
-  text-transform: none;
-  letter-spacing: 0;
-  flex: 0 1 auto;
-  min-width: 0;
-}
-
-.device-summary-state {
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-}
-
-.device-summary-seen {
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  opacity: 0.6;
-  white-space: nowrap;
-}
-
-.dot {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  flex: 0 0 auto;
-  border: var(--rule) solid var(--ink);
-}
-
-.dot.online {
-  background: var(--red);
-}
-
-.dot.offline {
-  background: transparent;
-}
-
-.actions {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  margin-left: auto;
-}
-
-/* ---------- theme ---------- */
-
-.theme-toggle {
-  align-items: center;
-  gap: 8px;
-}
-
-/* A disc split down the middle: the brand mark's circle cut the other way, and
-   the one shape that says "light or dark" without needing a sun or a moon. The
-   halves are the current theme's own two colours, so it inverts with it. */
-.theme-mark {
-  width: 15px;
-  height: 15px;
-  border-radius: 50%;
-  border: 2px solid var(--ink);
-  background: linear-gradient(to right, var(--ink) 50%, var(--paper) 50%);
-  flex: 0 0 auto;
-}
-
-/* ---------- battery ---------- */
-
-.battery {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-}
-
-.battery-shell {
-  width: 42px;
-  height: 20px;
-  border: var(--rule) solid var(--ink);
-  padding: 2px;
-  display: block;
-}
-
-.battery-fill {
-  height: 100%;
-  background: var(--red);
-  display: block;
-  transition: width 0.3s;
-}
-
-.battery-cap {
-  width: 5px;
-  height: 9px;
-  background: var(--ink);
-  display: block;
-}
-
-.battery b {
-  font-size: 15px;
-  margin-left: 5px;
-}
-
-.battery-shell {
-  position: relative;
-}
-
-.battery.charging .battery-fill {
-  background: var(--blue);
-}
-
-/* A bolt over the cell, in the Bauhaus vocabulary: a hard zigzag, no gradient */
-.battery-bolt {
-  position: absolute;
-  inset: 0;
-  margin: auto;
-  width: 8px;
-  height: 14px;
-  background: var(--yellow);
-  border: 1px solid var(--ink);
-  clip-path: polygon(55% 0, 10% 55%, 45% 55%, 40% 100%, 90% 42%, 52% 42%);
-}
-
-/* ---------- sparkline ---------- */
-
-.sparkline {
-  margin-top: 12px;
-}
-
-.sparkline svg {
-  width: 100%;
-  height: 60px;
-  display: block;
-  border: 2px solid var(--ink);
-  background: var(--paper);
-}
-
-.spark-line {
-  fill: none;
-  stroke: var(--red);
-  stroke-width: 2;
-  vector-effect: non-scaling-stroke;
-  stroke-linejoin: round;
-}
-
-/* Where the device was not reporting */
-.spark-gap {
-  fill: var(--ink-faint);
-}
-
-.sparkline-scale {
-  display: flex;
-  justify-content: space-between;
-  font-size: 9px;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  opacity: 0.6;
-  margin-top: 4px;
-}
-
-/* ---------- banners ---------- */
-
-.banner {
-  border: var(--rule) solid var(--ink);
-  background: var(--yellow);
-  color: var(--on-yellow);
-  box-shadow: var(--shadow-sm);
-  padding: 14px 18px;
-  margin-bottom: var(--gap);
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.banner.error {
-  background: var(--red);
-  color: var(--on-accent);
-  margin: 20px;
-}
-
-/* ---------- tabs ---------- */
-
-/* Three places to be, so no one screen carries everything: designing a page,
-   arranging the rotation, and the device itself. */
-.main-tabs {
-  margin-bottom: var(--gap);
-  border-bottom: var(--rule) solid var(--ink);
-  padding-bottom: 0;
-  gap: 8px;
-}
-
-.main-tabs .tab {
-  border-bottom: none;
-  font-size: 13px;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  padding: 12px 22px;
-  min-height: 44px;
-  margin-bottom: -3px;
-  box-shadow: none;
-  border-width: var(--rule);
-}
-
-.main-tabs .tab.active {
-  background: var(--ink);
-  color: var(--on-ink);
-}
-
-.tab-panel {
-  display: flex;
-  flex-direction: column;
-  gap: var(--gap);
-  max-width: 780px;
-}
-
-.card {
-  background: var(--paper);
-  border: var(--rule) solid var(--ink);
-  box-shadow: var(--shadow);
-  padding: 18px;
-}
-
-.card > h2 {
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.22em;
-  margin: 0 0 14px;
-  font-weight: 800;
-}
-
-/* Which page is being edited: navigation, so it stays a thin strip */
-
-/* ---------- the pages list ----------
-
-   Was "queue", which named one checkbox on a page rather than the thing itself.
-   Reordering was a pair of arrow buttons per row -- eleven clicks to move the
-   last page to the front. It is a drag handle now (PagesTab.jsx). */
-
-.page-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.page-row {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto auto;
-  align-items: center;
-  gap: 10px 12px;
-  border: 2px solid var(--ink);
-  padding: 10px 12px;
-  background: var(--paper);
-}
-
-.page-row.paused {
-  background: var(--grey);
-  opacity: 0.7;
-}
-
-/* Lifted while dragging so it reads as picked up rather than as a gap that
-   opened underneath it. */
-.page-row.dragging {
-  box-shadow: var(--shadow);
-  opacity: 0.95;
-  z-index: 1;
-  position: relative;
-}
-
-.page-grip {
-  padding: 8px 6px;
-  min-height: 40px;
-  box-shadow: none;
-  border-width: 2px;
-  background: var(--grey);
-  cursor: grab;
-  font-size: 15px;
-  line-height: 1;
-  /* Or the press-and-hold that starts a drag scrolls the page instead */
-  touch-action: none;
-}
-
-.page-grip:active {
-  cursor: grabbing;
-  transform: none;
-}
-
-.page-row-main {
-  min-width: 0;
-}
-
-.page-row-name {
-  width: 100%;
-  border: none;
-  border-bottom: 2px solid var(--ink-line);
-  padding: 4px 0;
-  min-height: 0;
-  font-weight: 800;
-  font-size: 15px;
-  background: none;
-}
-
-.page-row-name:focus {
-  border-bottom-color: var(--ink);
-  outline: none;
-}
-
-.page-row-meta {
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  opacity: 0.6;
-  margin-top: 2px;
-}
-
-.page-row-controls {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.page-row-queued {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  white-space: nowrap;
-}
-
-.page-row-dwell {
-  width: 130px;
-  min-height: 38px;
-  padding: 6px 10px;
-  font-size: 12px;
-}
-
-.page-row-actions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.page-row-actions button {
-  padding: 8px 14px;
-  min-height: 38px;
-  font-size: 11px;
-}
-
-.page-row-actions .icon-button.danger {
-  background: var(--red);
-  color: var(--on-accent);
-  padding: 0;
-  /* Or the flex row stretches it into a red bar wider than the two buttons
-     beside it, which reads as the row's primary action rather than its
-     most destructive one. */
-  flex: 0 0 auto;
-  width: 38px;
-}
-
-/* A checkbox inherits the global input rule -- full width, 44px tall, a 3px
-   border -- which made this one an empty box the size of a text field beside
-   its label, or invisible where the row squeezed it. */
-.page-row-queued input {
-  width: 20px;
-  height: 20px;
-  min-height: 0;
-  padding: 0;
-  flex: 0 0 auto;
-  accent-color: var(--red);
-}
-
-/* The chip row, which is a page setting and used to sit in the canvas toolbar
-   as the only page setting among three view settings. */
-.page-row-chips {
-  grid-column: 1 / -1;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  border-top: 2px solid var(--ink-faint);
-  padding-top: 8px;
-  flex-wrap: wrap;
-}
-
-.page-row-chips > span {
-  font-size: 9px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  opacity: 0.6;
-  margin-right: 2px;
-}
-
-.page-row-chips .chip {
-  min-height: 30px;
-  padding: 4px 10px;
-  font-size: 10px;
-}
-
-/* A heading with an action beside it, rather than the action orphaned at the
-   bottom of the card where you have to scroll past every page to reach it. */
-.card-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 14px;
-  flex-wrap: wrap;
-}
-
-.card-head h2 {
-  margin: 0;
-}
-
-.card-head .hint {
-  margin: 0;
-}
-
-/* ---------- sync state ---------- */
-
-.sync {
-  font-size: 10px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  padding: 6px 12px;
-  border: 2px solid var(--ink);
-  white-space: nowrap;
-}
-
-.sync.ok {
-  background: var(--paper);
-}
-
-.sync.pending {
-  background: var(--yellow);
-  color: var(--on-yellow);
-}
-
-.sync.bad {
-  background: var(--red);
-  color: var(--on-accent);
-}
-
-/* Not knowing is not a warning. Held back rather than given a colour, so it
-   reads as an absence of information and not as a fourth thing to worry about. */
-.sync.unknown {
-  background: var(--paper);
-  border-style: dashed;
-  opacity: 0.6;
-}
-
-/* ---------- workspace ----------
-
-   Two columns, not three. The palette rail that used to hold the left column is
-   a sheet now (WidgetPicker.jsx), which gives the canvas roughly 190px more to
-   scale into on a desktop and removes a whole band on a phone. */
-
-.workspace {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 300px;
-  grid-template-areas: "canvas inspector";
-  gap: var(--gap);
-  align-items: start;
-}
-
-.workspace > * {
-  min-width: 0;
-}
-
-main {
-  grid-area: canvas;
-  min-width: 0;
-}
-
-.inspector {
-  grid-area: inspector;
-  background: var(--paper);
-  border: var(--rule) solid var(--ink);
-  box-shadow: var(--shadow);
-  padding: 14px;
-}
-
-.inspector h2 {
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.22em;
-  margin: 0 0 12px;
-  font-weight: 800;
-}
-
-/* ---------- chips ----------
-
-   The small pill used for every set of mutually exclusive options: snap, zoom,
-   the picker's groups, the chip-row positions, the inspector's sizes. A flex
-   row, so a label and its <small> qualifier keep a gap between them -- set as
-   `display: block` they run together and read as one word ("All17", "Small1x1"). */
-
-.chip {
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
-  padding: 6px 12px;
-  min-height: 36px;
-  box-shadow: none;
-  border-width: 2px;
-}
-
-.chip small {
-  font-size: 9px;
-  opacity: 0.6;
-  letter-spacing: 0.08em;
-}
-
-.chip.active {
-  background: var(--blue);
-  color: var(--on-accent);
-}
-
-/* ---------- the page bar ----------
-
-   One row carrying the page you are editing, adding a widget, the edit
-   actions, and how the canvas snaps. It replaces a strip of page tabs stacked
-   on a toolbar of four bordered groups -- 126px of chrome above a canvas that
-   on a phone had barely 200px left. */
-
-.pagebar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: var(--gap);
-  flex-wrap: wrap;
-}
-
-.pagebar-page {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-}
-
-.pagebar-select {
-  display: block;
-  min-width: 0;
-}
-
-.pagebar-select select {
-  font-weight: 800;
-  min-width: 130px;
-  max-width: 100%;
-}
-
-.pagebar-live {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 9px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  padding: 4px 8px;
-  background: var(--red);
-  color: var(--on-accent);
-  flex: 0 0 auto;
-}
-
-.pagebar-add {
-  flex: 0 0 auto;
-}
-
-.pagebar-edit,
-.pagebar-snap {
-  display: flex;
-  gap: 4px;
-  flex: 0 0 auto;
-}
-
-/* Pushes the snap group to the far end, so the two things that change the
-   layout sit together at the near end and the one that changes only the view
-   sits apart from them. */
-.pagebar-snap {
-  margin-left: auto;
-}
-
-.pagebar-edit .icon-button {
-  font-size: 15px;
-}
-
-/* Only for screen readers: several controls here are labelled by an adjacent
-   icon or by their own content, and a hidden <span> is the honest way to give
-   them a name without printing one. */
+/* Visible to a screen reader, to nothing else */
 .sr-only {
   position: absolute;
   width: 1px;
@@ -823,41 +136,2613 @@ main {
   padding: 0;
   margin: -1px;
   overflow: hidden;
-  clip: rect(0, 0, 0, 0);
+  clip: rect(0 0 0 0);
   white-space: nowrap;
   border: 0;
 }
 
-/* ---------- toasts ----------
+/* ---------- shell ---------- */
 
-   A message used to be a full-width bar between the tabs and the canvas, so
-   every "Sent to the device" pushed the editor down by 67px and let it spring
-   back six seconds later. */
+/* The rail is a floating pill beside the content, not a sidebar the content
+   starts after: it is self-aligned to the top so it never stretches to the
+   height of a long page. */
+.app {
+  display: flex;
+  gap: 18px;
+  padding: 18px;
+  max-width: 1800px;
+  margin: 0 auto;
+  align-items: flex-start;
+}
 
+.rail {
+  width: 52px;
+  flex: none;
+  position: sticky;
+  top: 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 0;
+  background: var(--glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--ink-12);
+  border-radius: 999px;
+  box-shadow: var(--lift);
+}
+
+.rail-item {
+  width: 38px;
+  height: 38px;
+  flex: none;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink-60);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  box-shadow: none;
+}
+
+.rail-item:hover {
+  color: var(--ink);
+  background: var(--ink-06);
+  border: 0;
+}
+
+.rail-item.active,
+.rail-item.active:hover {
+  background: var(--grad);
+  box-shadow: 0 10px 18px -10px rgba(47, 91, 216, 0.95);
+  color: #fff;
+}
+
+.main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+}
+
+/* The mobile equivalent of the rail. Hidden until the layout collapses. */
+.tabbar {
+  display: none;
+}
+
+/* ---------- typography helpers ---------- */
+
+/* The small caps label above a heading: what kind of thing the heading names,
+   in the accent of whatever it belongs to -- so the colour is inherited. */
+.eyebrow {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-60);
+}
+
+.screen-head {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.screen-head h2 {
+  font-size: 26px;
+}
+
+.hint {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: var(--ink-60);
+}
+
+.hint.bad {
+  color: var(--on-red);
+}
+
+/* ---------- surfaces ---------- */
+
+.glass,
+.card {
+  background: var(--glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--ink-12);
+  border-radius: var(--r);
+  box-shadow: var(--lift);
+  padding: 16px;
+}
+
+/* Glass on glass turns to mud, so anything nested is opaque. */
+.solid {
+  background: #fff;
+  border: 1px solid var(--ink-12);
+  border-radius: var(--r-card);
+  box-shadow: var(--lift-sm);
+  padding: 12px 13px;
+}
+
+/* The coloured advisory boxes. Tone sets both the tint and the text, which is
+   the only difference between them. */
+.note {
+  border-radius: var(--r-card);
+  padding: 12px 14px;
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: var(--on-teal);
+  background: rgba(18, 163, 160, 0.12);
+}
+
+.note.warn {
+  background: var(--tint-yellow);
+  border: 1px solid rgba(242, 179, 51, 0.4);
+  color: var(--on-yellow);
+}
+
+.note.danger {
+  background: var(--tint-red);
+  border: 1px solid rgba(226, 64, 44, 0.3);
+  color: var(--on-red);
+}
+
+.note.info {
+  background: var(--tint-blue);
+  color: var(--on-blue);
+}
+
+.note-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+.note p {
+  margin: 7px 0 0;
+}
+
+.note-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.note .btn-tinted {
+  border: 0;
+  background: #fff;
+  color: inherit;
+  font-weight: 700;
+  box-shadow: var(--lift-sm);
+}
+
+.note .btn-outline {
+  border: 1px solid currentColor;
+  background: transparent;
+  color: inherit;
+  box-shadow: none;
+  opacity: 0.9;
+}
+
+/* The square tinted glyph holder that heads a card or labels a row. */
+.token {
+  width: 30px;
+  height: 30px;
+  flex: none;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: var(--ink-06);
+  color: var(--ink-60);
+}
+
+.token.lg {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+}
+
+.token.blue {
+  background: var(--tint-blue);
+  color: var(--on-blue);
+}
+
+.token.yellow {
+  background: var(--tint-yellow);
+  color: var(--on-yellow);
+}
+
+.token.teal {
+  background: var(--tint-teal);
+  color: var(--on-teal);
+}
+
+.token.violet {
+  background: var(--tint-violet);
+  color: var(--on-violet);
+}
+
+.token.red {
+  background: var(--tint-red);
+  color: var(--on-red);
+}
+
+.card-head h2 {
+  font-size: 20px;
+  margin: 0;
+}
+
+.card-head > button {
+  margin-left: auto;
+}
+
+.card-head,
+.field-title {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 14.5px;
+  font-weight: 700;
+}
+
+.card-head b,
+.card-head h3 {
+  font-size: 14.5px;
+  font-weight: 700;
+}
+
+/* ---------- controls ---------- */
+
+button {
+  font-family: var(--font);
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+/* The default button: white, hairline, softly lifted. Pill throughout -- the
+   design has no square button anywhere. */
+button,
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid var(--ink-12);
+  background: #fff;
+  color: var(--ink);
+  border-radius: 999px;
+  padding: 10px 16px;
+  font-size: 12.5px;
+  font-weight: 600;
+  box-shadow: var(--lift-sm);
+}
+
+button:hover:not(:disabled),
+.btn:hover {
+  border-color: var(--ink-40);
+}
+
+/* The one solid fill in the design, so there is at most one of these in view */
+button.primary,
+.btn.primary {
+  border: 0;
+  background: var(--grad);
+  color: #fff;
+  font-weight: 700;
+  box-shadow: var(--grad-lift);
+}
+
+button.primary:hover:not(:disabled) {
+  box-shadow: 0 16px 28px -12px rgba(47, 91, 216, 0.95);
+}
+
+button.danger,
+.btn.danger {
+  border: 1px solid rgba(226, 64, 44, 0.3);
+  background: rgba(226, 64, 44, 0.08);
+  color: var(--on-red);
+  box-shadow: none;
+}
+
+/* A left-aligned button that reads as a row: an action with a name and a note
+   about what it does. */
+.action-row {
+  width: 100%;
+  justify-content: flex-start;
+  text-align: left;
+  border-radius: 14px;
+  padding: 11px 13px;
+}
+
+.action-row small {
+  margin-left: auto;
+  font-weight: 400;
+  font-size: 11px;
+  color: var(--ink-60);
+}
+
+/* A button shaped like a row, not like a button: the base rule centres its
+   contents, which left every one of these floating in the middle. */
+.entity-trigger,
+.choice,
+.picker-tile,
+.device-entity-toggle,
+.image-item,
+.page-row-name {
+  justify-content: flex-start;
+}
+
+.icon-button {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  padding: 0;
+  border-radius: 50%;
+  background: #fff;
+  border: 1px solid var(--ink-12);
+  box-shadow: var(--lift-sm);
+  display: grid;
+  place-items: center;
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.icon-button.danger {
+  background: var(--tint-red);
+  border-color: rgba(226, 64, 44, 0.25);
+  color: var(--red);
+  box-shadow: none;
+}
+
+.icon-button.plain {
+  background: var(--ink-06);
+  border: 0;
+  box-shadow: none;
+  color: var(--ink-60);
+}
+
+/* A dashed pill that adds something: an empty slot waiting to be filled. */
+.add-button {
+  width: 100%;
+  justify-content: flex-start;
+  text-align: left;
+  border: 1px dashed rgba(27, 26, 31, 0.28);
+  background: transparent;
+  color: var(--ink-60);
+  box-shadow: none;
+  border-radius: var(--r-sm);
+  padding: 12px 13px;
+}
+
+.add-button:hover {
+  border-color: var(--ink-40);
+  color: var(--ink);
+}
+
+.add-button.stacked {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+}
+
+/* The selectable pill. Every set of mutually exclusive choices in the design is
+   one of these rows -- sizes, refresh rates, dither modes, room filters. */
+.pill,
+.chip {
+  border: 0;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 11.5px;
+  font-weight: 500;
+  background: var(--ink-06);
+  color: var(--ink-60);
+  box-shadow: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pill:hover:not(:disabled),
+.chip:hover:not(:disabled) {
+  background: rgba(27, 26, 31, 0.1);
+  color: var(--ink);
+  border: 0;
+}
+
+.pill.active,
+.chip.active {
+  background: var(--grad);
+  color: #fff;
+  font-weight: 600;
+  box-shadow: var(--grad-lift-sm);
+}
+
+.pill.active:hover,
+.chip.active:hover {
+  background: var(--grad);
+  color: #fff;
+}
+
+/* Ink rather than gradient: a filter, not a setting, so it does not compete
+   with the primary action. */
+.pill.solid-active {
+  background: var(--ink);
+  color: #fff;
+  font-weight: 600;
+}
+
+.chip small,
+.pill small {
+  font-weight: 400;
+  opacity: 0.7;
+  font-size: 10px;
+}
+
+.pill-row,
+.size-picker,
+.layer-picker {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* The segmented control: a sunken track with the chosen segment raised out of
+   it as a white pill. Used for view state -- snap, zoom, queued/paused. */
+.seg,
+.subtabs,
+.tabs {
+  display: inline-flex;
+  background: var(--ink-06);
+  border-radius: 999px;
+  padding: 3px;
+  gap: 0;
+}
+
+.seg button,
+.subtabs button,
+.tabs button {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--ink-60);
+}
+
+.seg button:hover:not(:disabled),
+.subtabs button:hover:not(:disabled),
+.tabs button:hover:not(:disabled) {
+  border: 0;
+  color: var(--ink);
+}
+
+.seg button.active,
+.subtabs button.active,
+.tabs button.active {
+  background: #fff;
+  color: var(--ink);
+  font-weight: 600;
+  box-shadow: var(--lift-sm);
+}
+
+.seg.wide {
+  display: flex;
+}
+
+.seg.wide button {
+  flex: 1;
+}
+
+/* The badge: a fact about something, not a control. */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 10.5px;
+  font-weight: 600;
+  background: var(--ink-06);
+  color: var(--ink-60);
+  white-space: nowrap;
+}
+
+.badge.ok,
+.badge.teal {
+  background: var(--tint-teal);
+  color: var(--on-teal);
+}
+
+.badge.waiting,
+.badge.yellow {
+  background: var(--tint-yellow);
+  color: var(--on-yellow);
+}
+
+.badge.blue {
+  background: var(--tint-blue);
+  color: var(--on-blue);
+}
+
+.badge.violet {
+  background: var(--tint-violet);
+  color: var(--on-violet);
+}
+
+.badge.bad,
+.badge.red {
+  background: var(--tint-red);
+  color: var(--on-red);
+}
+
+.badge.unknown {
+  background: var(--ink-06);
+  color: var(--ink-60);
+}
+
+.badge svg {
+  width: 11px;
+  height: 11px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+}
+
+.dot,
+.tab-dot {
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--ink-40);
+  display: inline-block;
+}
+
+.dot.online,
+.dot.teal {
+  background: var(--teal);
+}
+
+.dot.offline,
+.dot.red {
+  background: var(--red);
+}
+
+.dot.yellow {
+  background: var(--yellow);
+}
+
+.dot.blue,
+.tab-dot {
+  background: var(--blue);
+}
+
+/* Hollow: a page that exists but is not queued */
+.dot.empty {
+  background: transparent;
+  border: 1.5px solid var(--ink-40);
+}
+
+/* ---------- form fields ---------- */
+
+.field,
+.field-block {
+  display: block;
+  min-width: 0;
+}
+
+.field > span,
+.field-block > span {
+  display: block;
+  font-size: 11px;
+  color: var(--ink-60);
+  margin-bottom: 5px;
+}
+
+.field input,
+.field select,
+.field textarea,
+.field-block input,
+.field-block select,
+input[type="text"],
+input[type="number"],
+input[type="time"],
+input[type="search"],
+textarea,
+select {
+  width: 100%;
+  font-family: var(--font);
+  font-size: 13px;
+  color: var(--ink);
+  background: #fff;
+  border: 1px solid var(--ink-12);
+  border-radius: var(--r-sm);
+  box-shadow: var(--lift-sm);
+  padding: 10px 12px;
+  min-height: 40px;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: 2px solid var(--blue);
+  outline-offset: 1px;
+}
+
+.field-row {
+  display: flex;
+  gap: 9px;
+}
+
+.field-row > .field,
+.field-row > label {
+  flex: 1;
+}
+
+/* The pill toggle. An input kept for the semantics and hidden behind the track,
+   which is what actually draws. */
+.switch,
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
+.switch input[type="checkbox"],
+.toggle input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  margin: 0;
+  flex: none;
+  width: 44px;
+  height: 26px;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(27, 26, 31, 0.14);
+  box-shadow: none;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.switch input[type="checkbox"]::after,
+.toggle input[type="checkbox"]::after {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: var(--lift-sm);
+  transition: transform 0.15s ease;
+}
+
+.switch input[type="checkbox"]:checked,
+.toggle input[type="checkbox"]:checked {
+  background: var(--grad);
+  box-shadow: var(--grad-lift-sm);
+}
+
+.switch input[type="checkbox"]:checked::after,
+.toggle input[type="checkbox"]:checked::after {
+  transform: translateX(18px);
+}
+
+.switch input[type="checkbox"]:focus-visible,
+.toggle input[type="checkbox"]:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
+/* ---------- banners and toasts ---------- */
+
+.banner {
+  border-radius: var(--r);
+  padding: 13px 16px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  background: var(--glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--ink-12);
+  box-shadow: var(--lift-sm);
+}
+
+.banner.error {
+  background: var(--tint-red);
+  border-color: rgba(226, 64, 44, 0.3);
+  color: var(--on-red);
+}
+
+/* Says its piece without moving anything: a full-width bar between the tabs and
+   the canvas pushed the whole editor down and let it spring back seconds later. */
 .toast {
   position: fixed;
   left: 50%;
-  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  bottom: 24px;
   transform: translateX(-50%);
-  z-index: 200;
-  max-width: min(520px, calc(100vw - 24px));
+  z-index: 60;
+  max-width: min(520px, calc(100vw - 32px));
+  border-radius: 999px;
+  padding: 12px 20px;
   background: var(--ink);
-  color: var(--on-ink);
-  border: var(--rule) solid var(--ink);
-  box-shadow: var(--shadow);
-  padding: 12px 18px;
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 500;
+  box-shadow: 0 18px 34px -18px rgba(27, 26, 31, 0.7);
+  cursor: pointer;
+}
+
+/* ---------- device card ---------- */
+
+/* Identity, health and the one action that matters, at the top of the editor's
+   left column. This is what the old page-wide header carried: the design has no
+   title bar, so the facts about the device sit beside the thing being edited
+   onto it. */
+.device-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+}
+
+.device-ident {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+  text-align: left;
+  justify-content: flex-start;
+}
+
+.device-ident:hover {
+  border: 0;
+}
+
+.device-ident > span {
+  display: block;
+  min-width: 0;
+}
+
+.device-mark {
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--grad);
+  box-shadow: 0 6px 14px -6px rgba(47, 91, 216, 0.9);
+  display: grid;
+  place-items: center;
+  color: #fff;
+}
+
+.device-name {
+  display: block;
+  font-weight: 700;
+  font-size: 13.5px;
+  line-height: 1.15;
+}
+
+.device-spec {
+  display: block;
+  font-size: 10.5px;
+  color: var(--ink-60);
+}
+
+.device-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.device-push {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding-top: 12px;
+  border-top: 1px solid var(--ink-12);
+}
+
+.device-push button {
+  margin-left: auto;
+}
+
+/* ---------- sync ---------- */
+
+.sync {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 10.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.sync.pending {
+  background: var(--tint-yellow);
+  color: var(--on-yellow);
+}
+
+.sync.ok {
+  background: var(--tint-teal);
+  color: var(--on-teal);
+}
+
+.sync.bad {
+  background: var(--tint-red);
+  color: var(--on-red);
+}
+
+.sync.waiting {
+  background: var(--tint-violet);
+  color: var(--on-violet);
+}
+
+/* Not knowing is not a warning: held back rather than given a colour. */
+.sync.unknown {
+  background: var(--ink-06);
+  color: var(--ink-60);
+}
+
+/* The state as a card, on the Device screen. Five facts, five responses. */
+.sync-card {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+
+.sync-card.pending {
+  border-color: rgba(242, 179, 51, 0.5);
+}
+
+.sync-card.waiting {
+  border-color: rgba(122, 90, 245, 0.4);
+}
+
+.sync-card.bad {
+  border-color: rgba(226, 64, 44, 0.4);
+}
+
+.sync-card.ok {
+  border-color: rgba(18, 163, 160, 0.45);
+}
+
+.sync-card b {
+  font-size: 14.5px;
+}
+
+.sync-card p {
+  margin: 5px 0 0;
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: var(--ink-60);
+}
+
+.sync-foot {
+  margin-top: auto;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.sync-detail {
+  margin-top: 8px;
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1.5;
+  background: rgba(226, 64, 44, 0.09);
+  color: var(--on-red);
+}
+
+/* ---------- battery ---------- */
+
+.device-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+}
+
+.device-summary-state {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.device-summary-seen {
+  font-size: 10.5px;
+  color: var(--ink-60);
+}
+
+.battery {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 10.5px;
+  font-weight: 600;
+}
+
+.battery-shell {
+  position: relative;
+  width: 26px;
+  height: 13px;
+  border-radius: 4px;
+  border: 1.5px solid var(--ink-40);
+  overflow: hidden;
+}
+
+.battery-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: var(--ink-40);
+}
+
+.battery.charging .battery-fill {
+  background: var(--teal);
+}
+
+.battery-cap {
+  width: 2.5px;
+  height: 6px;
+  border-radius: 0 2px 2px 0;
+  background: var(--ink-40);
+  margin-right: 4px;
+}
+
+.battery-bolt {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+
+.battery-bolt::before {
+  content: "";
+  width: 5px;
+  height: 9px;
+  background: #fff;
+  clip-path: polygon(55% 0, 15% 55%, 45% 55%, 40% 100%, 85% 42%, 52% 42%);
+}
+
+.battery b {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- sparkline ---------- */
+
+/* The wrapper holds the plot and its scale line, so the height and the tray
+   belong to the svg -- setting them here clipped the scale off the bottom. */
+.sparkline svg {
+  display: block;
+  width: 100%;
+  height: 64px;
+  border-radius: var(--r-sm);
+  background: var(--ink-06);
+}
+
+.spark-line {
+  fill: none;
+  stroke: var(--teal);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+/* Where the device was not reporting */
+.spark-gap {
+  fill: rgba(27, 26, 31, 0.07);
+}
+
+/* Three labels: the low reading, the span, the high one. */
+.sparkline-scale {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 10.5px;
+  color: var(--ink-60);
+  margin-top: 7px;
+}
+
+/* ---------- screen layout ---------- */
+
+/* A main column with a narrower one beside it. Pages, Device and Images are all
+   this shape: the thing being worked on, and the facts about it. */
+/* A screen that is one column of cards. Capped, because a settings card
+   stretched to 1400px puts its label and its control a hand's width apart. */
+.screen-layout,
+.tab-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  width: 100%;
+  max-width: 1120px;
+}
+
+/* The sub-tab track is as wide as its tabs, not as wide as the screen. */
+.subtabs {
+  align-self: flex-start;
+  max-width: 100%;
+  flex-wrap: wrap;
+}
+
+/* Something needs attention behind this tab -- a firmware update waiting. */
+.tab-dot {
+  margin-left: 2px;
+}
+
+/* A card's heading, where the markup is a bare <h3> rather than .card-head */
+.card > h2,
+.card > h3 {
+  font-size: 14.5px;
+  margin-bottom: 12px;
+}
+
+.side-column {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.side-note {
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: var(--ink-60);
+}
+
+.side-note b {
+  color: var(--ink);
+}
+
+/* A control wearing a glass pill: a label and its control on one line, for the
+   settings that sit in a screen's header rather than in a card. */
+.pill-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  background: var(--glass);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid var(--ink-12);
+  border-radius: 999px;
+  padding: 6px 8px 6px 14px;
+  box-shadow: var(--lift-sm);
+}
+
+.pill-field > span {
+  margin: 0;
+  font-size: 12px;
+  color: var(--ink-60);
+  white-space: nowrap;
+}
+
+.pill-field select {
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+  width: auto;
+  min-height: 32px;
+  padding: 0 6px;
   font-size: 13px;
   font-weight: 700;
+}
+
+/* ---------- the workspace ---------- */
+
+/* Three columns: pages, canvas, inspector. Source order puts the canvas first
+   so it leads on a phone, and the areas put the columns back in visual order. */
+.workspace {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: 216px minmax(0, 1fr) 300px;
+  grid-template-areas: "pages canvas inspector";
+  align-items: start;
+}
+
+.workspace > main {
+  grid-area: canvas;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.pages-column {
+  grid-area: pages;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  /* Not stretched to the canvas column: the list is as tall as its pages, and
+     stretching left the rotation note stranded at the foot of empty glass. */
+  align-self: start;
+}
+
+.inspector {
+  grid-area: inspector;
+}
+
+/* ---------- the pages column ---------- */
+
+.page-list-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+}
+
+.page-list-head {
+  display: flex;
+  align-items: center;
+  padding: 0 2px 2px;
+}
+
+.page-list-head .eyebrow {
+  margin-right: auto;
+}
+
+.page-list-head > span:last-child {
+  font-size: 10px;
+  color: var(--ink-60);
+}
+
+.page-tab {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--ink-12);
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: var(--r-sm);
+  padding: 10px 11px;
+  box-shadow: none;
+}
+
+.page-tab-top {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.page-tab-top b {
+  font-size: 13px;
+}
+
+.page-tab-dwell {
+  margin-left: auto;
+  font-size: 10px;
+  background: rgba(27, 26, 31, 0.07);
+  border-radius: 999px;
+  padding: 2px 7px;
+  font-weight: 500;
+}
+
+.page-tab-meta {
+  font-size: 10.5px;
+  color: var(--ink-60);
+  margin-top: 3px;
+}
+
+.page-tab.active {
+  background: var(--grad);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 10px 22px -12px rgba(47, 91, 216, 0.95);
+}
+
+.page-tab.active .page-tab-meta {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.page-tab.active .page-tab-dwell {
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+}
+
+.page-tab.paused {
+  background: rgba(255, 255, 255, 0.45);
+  border-style: dashed;
+  opacity: 0.8;
+}
+
+.rotation-note {
+  margin-top: 4px;
+  border-radius: var(--r-sm);
+  background: rgba(242, 179, 51, 0.16);
+  padding: 9px 10px;
+  font-size: 10.5px;
+  line-height: 1.45;
+  color: var(--on-yellow);
+}
+
+/* ---------- the page bar ---------- */
+
+/* Which page is being edited, and the three actions that change it. Kept as one
+   bar, in glass, above the canvas it acts on. */
+.pagebar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  background: var(--glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--ink-12);
+  border-radius: 24px;
+  box-shadow: var(--lift);
+  padding: 8px 12px;
+}
+
+.pagebar-page {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.pagebar-select select {
+  border: 0;
+  background: var(--ink-06);
+  box-shadow: none;
+  border-radius: 999px;
+  min-height: 34px;
+  padding: 0 30px 0 14px;
+  font-size: 13px;
+  font-weight: 700;
+  width: auto;
+  max-width: 190px;
+}
+
+.pagebar-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 10.5px;
+  font-weight: 600;
+  background: var(--tint-blue);
+  color: var(--on-blue);
+  white-space: nowrap;
+}
+
+.pagebar-add {
+  margin-left: auto;
+}
+
+/* Source order puts the page select first, which is what a phone wants. On a
+   desktop the select is hidden and the edit actions take that end instead. */
+@media (min-width: 821px) {
+  .pagebar-edit {
+    order: -1;
+  }
+
+  .pagebar-add {
+    margin-left: auto;
+  }
+}
+
+.pagebar-edit {
+  display: flex;
+  gap: 6px;
+}
+
+/* ---------- the canvas dock ---------- */
+
+/* Snap and zoom describe how the canvas behaves, so they are docked to it. */
+.canvas-dock {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 0 6px;
+  font-size: 10.5px;
+  color: var(--ink-60);
+}
+
+/* Each group is a segmented control: a sunken track with the chosen segment
+   raised out of it. The buttons inside carry .chip, so the .seg rules are
+   repeated here rather than the markup being changed. */
+.dock-group {
+  display: inline-flex;
+  align-items: center;
+  background: var(--ink-06);
+  border-radius: 999px;
+  padding: 3px;
+  gap: 0;
+}
+
+.dock-group .chip {
+  background: transparent;
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--ink-60);
+  box-shadow: none;
+}
+
+.dock-group .chip:hover:not(:disabled) {
+  background: transparent;
+  color: var(--ink);
+}
+
+.dock-group .chip.active,
+.dock-group .chip.active:hover {
+  background: #fff;
+  color: var(--ink);
+  font-weight: 600;
+  box-shadow: var(--lift-sm);
+}
+
+/* The pages column already names every page and marks the live one, so the
+   bar's select is a second copy of the same control. It earns its place only
+   once the column has stacked below the canvas. */
+@media (min-width: 821px) {
+  .pagebar-page {
+    display: none;
+  }
+}
+
+/* ---------- the pages screen ---------- */
+
+.page-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.page-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  background: var(--glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--ink-12);
+  border-radius: var(--r);
+  box-shadow: var(--lift);
+  padding: 14px;
+}
+
+.page-row.paused {
+  background: rgba(255, 255, 255, 0.45);
+  border-style: dashed;
+  border-color: rgba(27, 26, 31, 0.22);
+  box-shadow: none;
+}
+
+/* A real render of the page at thumbnail size, so a row is recognised by the
+   shape of what is on it rather than only by its name. */
+.page-thumb {
+  width: 120px;
+  height: 68px;
+  flex: none;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 0 0 1px rgba(27, 26, 31, 0.28);
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  color: var(--ink-60);
+  text-transform: uppercase;
+}
+
+.page-grip {
+  display: grid;
+  place-items: center;
+  color: var(--ink-60);
+  cursor: grab;
+  flex: none;
+}
+
+.page-row-main {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.page-row-name {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+  min-height: 0;
+  width: 100%;
+}
+
+.page-row-name:focus {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+.page-row-meta {
+  font-size: 11.5px;
+  color: var(--ink-60);
+}
+
+.page-row-controls,
+.page-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.page-row-chips {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.page-row-chips > span:first-child {
+  font-size: 11px;
+  color: var(--ink-60);
+  white-space: nowrap;
+}
+
+.page-row-chips .chip {
+  padding: 5px 12px;
+}
+
+.page-row-dwell select {
+  min-height: 32px;
+  padding: 5px 10px;
+  font-size: 11.5px;
+  border-radius: 999px;
+  width: auto;
+}
+
+/* A plain label rather than .switch, so the toggle look is pinned on here too.
+   Left as-is it fell back to the browser's own checkbox, which on this ground
+   came out orange. */
+.page-row-queued {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.page-row-queued input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  margin: 0;
+  flex: none;
+  width: 44px;
+  height: 26px;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(27, 26, 31, 0.14);
+  box-shadow: none;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.page-row-queued input[type="checkbox"]::after {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: var(--lift-sm);
+  transition: transform 0.15s ease;
+}
+
+.page-row-queued input[type="checkbox"]:checked {
+  background: var(--grad);
+  box-shadow: var(--grad-lift-sm);
+}
+
+.page-row-queued input[type="checkbox"]:checked::after {
+  transform: translateX(18px);
+}
+
+.page-row-queued input[type="checkbox"]:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
+/* The cycle card: how long a loop takes, and each page's share of it. */
+.cycle-total {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.cycle-total b {
+  font-size: 38px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.cycle-total span {
+  font-size: 12px;
+  color: var(--ink-60);
+}
+
+.cycle-bar {
+  display: flex;
+  gap: 4px;
+  margin-top: 14px;
+  height: 10px;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.cycle-bar div:nth-child(1) {
+  background: var(--grad);
+}
+
+.cycle-bar div:nth-child(2) {
+  background: var(--teal);
+}
+
+.cycle-bar div:nth-child(3) {
+  background: var(--yellow);
+}
+
+.cycle-bar div:nth-child(4) {
+  background: var(--violet);
+}
+
+.cycle-bar div:nth-child(n + 5) {
+  background: var(--ink-40);
+}
+
+.cycle-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 9px;
+  font-size: 11px;
+  color: var(--ink-60);
+}
+
+.cycle-key b {
+  color: var(--ink);
+}
+
+/* ---------- inspector ---------- */
+
+.inspector {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 14px;
+  background: var(--glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--ink-12);
+  border-radius: var(--r);
+  box-shadow: var(--lift);
+}
+
+.inspector-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.inspector-head h2 {
+  font-size: 17px;
+}
+
+.inspector-head .icon-button {
+  margin-left: auto;
+}
+
+.inspector-meta {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-60);
+}
+
+/* .field-block is a label in everything but the element: a group of buttons
+   inside a real <label> takes its accessible name from the label, which means
+   each button announces its neighbours' text instead of its own. */
+.inspector label,
+.inspector .field-block {
+  display: block;
+  min-width: 0;
+}
+
+.inspector label > span,
+.inspector .field-block > span {
+  display: block;
+  font-size: 11px;
+  color: var(--ink-60);
+  margin-bottom: 5px;
+}
+
+.inspector-section {
+  border-top: 1px solid var(--ink-12);
+  padding-top: 12px;
+}
+
+.inspector-section > .eyebrow {
+  margin-bottom: 8px;
+}
+
+.inspector-actions {
+  display: flex;
+  gap: 8px;
+  border-top: 1px solid var(--ink-12);
+  padding-top: 12px;
+}
+
+.inspector-actions button {
+  flex: 1 1 auto;
+}
+
+.layer-count {
+  font-weight: 600;
+  opacity: 0.6;
+}
+
+/* The chosen picture, under the select that chose it. */
+.option-preview {
+  display: block;
+  max-width: 100%;
+  margin-top: 8px;
+  border-radius: var(--r-sm);
+  background: #fff;
+  box-shadow: inset 0 0 0 1px var(--ink-12);
+  image-rendering: pixelated;
+}
+
+/* ---------- picker triggers ---------- */
+
+/* A field that opens a picker: a row with the current value and a chevron,
+   rather than a text input. */
+.entity-trigger {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  text-align: left;
+  background: #fff;
+  border: 1px solid var(--ink-12);
+  border-radius: var(--r-sm);
+  padding: 10px 12px;
+  box-shadow: var(--lift-sm);
+}
+
+/* The name takes the slack rather than the meta taking a margin: with anything
+   after it, two auto margins would split the space between them. */
+.entity-trigger-name {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 700;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.entity-trigger-meta {
+  font-size: 10.5px;
+  color: var(--ink-60);
+  white-space: nowrap;
+}
+
+.entity-trigger-empty {
+  flex: 1;
+  color: var(--ink-60);
+  font-size: 13px;
+}
+
+.picker-clear {
+  align-self: flex-start;
+  margin-top: 8px;
+}
+
+/* ---------- pickers ---------- */
+
+.picker-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(27, 26, 31, 0.38);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+
+.picker {
+  width: min(560px, 100%);
+  max-height: min(760px, 90vh);
+  display: flex;
+  flex-direction: column;
+  background: #f7f5f1;
+  border-radius: 26px;
+  box-shadow: 0 0 0 1px rgba(27, 26, 31, 0.14), 0 30px 60px -30px rgba(27, 26, 31, 0.55);
+  overflow: hidden;
+}
+
+.picker-head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 16px 16px 12px;
+}
+
+.picker-head h2 {
+  font-size: 18px;
+}
+
+.picker-head .icon-button {
+  margin-left: auto;
+}
+
+.picker-search {
+  margin: 0 16px 12px;
+  width: calc(100% - 32px);
+  border-radius: 999px;
+  padding: 11px 16px;
+}
+
+/* Where you are, and the way back. */
+.picker-crumbs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 0 16px 12px;
+  font-size: 11.5px;
+  color: var(--ink-60);
+}
+
+.picker-crumbs i {
+  font-style: normal;
+  color: var(--ink-40);
+}
+
+.picker-crumbs b {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.picker-crumb {
+  border: 0;
+  background: var(--ink-06);
+  box-shadow: none;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--ink-60);
+}
+
+.picker-crumb:hover {
+  border: 0;
+  color: var(--ink);
+}
+
+/* A step's choices, as tiles: sized by the grid rather than by the count, so
+   one room and twenty rooms look like the same kind of question. */
+.picker-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+  padding: 0 16px 16px;
+  overflow-y: auto;
+}
+
+.picker-tile {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  background: #fff;
+  border: 1px solid var(--ink-12);
+  border-radius: 18px;
+  box-shadow: var(--lift-sm);
+  padding: 13px;
+  text-align: left;
+}
+
+.picker-tile-glyph {
+  width: 30px;
+  height: 30px;
+  flex: none;
+  border-radius: 10px;
+  background: var(--tint-yellow);
+  color: var(--on-yellow);
+  display: grid;
+  place-items: center;
+  font-size: 14px;
+}
+
+.picker-tile-label {
+  flex: 1;
+  min-width: 0;
+  font-size: 13.5px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.picker-tile-count {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--ink-60);
+  background: var(--ink-06);
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+
+/* The final list, once the steps have narrowed it. */
+.picker-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 16px 16px;
+  overflow-y: auto;
+}
+
+.picker-row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  text-align: left;
+  background: #fff;
+  border: 1px solid var(--ink-12);
+  border-radius: var(--r-card);
+  padding: 12px 13px;
+  box-shadow: var(--lift-sm);
+}
+
+.picker-row.active {
+  border: 0;
+  background: var(--grad);
+  color: #fff;
+  box-shadow: 0 14px 26px -14px rgba(47, 91, 216, 0.95);
+}
+
+.picker-row-name {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.picker-row-meta {
+  font-size: 10.5px;
+  color: var(--ink-60);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.picker-row.active .picker-row-meta {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.picker-empty {
+  padding: 8px 2px 16px;
+}
+
+.picker-foot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px 18px;
+  border-top: 1px solid var(--ink-12);
+  background: rgba(255, 255, 255, 0.9);
+  font-size: 11.5px;
+  color: var(--ink-60);
+}
+
+/* The widget picker's group headings */
+.picker-groups {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+  padding: 0 16px 12px;
+}
+
+.widget-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+  padding: 0 16px 16px;
+  overflow-y: auto;
+}
+
+.widget-card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 9px;
+  background: #fff;
+  border: 1px solid var(--ink-12);
+  border-radius: 18px;
+  box-shadow: var(--lift-sm);
+  padding: 13px;
+  text-align: left;
+}
+
+/* Contained rather than cropped: a wide widget cropped to a square stops being
+   recognisable as that widget. */
+.widget-card-shot {
+  width: 100%;
+  height: 54px;
+  object-fit: contain;
+  object-position: left center;
+}
+
+.widget-card-label {
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+.widget-card-size {
+  font-size: 10.5px;
+  color: var(--ink-60);
+}
+
+/* ---------- facts ---------- */
+
+.facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.fact {
+  background: #fff;
+  border: 1px solid var(--ink-12);
+  border-radius: 14px;
+  padding: 11px 12px;
+  box-shadow: var(--lift-sm);
+  min-width: 0;
+}
+
+.fact small {
+  display: block;
+  font-size: 10.5px;
+  color: var(--ink-60);
+  margin-bottom: 2px;
+}
+
+.fact b {
+  display: block;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.fact b.ok {
+  color: var(--on-teal);
+}
+
+.fact b.bad {
+  color: var(--on-red);
+}
+
+/* ---------- settings groups ---------- */
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.group + .group {
+  border-top: 1px solid var(--ink-12);
+  padding-top: 14px;
+}
+
+.group h3 {
+  font-size: 14.5px;
+}
+
+.group-actions {
+  display: flex;
+  gap: 9px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+/* A radio row: the choice, its name, and what it means in practice */
+.choice-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.choice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  border-radius: var(--r-sm);
+  padding: 10px 12px;
+  background: #fff;
+  border: 1px solid var(--ink-12);
+  box-shadow: var(--lift-sm);
+  font-size: 12.5px;
+}
+
+.choice b {
+  font-weight: 700;
+}
+
+.choice small {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--ink-60);
+  text-align: right;
+}
+
+.choice-mark {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  border-radius: 50%;
+  border: 1.5px solid rgba(27, 26, 31, 0.3);
+}
+
+.choice.active {
+  background: linear-gradient(140deg, rgba(47, 91, 216, 0.12), rgba(122, 90, 245, 0.14));
+  border-color: rgba(47, 91, 216, 0.3);
+  box-shadow: none;
+}
+
+.choice.active small {
+  color: var(--on-blue);
+}
+
+.choice.active .choice-mark {
+  background: var(--blue);
+  border-color: var(--blue);
+  box-shadow: inset 0 0 0 3.5px #fff;
+}
+
+/* The big clock-style time readouts in night sleep */
+.time-box {
+  flex: 1;
+  background: #fff;
+  border: 1px solid var(--ink-12);
+  border-radius: 14px;
+  padding: 11px 13px;
+  box-shadow: var(--lift-sm);
+}
+
+.time-box > span {
+  display: block;
+  font-size: 11px;
+  color: var(--ink-60);
+}
+
+.time-box input {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+  min-height: 0;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-family: var(--font);
+}
+
+/* ---------- diagnostics ---------- */
+
+.device-log {
+  background: #fff;
+  border: 1px solid var(--ink-12);
+  border-radius: 14px;
+  padding: 12px 13px;
+  box-shadow: var(--lift-sm);
+  font-family: var(--mono);
+  font-size: 11.5px;
+  line-height: 1.85;
+  color: var(--ink-60);
+  overflow-x: auto;
+  max-height: 320px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 0;
+}
+
+.report-age {
+  font-size: 11px;
+  color: var(--ink-60);
+}
+
+.screenshot {
+  border-radius: 14px;
+  background: var(--well);
+  box-shadow: var(--well-inset);
+  padding: 12px;
+  display: grid;
+  place-items: center;
+  max-width: 100%;
+}
+
+.screenshot img,
+img.screenshot {
+  display: block;
+  max-width: 100%;
+  background: #fff;
+  border-radius: 4px;
+  box-shadow: 0 0 0 1px rgba(27, 26, 31, 0.3);
+}
+
+/* ---------- device entity list ---------- */
+
+.device-entities {
+  background: #fff;
+  border: 1px solid var(--ink-12);
+  border-radius: 18px;
+  padding: 12px;
+  box-shadow: var(--lift-sm);
+}
+
+.device-entities-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-60);
+}
+
+.device-entities-list {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.device-entity {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.device-entity-toggle {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 5px 6px;
+  border-radius: 10px;
+  text-align: left;
+}
+
+.device-entity-toggle:hover {
+  border: 0;
+  background: var(--ink-06);
+}
+
+/* The tick box: tinted and filled when chosen, a hairline square when not. */
+.device-entity-box {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  border: 1.5px solid rgba(27, 26, 31, 0.25);
+  color: transparent;
+}
+
+.device-entity.on .device-entity-box {
+  border-color: transparent;
+  background: var(--tint-blue);
+  color: var(--on-blue);
+}
+
+.device-entity-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.device-entity-name {
+  font-size: 12.5px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.device-entity-meta {
+  font-size: 10.5px;
+  color: var(--ink-60);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Chosen, but past what this size draws. */
+.device-entity.overflow {
+  opacity: 0.55;
+}
+
+.device-entity-order {
+  display: flex;
+  flex: none;
+  gap: 2px;
+}
+
+.device-entity-order button {
+  width: 22px;
+  height: 22px;
+  min-width: 0;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 11px;
+  box-shadow: none;
+  background: var(--ink-06);
+  border: 0;
+  color: var(--ink-60);
+}
+
+.device-entities-warn {
+  color: var(--on-yellow);
+  letter-spacing: 0;
+  text-transform: none;
+  font-weight: 600;
+}
+
+/* ---------- images ---------- */
+
+.images-tab {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.image-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.image-item {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  background: #fff;
+  border: 1px solid var(--ink-12);
+  border-radius: 18px;
+  padding: 10px;
+  box-shadow: var(--lift-sm);
+  margin: 0;
+}
+
+.image-item img {
+  display: block;
+  width: 100%;
+  height: 104px;
+  object-fit: contain;
+  border-radius: 11px;
+  background: #fff;
+  box-shadow: inset 0 0 0 1px var(--ink-12);
+  image-rendering: pixelated;
+}
+
+.image-item figcaption {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.image-item strong {
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.image-item small {
+  font-size: 10.5px;
+  color: var(--ink-60);
+}
+
+/* The upload's steps: numbered, so a long form reads as a sequence */
+.step {
+  display: flex;
+  gap: 12px;
+}
+
+.step-mark {
+  width: 24px;
+  height: 24px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--tint-blue);
+  color: var(--on-blue);
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.step-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.upload {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.upload-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  border-top: 1px solid var(--ink-12);
+  padding-top: 14px;
+}
+
+.custom-size {
+  display: flex;
+  gap: 9px;
+}
+
+.custom-size label {
+  flex: 1;
+}
+
+/* The picture's size on the panel, as cells */
+.grid-size {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.grid-size-cells {
+  display: grid;
+  gap: 3px;
+  background: var(--well);
+  border-radius: 10px;
+  padding: 6px;
+  box-shadow: var(--well-inset);
+}
+
+.grid-size-cells button {
+  width: 18px;
+  height: 14px;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 3px;
+  background: rgba(27, 26, 31, 0.1);
+  box-shadow: none;
+}
+
+.grid-size-cells button.on {
+  background: var(--grad);
+}
+
+.grid-size-read {
+  font-size: 11.5px;
+  color: var(--ink-60);
+}
+
+.grid-size-read b {
+  color: var(--ink);
+}
+
+/* ---------- the image editor ---------- */
+
+.image-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.editor-split {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.editor-stage,
+.editor-preview {
+  flex: 1 1 220px;
+  min-width: 0;
+  background: var(--well);
+  border-radius: 18px;
+  box-shadow: var(--well-inset);
+  padding: 16px;
+  display: grid;
+  place-items: center;
+}
+
+.editor-stage canvas,
+.editor-preview canvas,
+.editor-stage img,
+.editor-preview img {
+  display: block;
+  max-width: 100%;
+  background: #fff;
+  border-radius: 4px;
+  box-shadow: 0 0 0 1px rgba(27, 26, 31, 0.3);
+  image-rendering: pixelated;
+}
+
+.editor-controls,
+.editor-knobs {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.editor-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* The gradient-tracked slider. Firefox and WebKit need separate thumb rules. */
+/* The file input's own button is the browser's, so it is restyled rather than
+   hidden: a hidden one needs a label to drive it and this field already has a
+   perfectly good caption above it. */
+input[type="file"] {
+  width: 100%;
+  font-family: var(--font);
+  font-size: 12.5px;
+  color: var(--ink-60);
+  background: #fff;
+  border: 1px dashed rgba(27, 26, 31, 0.28);
+  border-radius: var(--r-sm);
+  box-shadow: none;
+  padding: 10px 12px;
+  min-height: 44px;
+}
+
+input[type="file"]::file-selector-button {
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--grad);
+  border: 0;
+  border-radius: 999px;
+  padding: 8px 14px;
+  margin-right: 12px;
+  box-shadow: var(--grad-lift-sm);
+  cursor: pointer;
+}
+
+input[type="range"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  height: 6px;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(27, 26, 31, 0.1);
+  box-shadow: none;
+  margin: 6px 0;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 1px var(--ink-12), var(--lift-sm);
+  cursor: pointer;
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border: 0;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 1px var(--ink-12), var(--lift-sm);
   cursor: pointer;
 }
 
 /* ---------- canvas ---------- */
 
+/* The tray the panel sits in: pressed into the page rather than lifted off it */
 .panel-outer {
   width: 100%;
   min-width: 0;
+  border-radius: var(--r);
+  background: var(--well);
+  box-shadow: var(--well-inset);
+  padding: 22px;
+  display: grid;
+  place-items: center;
 }
-
 /* Zero height and full width, so nothing can inflate it: this is what the
    scale is measured from. */
 .ruler {
@@ -879,9 +2764,9 @@ main {
 /* The frame is editor chrome and follows the theme; what it holds does not, so
    the backdrop behind the panel is the device's paper, not the interface's. */
 .panel-scaler {
-  border: var(--rule) solid var(--ink);
-  box-shadow: var(--shadow);
   background: #ffffff;
+  border-radius: 6px;
+  box-shadow: 0 0 0 1px rgba(27, 26, 31, 0.35), 0 22px 40px -26px rgba(27, 26, 31, 0.6);
   overflow: hidden;
 }
 
@@ -896,6 +2781,10 @@ main {
   --ink: #14110f;
   --paper: #ffffff;
   --grey: #f2efe9;
+  --red: #e63946;
+  --on-accent: #ffffff;
+  --rule: 3px;
+  --shadow: 6px 6px 0 #14110f;
 
   position: relative;
   transform-origin: top left;
@@ -929,8 +2818,8 @@ main {
 .cell {
   position: absolute;
   border-radius: 8px;
-  background-color: rgba(230, 57, 70, 0.07);
-  outline: 1px dashed rgba(230, 57, 70, 0.3);
+  background-color: rgba(47, 91, 216, 0.07);
+  outline: 1px dashed rgba(47, 91, 216, 0.3);
   outline-offset: -1px;
 }
 
@@ -938,7 +2827,7 @@ main {
    columns here to draw. */
 .cell.chip-band {
   border-radius: 22px;
-  background-color: rgba(230, 57, 70, 0.04);
+  background-color: rgba(47, 91, 216, 0.04);
 }
 
 .size-picker,
@@ -998,8 +2887,10 @@ main {
 }
 
 .widget.selected {
-  outline: var(--rule) solid var(--red);
+  outline: 2px solid #2f5bd8;
   outline-offset: 4px;
+  border-radius: 2px;
+  box-shadow: 0 0 0 6px rgba(47, 91, 216, 0.22);
 }
 
 /* The ghost is drawn outside the widget's own box, so the widget has to come
@@ -1026,9 +2917,9 @@ main {
      out a tall bar hanging off the card's edge. Only a screenshot showed it. */
   min-height: 0;
   min-width: 0;
-  border: var(--rule) solid var(--ink);
-  background: var(--red);
-  box-shadow: none;
+  border: 2px solid #fff;
+  background: #2f5bd8;
+  box-shadow: 0 2px 8px -2px rgba(27, 26, 31, 0.5);
   cursor: nwse-resize;
   touch-action: none;
 }
@@ -1044,25 +2935,26 @@ main {
   left: 0;
   top: 0;
   pointer-events: none;
-  outline: var(--rule) dashed var(--red);
+  outline: 2px dashed #2f5bd8;
   outline-offset: 2px;
-  background: rgba(230, 57, 70, 0.06);
+  background: rgba(47, 91, 216, 0.06);
 }
 
 .resize-ghost span {
   position: absolute;
   right: 0;
   bottom: -26px;
-  background: var(--red);
-  color: var(--on-accent);
+  background: #2f5bd8;
+  color: #fff;
   font-size: 11px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  padding: 2px 6px;
+  font-weight: 700;
+  border-radius: 999px;
+  letter-spacing: 0.04em;
+  padding: 2px 8px;
   white-space: nowrap;
 }
 
+/* ---------- widget previews ---------- */
 /* ---------- widget previews ---------- */
 
 .pv {
@@ -1345,615 +3237,126 @@ main {
 }
 
 /* ---------- inspector ---------- */
+/* ---------- narrow screens ---------- */
 
-.inspector-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.inspector-head h2 {
-  margin: 0;
-}
-
-.inspector-meta {
-  font-size: 10px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  padding: 6px 0 14px;
-  opacity: 0.65;
-}
-
-/* .field-block is a label in everything but the element: a group of buttons
-   inside a real <label> takes its accessible name from the label, which means
-   each button announces its neighbours' text instead of its own. */
-.inspector label,
-.inspector .field-block {
-  display: block;
-  margin-bottom: 18px;
-  min-width: 0;
-}
-
-.inspector label > span,
-.inspector .field-block > span {
-  display: block;
-  font-size: 10px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  margin-bottom: 6px;
-}
-
-/* ---------- entity picker ---------- */
-
-.entity-trigger {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  width: 100%;
-  text-transform: none;
-  letter-spacing: 0;
-  background: var(--paper);
-  text-align: left;
-}
-
-.entity-trigger-name {
-  font-weight: 800;
-}
-
-.entity-trigger-meta,
-.entity-trigger-empty {
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  opacity: 0.65;
-  font-weight: 700;
-}
-
-/* ---------- shared form furniture ----------
-   Grouped sections, fact tiles, switches and labelled fields. These lived
-   inside the old modal block, which is why they read as modal furniture;
-   they are used by every tab. */
-
-.group {
-  border-top: var(--rule) solid var(--ink);
-  padding-top: 14px;
-  margin-top: 14px;
-}
-
-.group:first-child {
-  border-top: none;
-  margin-top: 0;
-  padding-top: 0;
-}
-
-.group h3 {
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.22em;
-  font-weight: 800;
-  margin: 0 0 12px;
-}
-
-.facts {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
-  gap: 10px;
-}
-
-.fact {
-  border: 2px solid var(--ink);
-  padding: 8px 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-
-.fact b {
-  font-size: 17px;
-  font-weight: 800;
-}
-
-.fact b.ok {
-  color: var(--red);
-}
-
-.fact b.bad {
-  opacity: 0.5;
-}
-
-.fact small {
-  font-size: 9px;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  opacity: 0.7;
-}
-
-.switch {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  margin-bottom: 14px;
-}
-
-.switch input {
-  width: 22px;
-  height: 22px;
-  min-height: 0;
-  accent-color: var(--red);
-  flex: 0 0 auto;
-  padding: 0;
-}
-
-/* Time inputs have a wide intrinsic size; min-width:0 keeps them in the box */
-.field-row {
-  display: flex;
-  gap: 10px;
-}
-
-.field {
-  display: block;
-  margin-bottom: 14px;
-  flex: 1 1 0;
-  min-width: 0;
-}
-
-.field > span {
-  display: block;
-  font-size: 10px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  margin-bottom: 4px;
-}
-
-.tabs {
-  display: flex;
-  gap: 6px;
-  overflow-x: auto;
-  padding-bottom: 4px;
-  flex: 0 0 auto;
-}
-
-.tab {
-  padding: 8px 14px;
-  min-height: 38px;
-  box-shadow: none;
-  white-space: nowrap;
-  font-size: 11px;
-  background: var(--paper);
-  border-width: 2px;
-}
-
-.tab.active {
-  background: var(--red);
-  color: var(--on-accent);
-}
-
-/* ---------- pickers ----------
-
-   One shell for choosing an entity, a device, a room or a widget. These were
-   four hand-rolled modals whose differences read as meaning but were accident:
-   three had an area filter, one did not, and the widget list was not a modal at
-   all. See Picker.jsx. */
-
-.picker-backdrop {
-  position: fixed;
-  inset: 0;
-  background: var(--scrim);
-  z-index: 100;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-}
-
-.picker {
-  background: var(--paper);
-  border: var(--rule) solid var(--ink);
-  box-shadow: var(--shadow);
-  width: min(620px, 100%);
-  max-height: 86vh;
-  display: flex;
-  flex-direction: column;
-  padding: 16px;
-  gap: 12px;
-}
-
-.picker-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  flex: 0 0 auto;
-}
-
-.picker-head h2 {
-  font-size: 12px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.2em;
-  margin: 0;
-}
-
-.picker-search {
-  flex: 0 0 auto;
-}
-
-/* Where you are in the steps, and the way back to any of them. */
-.picker-crumbs {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px;
-  font-size: 11px;
-  flex: 0 0 auto;
-}
-
-.picker-crumbs i {
-  opacity: 0.4;
-  font-style: normal;
-  padding: 0 2px;
-}
-
-.picker-crumbs b {
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  font-size: 10px;
-}
-
-.picker-crumb {
-  padding: 4px 8px;
-  min-height: 0;
-  border-width: 2px;
-  box-shadow: none;
-  font-size: 10px;
-  background: var(--grey);
-}
-
-.picker-groups {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  flex: 0 0 auto;
-}
-
-/* A step's answers. Sized by the grid, not by how many there are, so one room
-   and twenty rooms look like the same kind of question. */
-.picker-tiles {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 8px;
-  overflow-y: auto;
-  flex: 1 1 auto;
-  min-height: 120px;
-  align-content: start;
-  /* Explicit, because `auto` rows in a grid that has been given a definite
-     height by the flex column above divide that height between them instead of
-     taking their content's -- which cut every tile's caption in half at
-     the bottom of its own box. */
-  grid-auto-rows: min-content;
-  padding: 2px;
-}
-
-.picker-tile {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
-  gap: 2px;
-  padding: 12px;
-  min-height: 76px;
-  text-align: left;
-  text-transform: none;
-  letter-spacing: 0;
-  background: var(--paper);
-  box-shadow: var(--shadow-sm);
-}
-
-.picker-tile-glyph {
-  font-size: 15px;
-  line-height: 1;
-  opacity: 0.65;
-}
-
-.picker-tile-label {
-  font-weight: 800;
-  font-size: 13px;
-  line-height: 1.2;
-}
-
-.picker-tile-count {
-  font-size: 9px;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  opacity: 0.55;
-}
-
-.picker-list {
-  overflow-y: auto;
-  border: var(--rule) solid var(--ink);
-  flex: 1 1 auto;
-  min-height: 120px;
-}
-
-.picker-row {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  width: 100%;
-  border: none;
-  border-bottom: 1px solid var(--ink-line);
-  box-shadow: none;
-  text-transform: none;
-  letter-spacing: 0;
-  text-align: left;
-  padding: 10px 12px;
-  background: var(--paper);
-}
-
-.picker-row:active {
-  transform: none;
-}
-
-.picker-row.active {
-  background: var(--yellow);
-  color: var(--on-yellow);
-}
-
-.picker-row-name {
-  font-weight: 800;
-}
-
-.picker-row-meta {
-  font-size: 10px;
-  opacity: 0.6;
-  word-break: break-all;
-}
-
-.picker-empty {
-  padding: 18px 4px;
-  text-align: center;
-}
-
-.picker-clear {
-  flex: 0 0 auto;
-  align-self: flex-start;
-}
-
-.picker-foot {
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  opacity: 0.6;
-  flex: 0 0 auto;
-}
-
-/* The widget picker's grid. Bigger cells than the stepped pickers' tiles,
-   because each one carries a real render of the widget rather than a word. */
-.widget-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 10px;
-  overflow-y: auto;
-  flex: 1 1 auto;
-  min-height: 140px;
-  align-content: start;
-  /* Explicit, because `auto` rows in a grid that has been given a definite
-     height by the flex column above divide that height between them instead of
-     taking their content's -- which cut every card's caption in half at
-     the bottom of its own box. */
-  grid-auto-rows: min-content;
-  padding: 2px;
-}
-
-.widget-card {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 6px;
-  padding: 10px;
-  text-align: left;
-  text-transform: none;
-  letter-spacing: 0;
-  background: var(--paper);
-  box-shadow: var(--shadow-sm);
-  min-height: 0;
-}
-
-.widget-card-shot {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  /* Not `height`. A flex item shrinks by default, so on a narrow screen the
-     column squeezed this to a few pixels -- the render became a hairline and
-     the size caption underneath was pushed out past the card's own border. */
-  flex: 0 0 62px;
-  height: 62px;
-  background: #fff;
-  border: 2px solid var(--ink);
-  overflow: hidden;
-}
-
-.widget-card-shot img {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
-}
-
-.widget-card-label {
-  font-weight: 800;
-  font-size: 13px;
-  flex: 0 0 auto;
-}
-
-.widget-card-size {
-  font-size: 9px;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  opacity: 0.55;
-  flex: 0 0 auto;
-}
-
-/* ---------- narrow screens ----------
-
-   One breakpoint that matters, not two tiers of half-measures. Above it the
-   canvas and the inspector sit side by side; below it the inspector becomes a
-   sheet over the canvas, because 300px of rail beside a 1280px panel scaled to
-   a phone leaves neither of them usable.
-
-   What used to be here and is not any more: rules unstacking the header into
-   three rows, rules turning the palette rail into a scrolling strip, and rules
-   turning the toolbar into another one. None of those elements exist now. */
-
-@media (max-width: 1000px) {
+/* The rail becomes a bottom tab bar and the three editor columns stack. The
+   canvas leads, because it is what you came to look at. */
+@media (max-width: 1180px) {
   .workspace {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas: "canvas";
+    grid-template-columns: minmax(0, 1fr) 290px;
+    grid-template-areas:
+      "canvas inspector"
+      "pages inspector";
   }
 
-  /* A sheet over the canvas. It is only rendered at all when a widget is
-     selected -- see .inspector.open -- so nothing is hidden behind it that the
-     user did not just tap. */
-  .inspector {
+  .images-tab {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 820px) {
+  .app {
+    padding: 12px;
+    /* Clear of the fixed tab bar, plus the home indicator on an iPhone */
+    padding-bottom: calc(86px + env(safe-area-inset-bottom, 0px));
+    gap: 0;
+    --gap: 12px;
+  }
+
+  .rail {
+    display: none;
+  }
+
+  /* Fixed rather than sticky: a sticky footer inside a grid column loses its
+     containing block once the column scrolls, and lands mid-page. */
+  .tabbar {
     position: fixed;
     left: 0;
     right: 0;
     bottom: 0;
-    z-index: 50;
-    max-height: 70vh;
-    overflow-y: auto;
-    border-bottom: none;
-    box-shadow: 0 -6px 0 var(--shadow-ink);
-    /* The iOS home indicator sits over the last 34px of a fixed element */
-    padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px));
-    display: none;
+    z-index: 40;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(22px);
+    -webkit-backdrop-filter: blur(22px);
+    border-top: 1px solid var(--ink-12);
+    padding: 8px 6px calc(12px + env(safe-area-inset-bottom, 0px));
   }
 
-  .inspector.open {
-    display: block;
-  }
-}
-
-@media (max-width: 720px) {
-  .app {
-    padding: 10px;
-    --gap: 10px;
-  }
-
-  /* The header stays one row. It used to wrap into three on a phone -- brand,
-     then the device summary, then the actions -- which was 185px of masthead
-     before a single tab.
-
-     The brand keeps its mark and loses its wordmark; the device summary loses
-     its "last heard from", since the Device tab is one tap away and carries
-     that in full. What is left is: is it there, how full is it, and Push. */
-  header {
+  .tabbar-item {
+    display: flex;
+    flex-direction: column;
     align-items: center;
-    flex-wrap: nowrap;
-    gap: 8px;
-  }
-
-  .brand {
-    padding: 6px;
-    flex: 0 0 auto;
-  }
-
-  .brand h1 {
-    display: none;
-  }
-
-  .device-summary {
-    padding: 8px 10px;
-    gap: 8px;
-    min-width: 0;
-    overflow: hidden;
-  }
-
-  .device-summary-state,
-  .device-summary-seen {
-    display: none;
-  }
-
-  .actions {
-    margin-left: auto;
-    gap: 6px;
-    flex: 0 0 auto;
-  }
-
-  .actions .sync {
-    /* Kept for screen readers and as the button's title; the tone shows on the
-       button itself, which is the thing you would press about it. */
-    width: 12px;
-    height: 12px;
+    gap: 4px;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
     padding: 0;
-    overflow: hidden;
-    text-indent: -999px;
-    border-radius: 50%;
-    flex: 0 0 auto;
+    color: var(--ink-60);
+    font-size: 10px;
+    font-weight: 500;
   }
 
-  /* The page menu takes the slack; everything beside it is intrinsic and
-     tightened until the whole bar fits one row at 390px. It reached three
-     rows before this. */
+  .tabbar-item .tabbar-glyph {
+    height: 30px;
+    display: grid;
+    place-items: center;
+    color: var(--ink-40);
+  }
+
+  .tabbar-item.active .tabbar-glyph {
+    width: 46px;
+    border-radius: 999px;
+    background: var(--grad);
+    box-shadow: 0 10px 18px -10px rgba(47, 91, 216, 0.95);
+    color: #fff;
+  }
+
+  .tabbar-item.active {
+    color: var(--blue);
+    font-weight: 600;
+  }
+
+  .workspace {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "canvas"
+      "pages"
+      "inspector";
+  }
+
+  /* The toast clears the tab bar rather than sitting behind it */
+  .toast {
+    bottom: calc(86px + env(safe-area-inset-bottom, 0px));
+  }
+
   .pagebar {
-    gap: 6px;
-  }
-
-  .pagebar-page {
-    flex: 1 1 90px;
-    min-width: 0;
-  }
-
-  .pagebar-select select {
-    min-width: 0;
-    width: 100%;
-    padding: 10px;
-  }
-
-  .pagebar-live {
-    padding: 4px 5px;
-    font-size: 8px;
+    gap: 8px;
   }
 
   .pagebar-add {
-    padding: 12px 12px;
-    font-size: 11px;
-    letter-spacing: 0.06em;
+    margin-left: 0;
   }
 
-  .pagebar-edit {
-    gap: 2px;
+  .panel-outer {
+    padding: 14px;
   }
 
-  .pagebar-edit .icon-button {
-    width: 36px;
-    height: 36px;
-    min-height: 0;
+  .settings-grid {
+    grid-template-columns: minmax(0, 1fr);
   }
 
-  .main-tabs .tab {
-    padding: 11px 14px;
-    font-size: 11px;
-    letter-spacing: 0.08em;
+  .page-row {
+    gap: 10px;
   }
 
-  /* Under the canvas rather than over it: at this width the dock would cover
-     the chip row, which is a real part of the layout being edited. */
-  .canvas-dock {
-    position: static;
-    margin-top: 8px;
-    justify-content: space-between;
-    box-shadow: none;
+  .page-row-controls,
+  .page-row-actions {
+    width: 100%;
   }
 
+  /* A sheet from the bottom edge, which is where a thumb is */
   .picker-backdrop {
     padding: 0;
     align-items: flex-end;
@@ -1962,726 +3365,10 @@ main {
   .picker {
     width: 100%;
     max-height: 92vh;
-    padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
-  }
-
-  .page-row {
-    grid-template-columns: auto minmax(0, 1fr);
-  }
-
-  .page-row-controls,
-  .page-row-actions,
-  .page-row-chips {
-    grid-column: 2;
+    border-radius: 26px 26px 0 0;
   }
 
   .editor-split {
-    grid-template-columns: minmax(0, 1fr);
+    flex-direction: column;
   }
-
-  /* The step number keeps its column but stops taking 46px of a 390px screen */
-  .step {
-    gap: 8px;
-  }
-
-  .step-mark {
-    width: 20px;
-    height: 20px;
-    font-size: 10px;
-  }
-
-  /* Three short options fit one row here; at the default padding they came to
-     342px against 308px of card and each took a row of its own. */
-  .size-picker .chip {
-    padding: 6px 8px;
-    font-size: 10px;
-    letter-spacing: 0.04em;
-  }
-
-  .grid-size {
-    gap: 10px;
-  }
-
-  .grid-size-cells {
-    width: 150px;
-  }
-}
-
-/* --- images tab --------------------------------------------------------- */
-
-.images-tab {
-  display: grid;
-  gap: var(--gap);
-  padding: var(--gap);
-  align-content: start;
-}
-
-.upload label,
-/* Groups of buttons use .field rather than a label: a label names one control,
-   and wrapping several in one gives each of them the whole label as its
-   accessible name. */
-.upload .field {
-  display: grid;
-  gap: 6px;
-  margin-bottom: var(--gap);
-}
-
-.upload input[type="file"] {
-  padding: 8px;
-}
-
-/* A checkbox beside its label, rather than the stacked grid every other field
-   in this form uses. */
-.upload label.toggle {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-}
-
-.upload label.toggle input {
-  width: 18px;
-  height: 18px;
-  margin-top: 2px;
-  flex: none;
-}
-
-.upload label.toggle span {
-  display: grid;
-  gap: 2px;
-}
-
-/* Matches .hint, which is how every other explanatory line in this form is
-   dimmed -- there is no muted colour token, it is done with opacity. */
-.upload label.toggle small {
-  font-size: 12px;
-  opacity: 0.7;
-  line-height: 1.5;
-  font-weight: 400;
-}
-
-.image-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: var(--gap);
-}
-
-.image-item {
-  margin: 0;
-  display: grid;
-  gap: 8px;
-  border: var(--rule) solid var(--ink);
-  box-shadow: var(--shadow);
-  background: var(--paper);
-  padding: 10px;
-}
-
-/* Nearest-neighbour: these are 1-bit bitmaps, and smoothing them in the browser
-   would show something the panel cannot produce. White behind them for the same
-   reason the canvas stays white — this is the device's paper, not the theme's. */
-.image-item img {
-  width: 100%;
-  height: auto;
-  image-rendering: pixelated;
-  border: 2px solid var(--ink);
-  background: #ffffff;
-}
-
-.image-item figcaption {
-  display: grid;
-  gap: 2px;
-}
-
-.image-item figcaption small {
-  opacity: 0.7;
-}
-
-.option-preview {
-  margin-top: 8px;
-  width: 100%;
-  height: auto;
-  image-rendering: pixelated;
-  border: 2px solid var(--ink);
-  background: #ffffff;
-}
-
-/* Whether the panel has actually fetched an image yet */
-.badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  justify-self: start;
-  padding: 3px 8px;
-  border: 2px solid var(--ink);
-  font-size: 10px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-}
-
-.badge svg {
-  width: 13px;
-  height: 13px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2.2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.badge.ok { background: var(--ink); color: var(--on-ink); }
-.badge.waiting { background: var(--yellow); color: var(--on-yellow); }
-.badge.unknown { background: var(--grey); opacity: 0.75; }
-
-/* Static text on the canvas. white-space: pre-wrap keeps the newlines that the
-   firmware also treats as line breaks. */
-.pv-text {
-  width: 100%;
-  height: 100%;
-  white-space: pre-wrap;
-  overflow: hidden;
-  color: var(--ink);
-  font-family: var(--font);
-}
-
-.inspector textarea {
-  font: inherit;
-  padding: 8px;
-  resize: vertical;
-}
-
-.group-actions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-top: 10px;
-}
-
-.report-age {
-  align-self: center;
-  font-size: 10px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  opacity: 0.6;
-}
-
-/* A picture of a screen that can only do black on white, so it keeps its own
-   colours in either theme -- the same reasoning as .panel on the canvas. The
-   border is what stops a white panel dissolving into a light background. */
-.screenshot {
-  display: block;
-  width: 100%;
-  height: auto;
-  margin-top: 12px;
-  background: #ffffff;
-  border: var(--rule) solid var(--ink);
-  box-shadow: var(--shadow-sm);
-  /* Crisp rather than smoothed: this is 1-bit art shown below its own size, and
-     interpolation turns the dither patterns into grey mush. */
-  image-rendering: pixelated;
-}
-
-.device-log {
-  margin-top: 12px;
-  max-height: 320px;
-  overflow: auto;
-  padding: 12px;
-  background: var(--grey);
-  border: var(--rule) solid var(--ink);
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 11px;
-  line-height: 1.5;
-  /* Long lines wrap rather than scrolling sideways: a log is read top to
-     bottom, and a horizontal scrollbar hides the ends of exactly the lines
-     that are long because something went wrong. */
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
-.custom-size {
-  display: flex;
-  gap: var(--gap);
-  margin-top: 10px;
-}
-
-.custom-size label {
-  flex: 1;
-  margin-bottom: 0;
-}
-
-/* --- a device widget's entity list ------------------------------------------
-   Which of a device's entities the card draws, and in what order. Both at once,
-   in one list: the chosen ones sit at the top in their own order, the rest
-   below. Two panels to look between would make reordering feel like a different
-   task from choosing, and it is the same one. */
-.device-entities {
-  margin-top: 10px;
-  border: 2px solid var(--ink);
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.device-entities-head {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 6px 10px;
-  background: var(--grey);
-  font-size: 10px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.device-entities-warn {
-  color: var(--on-yellow);
-  background: var(--yellow);
-  padding: 0 6px;
-  border-radius: 4px;
-}
-
-.device-entities-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  max-height: 260px;
-  overflow-y: auto;
-}
-
-.device-entity {
-  display: flex;
-  align-items: stretch;
-  border-top: 1px solid var(--ink-line);
-}
-
-.device-entity:first-child {
-  border-top: none;
-}
-
-/* Dimmed rather than hidden: an entity that is chosen but past what this size
-   draws is still a choice, and one that silently vanished would read as a bug. */
-.device-entity.overflow .device-entity-text {
-  opacity: 0.55;
-}
-
-.device-entity-toggle {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  border: none;
-  box-shadow: none;
-  background: none;
-  text-transform: none;
-  letter-spacing: 0;
-  text-align: left;
-  padding: 7px 10px;
-  min-width: 0;
-}
-
-.device-entity-toggle:active {
-  transform: none;
-}
-
-.device-entity-box {
-  flex: 0 0 auto;
-  width: 18px;
-  height: 18px;
-  border: 2px solid var(--ink);
-  border-radius: 4px;
-  display: grid;
-  place-items: center;
-  font-size: 12px;
-  font-weight: 900;
-  line-height: 1;
-}
-
-.device-entity.on .device-entity-box {
-  background: var(--ink);
-  color: var(--paper);
-}
-
-.device-entity-text {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  min-width: 0;
-}
-
-.device-entity-name {
-  font-weight: 800;
-  font-size: 12px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.device-entity-meta {
-  font-size: 10px;
-  font-weight: 600;
-  opacity: 0.6;
-}
-
-.device-entity-order {
-  display: flex;
-  flex-direction: column;
-  flex: 0 0 auto;
-}
-
-.device-entity-order button {
-  border: none;
-  border-left: 1px solid var(--ink-line);
-  box-shadow: none;
-  background: none;
-  padding: 0 8px;
-  font-size: 11px;
-  line-height: 1;
-  flex: 1;
-}
-
-.device-entity-order button:disabled {
-  opacity: 0.25;
-}
-
-.device-entity-order button:active {
-  transform: none;
-}
-
-/* --- the image editor ---------------------------------------------------- */
-
-.image-editor {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-/* The window the photo is dragged behind. Its aspect ratio is set inline from
-   the chosen target, so the box on screen is the shape the panel will show. */
-.editor-stage {
-  position: relative;
-  width: 100%;
-  max-width: 520px;
-  overflow: hidden;
-  border-radius: 10px;
-  border: 1px solid var(--ink-line);
-  /* A checkerboard would suggest transparency, which the panel does not have.
-     Plain paper is the honest backdrop. */
-  background: #fff;
-  cursor: grab;
-  touch-action: none; /* or a drag scrolls the page on a touchscreen */
-}
-
-.editor-stage:active {
-  cursor: grabbing;
-}
-
-/* The preview canvas is the panel's own pixels, so it must not be smoothed on
-   the way up to CSS size -- a blurred dither looks like grey, which is exactly
-   the thing this panel cannot do. */
-.editor-preview {
-  display: block;
-  width: 100%;
-  height: 100%;
-  image-rendering: pixelated;
-  -webkit-user-drag: none;
-  user-select: none;
-}
-
-.editor-controls {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.editor-buttons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-/* ---------- the canvas dock ----------
-
-   Snap and zoom, docked to the canvas. Both describe how this view behaves and
-   change nothing that reaches the panel, so they belong to the thing they act
-   on rather than to the bar of controls that edit the layout. As two of four
-   groups in a shared toolbar they were also the two most often scrolled off a
-   phone's edge, which is the worst place for the control that makes precise
-   placement possible at all. */
-
-.panel-outer {
-  position: relative;
-}
-
-.canvas-dock {
-  position: absolute;
-  right: 8px;
-  bottom: 8px;
-  display: flex;
-  gap: 6px;
-  background: var(--paper);
-  border: 2px solid var(--ink);
-  padding: 4px;
-  box-shadow: var(--shadow-sm);
-}
-
-.dock-group {
-  display: flex;
-  gap: 2px;
-}
-
-/* A hairline between the two groups, so six chips read as two questions */
-.dock-group + .dock-group {
-  border-left: 2px solid var(--ink-faint);
-  padding-left: 6px;
-}
-
-.canvas-dock .chip {
-  min-height: 30px;
-  padding: 4px 9px;
-  font-size: 10px;
-  border-width: 0;
-  box-shadow: none;
-}
-
-.canvas-dock .chip.active {
-  background: var(--blue);
-  color: var(--on-accent);
-}
-
-/* ---------- sub-tabs ----------
-
-   Inside a tab panel, so lighter than .main-tabs: no bottom rule to sit on,
-   because the card below already has a border of its own. */
-
-.tabs.subtabs {
-  gap: 6px;
-  margin-bottom: 0;
-}
-
-.subtabs .tab {
-  position: relative;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-}
-
-.subtabs .tab.active {
-  background: var(--ink);
-  color: var(--on-ink);
-}
-
-.tab-dot {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--red);
-}
-
-/* An action and the sentence explaining it, kept together. The Device tab's
-   diagnostics are things you do rarely and want to read about first. */
-.action-row {
-  border-top: 2px solid var(--ink-faint);
-  padding-top: 12px;
-  margin-top: 12px;
-}
-
-.action-row:first-of-type {
-  border-top: none;
-  padding-top: 0;
-  margin-top: 0;
-}
-
-.action-row .hint {
-  margin-top: 6px;
-}
-
-/* ---------- the image upload's steps ----------
-
-   The form used to ask everything at once, in the order the options happened to
-   be written, with nothing saying which questions mattered before a file had
-   been chosen. */
-
-.step {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 12px;
-  border-top: 2px solid var(--ink-faint);
-  padding-top: 16px;
-  margin-top: 16px;
-}
-
-.step:first-of-type {
-  border-top: none;
-  padding-top: 0;
-  margin-top: 0;
-}
-
-.step-mark {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  background: var(--ink);
-  color: var(--on-ink);
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.step-body {
-  min-width: 0;
-}
-
-.step-body > .field:last-child {
-  margin-bottom: 0;
-}
-
-.field-title {
-  display: block;
-  font-size: 10px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  margin-bottom: 8px;
-}
-
-/* The preview and the knobs that change it, side by side, so a slider and what
-   it does to the picture are visible at the same time. */
-.editor-split {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(220px, 280px);
-  gap: var(--gap);
-  align-items: start;
-}
-
-.editor-knobs > .field:last-child,
-.editor-knobs > .toggle:last-child {
-  margin-bottom: 0;
-}
-
-.upload-actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 18px;
-}
-
-/* A choice between two or three options, each needing a sentence. A .chip puts
-   its label and its <small> on one line, which is right for "Grid / 20px /
-   1px" and wrong the moment the hint is a clause. */
-
-.choice-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-  gap: 8px;
-  margin-top: 2px;
-}
-
-.choice-card {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 3px;
-  padding: 12px;
-  text-align: left;
-  text-transform: none;
-  letter-spacing: 0;
-  background: var(--paper);
-  box-shadow: var(--shadow-sm);
-}
-
-.choice-card b {
-  font-size: 14px;
-  font-weight: 800;
-}
-
-.choice-card small {
-  font-size: 11px;
-  opacity: 0.65;
-  line-height: 1.35;
-}
-
-.choice-card.active {
-  background: var(--blue);
-  color: var(--on-accent);
-}
-
-.choice-card.active small {
-  opacity: 0.85;
-}
-
-/* ---------- the picture's size on the panel ----------
-
-   Two rows of chips -- "1 wide 2 wide ..." then "1 tall 2 tall ..." -- asked
-   for a footprint as two numbers and pictured neither. The panel is a 5x3 grid,
-   so the honest control is the grid itself. */
-
-.grid-size {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-top: 10px;
-  flex-wrap: wrap;
-}
-
-.grid-size-cells {
-  display: grid;
-  gap: 3px;
-  border: 2px solid var(--ink);
-  padding: 3px;
-  background: var(--grey);
-  /* The panel's own 16:9, so the rectangle swept out here is the shape the
-     picture will actually be. */
-  width: 176px;
-  aspect-ratio: 1280 / 720;
-}
-
-.grid-cell {
-  min-height: 0;
-  min-width: 0;
-  padding: 0;
-  border: none;
-  box-shadow: none;
-  background: var(--paper);
-}
-
-.grid-cell:active {
-  transform: none;
-}
-
-.grid-cell.on {
-  background: var(--blue);
-}
-
-.grid-size-read b {
-  display: block;
-  font-size: 19px;
-  font-weight: 800;
-  line-height: 1.1;
-}
-
-.grid-size-read small {
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  opacity: 0.6;
-}
-
-/* A range with its value in the label, so the number is readable without
-   dragging to find out. */
-.field > span b {
-  float: right;
-  font-weight: 800;
-  opacity: 0.9;
-  letter-spacing: 0;
-}
-
-input[type="range"] {
-  width: 100%;
-  min-height: 0;
-  padding: 0;
-  border: none;
-  background: none;
-  accent-color: var(--blue);
 }

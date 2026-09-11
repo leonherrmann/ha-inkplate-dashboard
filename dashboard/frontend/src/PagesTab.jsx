@@ -16,6 +16,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
+import PageThumb from "./PageThumb.jsx";
 import { CHIP_ROW_POSITIONS, DEFAULT_CHIP_ROW } from "./layout.js";
 
 // The pages of the dashboard: what they are called, what order they come in,
@@ -39,7 +40,7 @@ const DWELLS = [
   { value: 900, label: "15 minutes" },
 ];
 
-function Row({ page, index, count, currentPageId, pageLocked, onSet, onShow, onRemove, onEdit }) {
+function Row({ page, index, count, currentPageId, pageLocked, manifest, uploads, panel, onSet, onShow, onRemove, onEdit }) {
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } =
     useSortable({ id: page.id });
 
@@ -66,6 +67,8 @@ function Row({ page, index, count, currentPageId, pageLocked, onSet, onShow, onR
       >
         <span aria-hidden="true">⠿</span>
       </button>
+
+      <PageThumb page={page} manifest={manifest} uploads={uploads} panel={panel} />
 
       <div className="page-row-main">
         <input
@@ -150,6 +153,9 @@ export default function PagesTab({
   layout,
   currentPageId,
   pageLocked,
+  manifest,
+  uploads,
+  panel,
   onChange,
   onShowPage,
   onEditPage,
@@ -223,6 +229,9 @@ export default function PagesTab({
                   count={pages.length}
                   currentPageId={currentPageId}
                   pageLocked={pageLocked}
+                  manifest={manifest}
+                  uploads={uploads}
+                  panel={panel}
                   onSet={(changes) =>
                     changes.chip_row
                       ? onSetChipRow(page.id, changes.chip_row)
