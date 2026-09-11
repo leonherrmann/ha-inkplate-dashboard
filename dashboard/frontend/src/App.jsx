@@ -761,6 +761,7 @@ export default function App() {
           onShowInfo={() =>
             api.showDeviceInfo().then(() => setMessage("Device info sent to the panel"))
           }
+          onPush={push}
         />
       )}
 

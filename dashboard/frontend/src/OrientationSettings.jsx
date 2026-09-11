@@ -1,3 +1,5 @@
+import { OrientIcon } from "./Icons.jsx";
+
 // Which way up the panel is hung.
 //
 // Deliberately not called "rotation" anywhere the user can see it: this editor
@@ -14,7 +16,7 @@
 // the words changed -- the degrees are still the degrees, so stored layouts
 // need no migration.
 export const ORIENTATIONS = [
-  { degrees: 180, label: "Normal", hint: "The usual way up" },
+  { degrees: 180, label: "Upright", hint: "The usual way up" },
   { degrees: 0, label: "Upside down", hint: "Turned the other way up" },
 ];
 
@@ -24,32 +26,37 @@ export default function OrientationSettings({ orientation, onChange }) {
   const degrees = Number(orientation ?? DEFAULT_ORIENTATION);
 
   return (
-    <section className="group">
-      <h3>Orientation</h3>
+    <section className="card">
+      <div className="card-head">
+        <span className="token blue">
+          <OrientIcon size={16} />
+        </span>
+        <b>Orientation</b>
+      </div>
 
       {/* A group rather than a <label>: wrapping several buttons in a label
           makes a screen reader read every one of them as the name of each,
-          so "Upside down" announces as "Orientation Normal Upside down". That
+          so "Upside down" announces as "Orientation Upright Upside down". That
           exact defect has been fixed in this editor twice already. */}
-      <div className="field" role="group" aria-label="Screen orientation">
-        <span>Screen</span>
-        <select
-          value={String(degrees)}
-          onChange={(event) => onChange(Number(event.target.value))}
-        >
-          {ORIENTATIONS.map((option) => (
-            <option key={option.degrees} value={String(option.degrees)}>
-              {option.label}
-            </option>
-          ))}
-        </select>
+      <div className="orient" role="group" aria-label="Screen orientation">
+        {ORIENTATIONS.map((option) => (
+          <button
+            key={option.degrees}
+            className={degrees === option.degrees ? "active" : undefined}
+            onClick={() => onChange(option.degrees)}
+            aria-pressed={degrees === option.degrees}
+            title={option.hint}
+          >
+            <span className="orient-screen" />
+            {option.label}
+          </button>
+        ))}
       </div>
 
       <p className="hint">
-        Turns the whole dashboard over, for a panel mounted the other way up.
-        The layout does not change — the same widgets stay in the same places,
-        the picture is simply the other way round. The screen flashes once when
-        it changes, because every pixel means something different afterwards.
+        Quarter turns are impossible — every widget fixes its box in pixels. The
+        screen flashes once when this changes, because every pixel means
+        something different afterwards.
       </p>
     </section>
   );

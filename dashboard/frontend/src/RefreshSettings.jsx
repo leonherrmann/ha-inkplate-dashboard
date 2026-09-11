@@ -1,3 +1,5 @@
+import { RefreshIcon } from "./Icons.jsx";
+
 // How often the panel clears itself. e-ink can repaint quickly, but each quick
 // repaint leaves a faint ghost of what was there before; only the slow
 // black-flash refresh clears them. The device counts how much of the screen has
@@ -14,21 +16,25 @@ export const REFRESH_LEVELS = [
   {
     percent: 6,
     label: "Cleanest — clears often",
+    short: "about every hour",
     estimate: "roughly every hour on a typical dashboard",
   },
   {
     percent: 12,
     label: "Balanced (recommended)",
+    short: "about twice an hour · default",
     estimate: "roughly every 2 hours on a typical dashboard",
   },
   {
     percent: 25,
     label: "Relaxed — fewer flashes",
+    short: "a few times a day",
     estimate: "roughly every 5 hours on a typical dashboard",
   },
   {
     percent: 50,
     label: "Rarely — expect visible ghosting",
+    short: "rarely, more ghosting",
     estimate: "most of a day on a typical dashboard",
   },
 ];
@@ -45,31 +51,47 @@ export default function RefreshSettings({ refresh, onChange }) {
   const known = REFRESH_LEVELS.find((level) => level.percent === percent);
 
   return (
-    <section className="group">
-      <h3>Screen refresh</h3>
+    <section className="card">
+      <div className="card-head">
+        <span className="token teal">
+          <RefreshIcon size={16} width={2} />
+        </span>
+        <b>Screen refresh</b>
+        <span className="report-age" style={{ marginLeft: "auto" }}>
+          ghosting allowed
+        </span>
+      </div>
 
-      <label className="field">
-        <span>Clear the screen</span>
-        <select
-          value={String(percent)}
-          onChange={(event) =>
-            onChange({ ...value, ghost_percent: Number(event.target.value) })
-          }
-        >
-          {!known && <option value={String(percent)}>Custom — {percent}% of the screen</option>}
-          {REFRESH_LEVELS.map((level) => (
-            <option key={level.percent} value={String(level.percent)}>
-              {level.label}
-            </option>
-          ))}
-        </select>
-      </label>
+      <div className="choice-cards">
+        {!known && (
+          <div className="choice active">
+            <span className="choice-mark" />
+            <b>{percent} %</b>
+            <small>set through the API</small>
+          </div>
+        )}
+        {REFRESH_LEVELS.map((level) => {
+          const active = level.percent === percent;
+          return (
+            <button
+              key={level.percent}
+              className={active ? "choice active" : "choice"}
+              onClick={() => onChange({ ...value, ghost_percent: level.percent })}
+              aria-pressed={active}
+              title={level.label}
+            >
+              <span className="choice-mark" />
+              <b>{level.percent} %</b>
+              <small>{level.short}</small>
+            </button>
+          );
+        })}
+      </div>
 
       <p className="hint">
-        Quick updates leave a faint ghost of the previous image; a full refresh
-        flashes the screen black to clear them. The device flashes once{" "}
-        {percent}% of the screen has ghosted — {known?.estimate || "how often depends on what is on screen"}.
-        A page with a large clock reaches it about twice as fast.
+        The device flashes once {percent}% of the screen has ghosted —{" "}
+        {known?.estimate || "how often depends on what is on screen"}. A page with a large
+        clock reaches it about twice as fast.
       </p>
     </section>
   );

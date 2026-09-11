@@ -1189,6 +1189,64 @@ textarea:focus {
   max-width: 1120px;
 }
 
+/* The Device and Diagnostics screens are wider than a settings column: they are
+   a grid of cards with a column of facts beside it. */
+.screen-layout.wide {
+  max-width: 1500px;
+}
+
+/* Settings grid, then the panel-owned column beside it -- design 1e. */
+.device-screen {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  align-items: start;
+}
+
+/* Screenshot and battery on the left, what the panel reports on the right --
+   design 1g. */
+.diagnostics {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: 400px minmax(0, 1fr);
+  align-items: start;
+}
+
+.owned-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.owned-list > div {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 12.5px;
+}
+
+/* The row that leads to Diagnostics spans the settings grid rather than sitting
+   as a fifth card in it. */
+.settings-grid > .action-row {
+  grid-column: 1 / -1;
+}
+
+.settings-grid > .action-row .badge {
+  margin-left: auto;
+}
+
+.settings-grid > .action-row svg:last-child {
+  color: var(--ink-40);
+}
+
+@media (max-width: 1180px) {
+  .device-screen,
+  .diagnostics {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 /* The sub-tab track is as wide as its tabs, not as wide as the screen. */
 .subtabs {
   align-self: flex-start;
@@ -2240,9 +2298,15 @@ input.picker-search {
 
 .settings-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
   align-items: start;
+}
+
+@media (max-width: 900px) {
+  .settings-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 /* A radio row: the choice, its name, and what it means in practice */
@@ -2300,6 +2364,44 @@ input.picker-search {
   background: var(--blue);
   border-color: var(--blue);
   box-shadow: inset 0 0 0 3.5px #fff;
+}
+
+/* Which way up the panel hangs, as a sketch of the screen over its name */
+.orient {
+  display: flex;
+  gap: 9px;
+}
+
+.orient button {
+  flex: 1;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 8px;
+  border-radius: 14px;
+  padding: 12px;
+  font-size: 12.5px;
+  font-weight: 700;
+  text-align: left;
+}
+
+.orient .orient-screen {
+  display: block;
+  width: 100%;
+  height: 34px;
+  border-radius: 5px;
+  background: rgba(27, 26, 31, 0.08);
+}
+
+.orient button.active {
+  border: 0;
+  background: var(--grad);
+  color: #fff;
+  box-shadow: var(--grad-lift);
+}
+
+.orient button.active .orient-screen {
+  background: rgba(255, 255, 255, 0.28);
 }
 
 /* The big clock-style time readouts in night sleep */
@@ -2502,6 +2604,18 @@ img.screenshot {
   letter-spacing: 0;
   text-transform: none;
   font-weight: 600;
+}
+
+/* The same element used as prose under a card, where it is a footnote rather
+   than a warning about a count. */
+.card > .device-entities-warn {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--ink-12);
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--ink-60);
+  line-height: 1.5;
 }
 
 /* ---------- images ---------- */
