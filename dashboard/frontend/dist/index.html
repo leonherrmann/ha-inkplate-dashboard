@@ -2,34 +2,24 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Inkplate Dashboard</title>
     <!--
-      Before the first paint, not in React: the body's background comes from CSS
-      the moment it loads, so setting this from a module would show a white flash
-      on the way into the dark theme. It also has to happen outside the app,
-      because App.jsx returns early while loading and when the backend cannot be
-      reached, and neither of those screens mounts the toggle.
+      The ground colour, before the stylesheet has loaded. One line rather than
+      the theme bootstrap that used to live here: the editor is light only now,
+      so there is no stored choice to read and nothing to resolve before paint.
 
-      Deliberately dumb, and the storage key is the one thing duplicated from
-      theme.js, which owns everything else about the theme.
+      viewport-fit=cover on the meta above is what makes env(safe-area-inset-bottom)
+      report a real number, which the mobile tab bar pads itself by.
     -->
-    <script>
-      (() => {
-        let mode = null;
-        try {
-          mode = localStorage.getItem("inkplate-dashboard-theme");
-        } catch {
-          // Storage refused; fall through to following the system
-        }
-        const dark =
-          mode === "dark" ||
-          (mode !== "light" && matchMedia("(prefers-color-scheme: dark)").matches);
-        document.documentElement.dataset.theme = dark ? "dark" : "light";
-      })();
-    </script>
-    <script type="module" crossorigin src="./assets/index-CPEK7zVf.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-CxRi8NEs.css">
+    <style>
+      html,
+      body {
+        background: #efece6;
+      }
+    </style>
+    <script type="module" crossorigin src="./assets/index-CRqyFnDU.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-DhN-QPsJ.css">
   </head>
   <body>
     <div id="root"></div>
