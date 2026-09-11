@@ -1,5 +1,27 @@
 # Changelog
 
+## 2026.9.36
+
+- **A new look.** The editor is rebuilt on a design of floating glass panels
+  over a warm ground: translucent cards, soft depth instead of hard shadows,
+  round corners throughout, and a single blue-to-violet gradient kept for
+  whichever action actually matters on the screen you are looking at.
+- **The header and its tabs are gone.** The four sections — Editor, Pages,
+  Device, Images — are a floating rail down the left on a desktop and a tab bar
+  along the bottom on a phone, so the chrome above the canvas is a bar rather
+  than three bands.
+- **The device moved in beside the pages.** Which panel it is, whether it is
+  online, its battery and signal, how many edits are waiting and the Push button
+  are one card at the top of the editor's left column, under a list of your
+  pages — so what you are editing and what you are editing it onto are in the
+  same place.
+- **A page is recognisable by its shape.** Rows on the Pages screen now carry a
+  real render of the page at thumbnail size rather than only its name.
+- **Dark mode is gone for now.** The design is light only. The editor no longer
+  follows Home Assistant's theme; a dark version may come back later.
+- Nothing about how the panel is driven has changed, and nothing in a layout
+  needs redoing. Same firmware as 2026.9.35.
+
 ## 2026.9.35
 
 - **Fixes the panel's timer restarting itself.** Pausing did not stop it, the
