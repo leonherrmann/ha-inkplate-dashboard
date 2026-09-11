@@ -10,6 +10,7 @@ import {
 
 import WidgetPreview from "./WidgetPreview.jsx";
 import {
+  CHIP_ROW_POSITIONS,
   SNAP_MODES,
   ZOOM_LEVELS,
   cardBandTop,
@@ -242,6 +243,7 @@ export default function Panel({
   zoom,
   onZoom,
   onSnap,
+  onChipRow,
 }) {
   const [rulerRef, available] = useAvailableWidth();
 
@@ -383,6 +385,32 @@ export default function Panel({
               </button>
             ))}
           </div>
+
+          {/* The chip row is back beside them. It is a page setting rather than
+              a view setting, so it does not strictly belong to a dock of view
+              controls -- but it is the one page setting whose effect you can
+              only judge by looking at the canvas: turning it off gives every
+              card on the page the row's height, and every widget moves. Set it
+              from a list of pages and you are choosing blind.
+
+              Labelled, because "Off" among Snap and Zoom would otherwise read
+              as a third way to turn one of those off. */}
+          {onChipRow && (
+            <>
+              <span>Chips</span>
+              <div className="dock-group" role="group" aria-label="Chip row">
+                {CHIP_ROW_POSITIONS.map(({ id, label }) => (
+                  <button
+                    key={id}
+                    className={id === chipRow ? "chip active" : "chip"}
+                    onClick={() => onChipRow(id)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>

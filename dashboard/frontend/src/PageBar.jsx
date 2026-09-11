@@ -4,11 +4,11 @@
 // bordered groups holding twelve chips -- which on a phone was 126px of chrome
 // above a canvas that had barely 200px left. They are one bar now.
 //
-// What went: the chip row buttons, which are a *page* setting and now live with
-// the other page settings in the Pages tab; and snap and zoom, which describe
-// how the canvas behaves rather than what is on it, and are docked to the
-// canvas together. What is left is the page you are editing and the three
-// actions that change it.
+// What went: snap and zoom, which describe how the canvas behaves rather than
+// what is on it; and the chip row buttons, which are a page setting but one you
+// can only judge by watching the canvas. All three are docked to the canvas
+// itself. What is left is the page you are editing and the three actions that
+// change it.
 
 export default function PageBar({
   pages,

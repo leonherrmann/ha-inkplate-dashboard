@@ -355,9 +355,10 @@ export default function App() {
   // every row 34px taller, so the pitch changes and a widget has to be put back
   // on the row it was on rather than nudged by a constant. regridY does that.
   //
-  // Takes the page id rather than assuming the one being edited: the setting
-  // now lives in the Pages tab, where any page's row can be changed without
-  // first navigating to it.
+  // Takes the page id rather than assuming the one being edited. Only the
+  // canvas dock calls it now, which always means the active page -- but the
+  // confirm below names the page it is about, and a function that has to be
+  // told which page that is cannot name the wrong one.
   const setChipRow = (pageId, next) => {
     const page = pages.find((one) => one.id === pageId);
     if (!page) return;
@@ -662,6 +663,7 @@ export default function App() {
               zoom={zoom}
               onZoom={setZoom}
               onSnap={setSnapMode}
+              onChipRow={(next) => activePage && setChipRow(activePage.id, next)}
             />
           </main>
 
@@ -704,7 +706,6 @@ export default function App() {
           uploads={uploads}
           panel={panel}
           onChange={persist}
-          onSetChipRow={setChipRow}
           onAddPage={addPage}
           onEditPage={(id) => {
             setActivePageId(id);

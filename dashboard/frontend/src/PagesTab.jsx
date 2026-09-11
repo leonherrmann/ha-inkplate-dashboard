@@ -17,7 +17,9 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 
 import PageThumb from "./PageThumb.jsx";
-import { CHIP_ROW_POSITIONS, DEFAULT_CHIP_ROW } from "./layout.js";
+import { CheckIcon, GripIcon, LockIcon, PencilIcon, TrashIcon } from "./Icons.jsx";
+import { DEFAULT_CHIP_ROW } from "./layout.js";
+import { effectiveDwell, formatClock, formatDuration } from "./format.js";
 
 // The pages of the dashboard: what they are called, what order they come in,
 // which of them the panel cycles through, and for how long.
@@ -30,17 +32,45 @@ import { CHIP_ROW_POSITIONS, DEFAULT_CHIP_ROW } from "./layout.js";
 // The device holds the rotation and advances on its own timer, so it carries on
 // when the add-on, broker or WiFi is not there -- and it has to, since a
 // sleeping device could not be driven from outside at all.
+//
+// Design 1c puts the rotation switch and the default dwell in the header rather
+// than in a card below the list, because both of them describe the list you are
+// looking at; and it moves the per-page settings off the row's face -- queued
+// is a two-way segment, the actions are icons, and the chip row is not here at
+// all. That last one went back to the canvas dock, where you can see what
+// turning it off does to the page.
 
+// Short, because both places these appear are sentences -- "dwell 30 s" in a
+// row's meta line, "Default dwell 30 s" in the header pill -- and a menu that
+// says "30 seconds" inside one reads as a stray fragment of another.
 const DWELLS = [
-  { value: 0, label: "Default" },
-  { value: 15, label: "15 seconds" },
-  { value: 30, label: "30 seconds" },
-  { value: 60, label: "1 minute" },
-  { value: 300, label: "5 minutes" },
-  { value: 900, label: "15 minutes" },
+  { value: 0, label: "default" },
+  { value: 15, label: "15 s" },
+  { value: 30, label: "30 s" },
+  { value: 60, label: "1 min" },
+  { value: 300, label: "5 min" },
+  { value: 900, label: "15 min" },
 ];
 
-function Row({ page, index, count, currentPageId, pageLocked, manifest, uploads, panel, onSet, onShow, onRemove, onEdit }) {
+function chipRowPhrase(page) {
+  const chipRow = page.chip_row || DEFAULT_CHIP_ROW;
+  return chipRow === "off" ? "chip row off" : `chip row ${chipRow}`;
+}
+
+function Row({
+  page,
+  index,
+  count,
+  currentPageId,
+  pageLocked,
+  manifest,
+  uploads,
+  panel,
+  onSet,
+  onShow,
+  onRemove,
+  onEdit,
+}) {
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } =
     useSortable({ id: page.id });
 
@@ -48,6 +78,10 @@ function Row({ page, index, count, currentPageId, pageLocked, manifest, uploads,
     transform: CSS.Translate.toString(transform),
     transition,
   };
+
+  const live = page.id === currentPageId;
+  const name = page.name || page.id;
+  const widgets = page.widgets?.length || 0;
 
   return (
     <li
@@ -63,89 +97,161 @@ function Row({ page, index, count, currentPageId, pageLocked, manifest, uploads,
         ref={setActivatorNodeRef}
         {...attributes}
         {...listeners}
-        aria-label={`Reorder ${page.name || page.id}, currently ${index + 1} of ${count}`}
+        aria-label={`Reorder ${name}, currently ${index + 1} of ${count}`}
       >
-        <span aria-hidden="true">⠿</span>
+        <GripIcon />
       </button>
 
       <PageThumb page={page} manifest={manifest} uploads={uploads} panel={panel} />
 
       <div className="page-row-main">
-        <input
-          className="page-row-name"
-          value={page.name || ""}
-          onChange={(event) => onSet({ name: event.target.value })}
-          placeholder={page.id}
-          aria-label="Page name"
-        />
+        <div className="page-row-title">
+          {/* Sized to its content, so the badge sits against the name rather
+              than at the far end of a field padded out to twenty characters.
+              field-sizing: content would do this in CSS, but WebKit does not
+              have it yet and this screen is checked in WebKit. */}
+          <input
+            className="page-row-name"
+            size={Math.max(4, (page.name || page.id || "").length)}
+            value={page.name || ""}
+            onChange={(event) => onSet({ name: event.target.value })}
+            placeholder={page.id}
+            aria-label="Page name"
+          />
+          {live && (
+            <span className={pageLocked ? "badge yellow" : "badge blue"}>
+              <span className={pageLocked ? "dot yellow" : "dot blue"} />
+              {pageLocked ? "Held here" : "Showing now"}
+            </span>
+          )}
+        </div>
+
         <div className="page-row-meta">
-          {page.widgets?.length || 0} {page.widgets?.length === 1 ? "widget" : "widgets"}
-          {page.id === currentPageId && (
-            <b> · on the device now{pageLocked ? ", locked there" : ""}</b>
+          {widgets} {widgets === 1 ? "widget" : "widgets"} · {chipRowPhrase(page)} ·{" "}
+          {/* Dwell reads as part of the sentence and opens as a menu. The design
+              draws it as plain text, and a page's time on screen is a fact about
+              the page before it is a setting -- but it has to be settable
+              somewhere, and the sentence that states it is the honest place. */}
+          {page.queued ? (
+            <label className="meta-dwell">
+              <span className="sr-only">Time on this page</span>
+              dwell{" "}
+              <select
+                value={String(page.dwell_seconds || 0)}
+                onChange={(event) => onSet({ dwell_seconds: Number(event.target.value) })}
+              >
+                {DWELLS.map((entry) => (
+                  <option key={entry.value} value={entry.value}>
+                    {entry.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : (
+            "kept, reachable by command"
           )}
         </div>
       </div>
 
-      <div className="page-row-controls">
-        <label className="page-row-queued">
-          <input
-            type="checkbox"
-            checked={Boolean(page.queued)}
-            onChange={(event) => onSet({ queued: event.target.checked })}
-          />
-          <span>In rotation</span>
-        </label>
-
-        <select
-          className="page-row-dwell"
-          value={String(page.dwell_seconds || 0)}
-          onChange={(event) => onSet({ dwell_seconds: Number(event.target.value) })}
-          disabled={!page.queued}
-          aria-label="Time on this page"
-        >
-          {DWELLS.map((entry) => (
-            <option key={entry.value} value={entry.value}>
-              {entry.label}
-            </option>
-          ))}
-        </select>
-      </div>
-
       <div className="page-row-actions">
-        <button onClick={onEdit} title="Edit this page's layout">
-          Edit
+        {/* Two states, both named. The switch this replaces said "In rotation"
+            beside a toggle, which names only the state it is not in -- so what
+            an off toggle meant (deleted? hidden? still there?) was left to be
+            guessed, and the answer is the third row's meta line. */}
+        {/* No .chip on these. Every other .seg in the app puts a bare button
+            inside it, and for a reason: .chip.active:hover ties .seg
+            button.active on specificity and wins on order, so a chip in a seg
+            turns gradient the moment the pointer is over it. */}
+        <div className="seg" role="group" aria-label="Rotation">
+          <button
+            className={page.queued ? "active" : undefined}
+            onClick={() => onSet({ queued: true })}
+            aria-pressed={Boolean(page.queued)}
+          >
+            Queued
+          </button>
+          <button
+            className={page.queued ? undefined : "active"}
+            onClick={() => onSet({ queued: false })}
+            aria-pressed={!page.queued}
+          >
+            Paused
+          </button>
+        </div>
+
+        <button className="icon-button" onClick={onEdit} title="Edit this page's layout" aria-label={`Edit ${name}`}>
+          <PencilIcon size={15} />
         </button>
-        <button onClick={onShow} title="Show this page on the device now">
-          Show
+        <button
+          className="icon-button dim"
+          onClick={onShow}
+          title="Show this page on the device now"
+          aria-label={`Show ${name} on the device`}
+        >
+          <CheckIcon size={15} />
         </button>
         <button
           className="icon-button danger"
           onClick={onRemove}
           disabled={count <= 1}
-          aria-label={`Delete ${page.name || page.id}`}
+          aria-label={`Delete ${name}`}
           title={count <= 1 ? "A dashboard needs at least one page" : "Delete this page"}
         >
-          ×
+          <TrashIcon size={15} />
         </button>
       </div>
+    </li>
+  );
+}
 
-      {/* Per page, not per dashboard: turning it off gives this page's cards
-          the row's height, so a full-screen clock page can drop it while a
-          dashboard page keeps it. It used to sit in the canvas toolbar, where
-          it was the only page setting among three view settings. */}
-      <div className="page-row-chips" role="group" aria-label="Chip row">
-        <span>Chip row</span>
-        {CHIP_ROW_POSITIONS.map(({ id, label }) => (
-          <button
-            key={id}
-            className={(page.chip_row || DEFAULT_CHIP_ROW) === id ? "chip active" : "chip"}
-            onClick={() => onSet({ chip_row: id })}
-          >
-            {label}
-          </button>
+// How the loop divides between the pages in it. Each page's share is its dwell,
+// so the bar is the cycle drawn to scale rather than a progress indicator.
+function CycleCard({ rotation, queued, totalCycle }) {
+  if (!rotation.enabled) {
+    return (
+      <section className="card">
+        <span className="eyebrow">Cycle</span>
+        <p className="hint" style={{ marginTop: 10 }}>
+          Rotation is off, so the panel stays on whichever page it was last sent and
+          nothing here is running. Turn it on above to cycle.
+        </p>
+      </section>
+    );
+  }
+
+  if (queued.length < 2) {
+    return (
+      <section className="card">
+        <span className="eyebrow">Cycle</span>
+        <p className="hint" style={{ marginTop: 10 }}>
+          {queued.length === 1
+            ? `Only “${queued[0].name || queued[0].id}” is queued, so it simply stays put. Queue a second page to start a cycle.`
+            : "No page is queued, so there is nothing to cycle. Queue at least two."}
+        </p>
+      </section>
+    );
+  }
+
+  return (
+    <section className="card">
+      <span className="eyebrow">Cycle</span>
+      <div className="cycle-total">
+        <b>{formatClock(totalCycle)}</b>
+        <span>per loop</span>
+      </div>
+      <div className="cycle-bar">
+        {queued.map((page) => (
+          <div key={page.id} style={{ flex: effectiveDwell(page, rotation) }} />
         ))}
       </div>
-    </li>
+      <div className="cycle-key">
+        {queued.map((page) => (
+          <span key={page.id}>
+            <b>{page.name || page.id}</b> {formatDuration(effectiveDwell(page, rotation))}
+          </span>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -160,7 +266,6 @@ export default function PagesTab({
   onShowPage,
   onEditPage,
   onAddPage,
-  onSetChipRow,
 }) {
   const rotation = layout.rotation || {};
   const pages = layout.pages || [];
@@ -203,20 +308,45 @@ export default function PagesTab({
     onChange({ ...layout, pages: arrayMove(pages, from, to) });
   };
 
-  const totalCycle = queued.reduce(
-    (sum, page) => sum + (page.dwell_seconds || rotation.default_dwell_seconds || 60),
-    0
-  );
+  const totalCycle = queued.reduce((sum, page) => sum + effectiveDwell(page, rotation), 0);
+  const lockedPage = pages.find((page) => page.id === currentPageId);
 
   return (
-    <div className="tab-panel pages-tab">
-      <section className="card">
-        <div className="card-head">
-          <h2>Pages</h2>
-          <button className="primary" onClick={onAddPage}>
-            Add a page
-          </button>
-        </div>
+    <div className="pages-screen">
+      <div className="pages-main">
+        <header className="screen-head">
+          <div>
+            <span className="eyebrow">Rotation</span>
+            <h2>Pages</h2>
+          </div>
+
+          {/* Both header pills describe the list below them rather than any one
+              page, which is why they are here and not in a card of their own at
+              the foot of the screen where they used to be. */}
+          <label className="pill-field pill-toggle">
+            <span>Rotate pages</span>
+            <input
+              type="checkbox"
+              checked={Boolean(rotation.enabled)}
+              onChange={(event) => setRotation("enabled", event.target.checked)}
+            />
+          </label>
+
+          <label className="pill-field">
+            <span>Default dwell</span>
+            <select
+              value={String(rotation.default_dwell_seconds ?? 60)}
+              onChange={(event) => setRotation("default_dwell_seconds", Number(event.target.value))}
+              disabled={!rotation.enabled}
+            >
+              {DWELLS.filter((entry) => entry.value > 0).map((entry) => (
+                <option key={entry.value} value={entry.value}>
+                  {entry.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </header>
 
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
           <SortableContext items={pages.map((page) => page.id)} strategy={verticalListSortingStrategy}>
@@ -232,11 +362,7 @@ export default function PagesTab({
                   manifest={manifest}
                   uploads={uploads}
                   panel={panel}
-                  onSet={(changes) =>
-                    changes.chip_row
-                      ? onSetChipRow(page.id, changes.chip_row)
-                      : setPage(page.id, changes)
-                  }
+                  onSet={(changes) => setPage(page.id, changes)}
                   onShow={() => onShowPage(page.id)}
                   onEdit={() => onEditPage(page.id)}
                   onRemove={() => remove(page.id)}
@@ -246,72 +372,43 @@ export default function PagesTab({
           </SortableContext>
         </DndContext>
 
-        <p className="hint">
-          Drag a page by its handle to reorder it. A page out of the rotation is kept but
-          never comes up on its own — Show still puts it on the panel, as can a Home
-          Assistant automation.
-        </p>
-      </section>
+        {/* The label is one item and the aside another, so on a phone the aside
+            wraps under it rather than the label breaking across two lines. */}
+        <button className="add-button" onClick={onAddPage}>
+          <b>+&nbsp; Add page</b>
+          <span>— inherits the chip row of the page you are editing</span>
+        </button>
+      </div>
 
-      <section className="card">
-        <h2>Rotation</h2>
-
-        <label className="switch">
-          <input
-            type="checkbox"
-            checked={Boolean(rotation.enabled)}
-            onChange={(event) => setRotation("enabled", event.target.checked)}
-          />
-          <span>Cycle through the pages in rotation</span>
-        </label>
-
-        {rotation.enabled && (
-          <label className="field">
-            <span>Default time on each page</span>
-            <select
-              value={String(rotation.default_dwell_seconds ?? 60)}
-              onChange={(event) => setRotation("default_dwell_seconds", Number(event.target.value))}
-            >
-              {DWELLS.filter((entry) => entry.value > 0).map((entry) => (
-                <option key={entry.value} value={entry.value}>
-                  {entry.label}
-                </option>
-              ))}
-            </select>
-          </label>
+      <aside className="side-column">
+        {/* First, and before anything describing the cycle: with the panel held,
+            none of what the cycle card says is happening, and a card that
+            quietly describes something that is not running is how an evening
+            gets spent looking for a fault that is not there. */}
+        {pageLocked && (
+          <div className="note warn">
+            <div className="note-head">
+              <LockIcon size={16} />
+              Page locked on the panel
+            </div>
+            <p>
+              Somebody held the button on the device, so rotation is pinned to{" "}
+              <b>{lockedPage?.name || lockedPage?.id || "one page"}</b>. The cycle below is
+              not running. Release it with the same gesture on the panel — it is not
+              something the editor can undo, and the panel forgets it on a reboot.
+            </p>
+          </div>
         )}
 
-        {/* First, and before anything describing the cycle: with the panel
-            held, none of what follows is happening, and settings that quietly
-            describe something that is not running are how an evening gets
-            spent looking for a fault that is not there. */}
-        {rotation.enabled && pageLocked && (
-          <p className="hint">
-            <b>The panel is locked on the page it is showing</b>, so the rotation is
-            paused. Hold the right button on the panel to release it — it is not
-            something the editor can undo, and the panel forgets it on a reboot.
-          </p>
-        )}
-        {rotation.enabled && queued.length < 2 && (
-          <p className="hint">
-            Rotation needs at least two pages in it; with one it simply stays put.
-          </p>
-        )}
-        {rotation.enabled && queued.length > 1 && (
-          <p className="hint">
-            A full cycle takes {formatDuration(totalCycle)}. Every page change is a full
-            refresh, since pages differ too much for a partial one to come out clean.
-          </p>
-        )}
-      </section>
+        <CycleCard rotation={rotation} queued={queued} totalCycle={totalCycle} />
+
+        <div className="card side-note">
+          Dwell <b>default</b> on a page means it uses the default above. Page order here
+          is the rotation order — drag a page by its handle to move it. A paused page is
+          kept but never comes up on its own; Show still puts it on the panel, as can a
+          Home Assistant automation.
+        </div>
+      </aside>
     </div>
   );
-}
-
-function formatDuration(seconds) {
-  if (seconds < 60) return `${seconds}s`;
-  const minutes = Math.round(seconds / 60);
-  if (minutes < 60) return `${minutes} min`;
-  const hours = Math.floor(minutes / 60);
-  return `${hours}h ${minutes % 60}m`;
 }
