@@ -1,5 +1,38 @@
 # Changelog
 
+## 2026.9.37
+
+- **The Device, Images and Pages screens are rebuilt**, and the editor's toolbar
+  with them. 2026.9.36 brought the new look to the chrome and the canvas; this
+  finishes the other three screens rather than re-painting the old ones.
+- **The toolbar is one bar again.** Snap, zoom and the chip row sit on the left,
+  then bring-to-front, send-to-back, duplicate and delete for whatever you have
+  selected, then undo and redo at the far edge and Add widget. The strip of view
+  controls that used to sit under the canvas is now a line that simply tells you
+  the grid you are snapping to and where the chip row is.
+- **The chip row is back in the editor**, as a menu in the toolbar. It was on
+  each row of the Pages screen, where you had to choose it without being able to
+  see what it did — turning it off gives every card the chip row's height and
+  moves every widget on the page.
+- **Front, back, duplicate and delete are in the toolbar** rather than only in
+  the options panel on the far side of the canvas. They are gone from the panel,
+  so there is one of each rather than two.
+- **Pages says what a rotation adds up to.** A card beside the list gives the
+  full cycle as a clock, with each page's share of it drawn to scale. The
+  rotation switch and the default dwell moved up into the header. Each row is a
+  Queued/Paused pair rather than a toggle labelled with only one of its states,
+  and Edit, Show and Delete are icons.
+- **Device splits settings from diagnostics.** Orientation, refresh, night sleep
+  and timers are a grid of cards, with what the panel itself reports — including
+  any setting changed on the device — in a column beside them. Battery history,
+  the log and the firmware are behind Diagnostics.
+- **Images shows the picture and the result side by side.** Choosing a file
+  gives you the source with a crop you can pan and zoom, and the actual 1-bit
+  dither the panel will draw, next to each other rather than one after the
+  other.
+- Nothing about how the panel is driven has changed, and nothing in a layout
+  needs redoing. Same firmware as 2026.9.35.
+
 ## 2026.9.36
 
 - **A new look.** The editor is rebuilt on a design of floating glass panels
