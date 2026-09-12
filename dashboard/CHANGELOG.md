@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026.9.40
+
+- **The tab bar reaches the bottom of the screen on a phone.** It was ending
+  short, with a strip of a different colour beneath it, and sat higher than a
+  tab bar should. Home Assistant stops the add-on's frame above the home
+  indicator and fills that band itself, so the add-on now gives the band the
+  bar's own colour and stops adding clearance on top of clearance it was already
+  being given. The labels sit where iOS puts its own.
+- The tab bar is a flat colour rather than a frosted one. It is the same shade
+  it always rendered as — a translucent bar has no fixed colour to match the
+  band to, and the join would have shimmered as the page scrolled behind it.
+
 ## 2026.9.39
 
 Phone fixes, all of them found on one.
