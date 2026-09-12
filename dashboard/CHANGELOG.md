@@ -1,5 +1,26 @@
 # Changelog
 
+## 2026.9.39
+
+Phone fixes, all of them found on one.
+
+- **Diagnostics no longer scrolls sideways.** The firmware card's two buttons
+  hung off the edge of the card and dragged the width of the whole page with
+  them, so everything sat shifted with its left edge off-screen.
+- **The screenshot from the panel is the right shape.** It was stretched tall on
+  any screen narrower than the panel itself.
+- **"Running 1.6.2 → Offered 1.7.0" reads as words again** rather than running
+  together into one unbroken line.
+- **The Images screen no longer scrolls sideways either.** Nothing was visible
+  there to explain it — an invisible element was hanging off the side of the
+  page.
+- **The device card is the first thing in the editor on a phone.** Which panel
+  you are editing onto, whether it is awake and whether anything is waiting to
+  be sent are what you open the editor to find out, and Push is the button you
+  came to press; it was below the canvas and the page list.
+- **No more bare white strip under the tab bar**, and the icon in the device
+  card sits in the middle of its circle instead of the corner.
+
 ## 2026.9.38
 
 - **Fixes the orientation being the wrong way round.** Since 2026.9.19 the two
