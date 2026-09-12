@@ -256,8 +256,6 @@ export default function Inspector({
   onSetOptions,
   onSetSize,
   onSetLayer,
-  onDuplicate,
-  onRemove,
   onClose,
 }) {
   if (!widget) {
@@ -444,12 +442,12 @@ export default function Inspector({
         </div>
       )}
 
-      <div className="inspector-actions">
-        <button onClick={() => onDuplicate(widget.id)}>Duplicate</button>
-        <button className="danger" onClick={() => onRemove(widget.id)}>
-          Remove
-        </button>
-      </div>
+      {/* Duplicate and Remove were here as well until the toolbar grew the
+          design's four selection actions. Two buttons that do the same thing on
+          the same widget, one on each side of the canvas, is a question the
+          reader has to answer ("do these differ?") before they can use either.
+          The toolbar keeps them, because that is where 1a draws them and it is
+          the side the selection is on. */}
     </aside>
   );
 }

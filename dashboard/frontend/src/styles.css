@@ -1347,7 +1347,9 @@ textarea:focus {
 .workspace {
   display: grid;
   gap: 14px;
-  grid-template-columns: 216px minmax(0, 1fr) 300px;
+  /* The design's own widths: 206 and 296. The extra 14px they had over the
+     toolbar's column is the difference between it fitting and wrapping. */
+  grid-template-columns: 206px minmax(0, 1fr) 296px;
   grid-template-areas: "pages canvas inspector";
   align-items: start;
 }
@@ -1466,14 +1468,18 @@ textarea:focus {
   color: var(--on-yellow);
 }
 
-/* ---------- the page bar ---------- */
+/* ---------- the canvas toolbar ---------- */
 
-/* Which page is being edited, and the three actions that change it. Kept as one
-   bar, in glass, above the canvas it acts on. */
+/* One glass bar above the canvas: how the view behaves, what to do with the
+   selection, and what to do with the page. Design 1a. */
 .pagebar {
   display: flex;
   align-items: center;
-  gap: 10px;
+  /* Tight, because this bar carries three view controls, four selection
+     actions, two history buttons and the primary action, and at 1440 -- the
+     narrowest desktop worth designing for -- the column it sits in is about
+     790px. It wrapped at 10px. */
+  gap: 8px;
   flex-wrap: wrap;
   background: var(--glass);
   backdrop-filter: blur(20px);
@@ -1517,73 +1523,113 @@ textarea:focus {
   white-space: nowrap;
 }
 
-.pagebar-add {
-  margin-left: auto;
-}
-
-/* Source order puts the page select first, which is what a phone wants. On a
-   desktop the select is hidden and the edit actions take that end instead. */
-@media (min-width: 821px) {
-  .pagebar-edit {
-    order: -1;
-  }
-
-  .pagebar-add {
-    margin-left: auto;
-  }
-}
-
-.pagebar-edit {
-  display: flex;
-  gap: 6px;
-}
-
-/* ---------- the canvas dock ---------- */
-
-/* Snap and zoom describe how the canvas behaves, so they are docked to it. */
-.canvas-dock {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  flex-wrap: wrap;
-  padding: 0 6px;
-  font-size: 10.5px;
-  color: var(--ink-60);
-}
-
-/* Each group is a segmented control: a sunken track with the chosen segment
-   raised out of it. The buttons inside carry .chip, so the .seg rules are
-   repeated here rather than the markup being changed. */
-.dock-group {
+/* A menu built out of the segment's own parts: the same sunken track, with the
+   chosen value as the raised pill inside it. A segment with one visible option
+   is exactly what a menu is, so it should not look like anything else in the
+   bar -- and it has to match their height, or the row of controls steps. */
+.bar-menu {
   display: inline-flex;
   align-items: center;
   background: var(--ink-06);
   border-radius: 999px;
   padding: 3px;
-  gap: 0;
 }
 
-.dock-group .chip {
-  background: transparent;
+.bar-menu select {
+  border: 0;
+  background: #fff;
+  box-shadow: var(--lift-sm);
   border-radius: 999px;
-  padding: 5px 12px;
+  width: auto;
+  /* Pinned to the height a .seg button comes out at, rather than padded and
+     hoped for: a select's intrinsic box is not a button's, so the same padding
+     on both gave 24px against 30px and the row of controls stepped. */
+  min-height: 0;
+  height: 24px;
+  padding: 0 25px 0 10px;
   font-size: 11.5px;
-  font-weight: 500;
-  color: var(--ink-60);
+  font-weight: 600;
+  line-height: inherit;
+  color: var(--ink);
+}
+
+.pagebar .seg button {
+  padding: 5px 10px;
+}
+
+.pagebar-actions,
+.pagebar-history {
+  gap: 5px;
+}
+
+/* A hairline between the view settings and the selection actions: the first
+   group changes nothing that reaches the panel, the second changes the layout,
+   and the bar gives no other sign of where one ends. */
+.bar-divider {
+  width: 1px;
+  height: 22px;
+  flex: none;
+  background: var(--ink-12);
+}
+
+/* It separates two groups that sit on one line. Once the bar wraps they are on
+   different lines already, and the rule is left hanging off the end of one. */
+@media (max-width: 820px) {
+  .bar-divider {
+    display: none;
+  }
+}
+
+.pagebar-actions,
+.pagebar-history {
+  display: flex;
+  gap: 6px;
+}
+
+/* Undo and redo sit at the far edge, away from delete. The gap is what stops a
+   miss on one from landing on the other. */
+.pagebar-history {
+  margin-left: auto;
+}
+
+.pagebar-add {
+  flex: none;
+}
+
+/* A disabled icon button reads as unavailable rather than absent: dimmed, but
+   still holding its place so the bar does not reshuffle on every selection. */
+.pagebar .icon-button:disabled {
+  opacity: 0.4;
   box-shadow: none;
 }
 
-.dock-group .chip:hover:not(:disabled) {
-  background: transparent;
-  color: var(--ink);
+/* ---------- the canvas dock ---------- */
+
+/* Snap and zoom describe how the canvas behaves, so they are docked to it. */
+/* A sibling of the well, not a child of it: the design draws this line on the
+   page ground below the canvas, and inside the well it was centred by the
+   well's own place-items and the keys had no edge to sit against. */
+.canvas-foot {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  width: 100%;
+  padding: 0 6px;
+  font-size: 10.5px;
+  color: var(--ink-60);
 }
 
-.dock-group .chip.active,
-.dock-group .chip.active:hover {
-  background: #fff;
-  color: var(--ink);
-  font-weight: 600;
-  box-shadow: var(--lift-sm);
+/* Pushed to the trailing edge, and gone where there are no keys to press: a
+   phone has no ⌘, and a tablet with a pointer-less screen has none either. */
+.foot-keys {
+  margin-left: auto;
+}
+
+@media (hover: none), (max-width: 820px) {
+  .foot-keys {
+    display: none;
+  }
 }
 
 /* The pages column already names every page and marks the live one, so the
@@ -1965,17 +2011,6 @@ textarea:focus {
 
 .inspector-section > .eyebrow {
   margin-bottom: 8px;
-}
-
-.inspector-actions {
-  display: flex;
-  gap: 8px;
-  border-top: 1px solid var(--ink-12);
-  padding-top: 12px;
-}
-
-.inspector-actions button {
-  flex: 1 1 auto;
 }
 
 .layer-count {
@@ -3297,15 +3332,6 @@ input[type="range"]::-moz-range-thumb {
   opacity: 0.6;
 }
 
-.inspector-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.inspector-actions button {
-  flex: 1 1 auto;
-}
-
 .widget {
   position: absolute;
   cursor: grab;
@@ -3686,8 +3712,12 @@ input[type="range"]::-moz-range-thumb {
 /* ---------- narrow screens ---------- */
 
 /* The rail becomes a bottom tab bar and the three editor columns stack. The
-   canvas leads, because it is what you came to look at. */
-@media (max-width: 1180px) {
+   canvas leads, because it is what you came to look at.
+
+   1400 rather than 1180: three columns leave the canvas about 650px at 1366,
+   and the toolbar needs 700 to stay on one line. Dropping the pages column
+   under the canvas gives it 960 and the bar fits. */
+@media (max-width: 1400px) {
   .workspace {
     grid-template-columns: minmax(0, 1fr) 290px;
     grid-template-areas:

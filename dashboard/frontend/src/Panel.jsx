@@ -10,9 +10,6 @@ import {
 
 import WidgetPreview from "./WidgetPreview.jsx";
 import {
-  CHIP_ROW_POSITIONS,
-  SNAP_MODES,
-  ZOOM_LEVELS,
   cardBandTop,
   chipRowTop,
   gridPitch,
@@ -241,9 +238,7 @@ export default function Panel({
   grid,
   chipRow,
   zoom,
-  onZoom,
-  onSnap,
-  onChipRow,
+  mod,
 }) {
   const [rulerRef, available] = useAvailableWidth();
 
@@ -309,110 +304,75 @@ export default function Panel({
     : { backgroundSize: `${snapMode === "fine" ? 20 : 10}px ${snapMode === "fine" ? 20 : 10}px` };
 
   return (
-    <div className="panel-outer">
-      <div className="ruler" ref={rulerRef} aria-hidden="true" />
+    <>
+      <div className="panel-outer">
+        <div className="ruler" ref={rulerRef} aria-hidden="true" />
 
-      {/* Clipped when it fits so it can never spill; scrollable when zoomed in */}
-      <div className={fits ? "panel-viewport" : "panel-viewport scrollable"}>
-        <div
-          className="panel-scaler"
-          style={{
-            width: Math.round(panel.width * scale),
-            height: Math.round(panel.height * scale),
-            visibility: available > 0 ? "visible" : "hidden",
-          }}
-        >
-          <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-            <div
-              className={showCells ? "panel gridded" : "panel"}
-              style={{
-                width: panel.width,
-                height: panel.height,
-                transform: `scale(${scale})`,
-                ...backdrop,
-              }}
-              onPointerDown={(event) => {
-                if (event.target === event.currentTarget) onSelect(null);
-              }}
-            >
-              {showCells && <GridCells grid={grid} panel={panel} chipRow={chipRow} />}
-              {widgets.map((widget) => (
-                <DraggableWidget
-                  key={widget.id}
-                  widget={widget}
-                  size={widgetSize(manifest, widget, uploads, chipRow)}
-                  type={widgetType(manifest, widget)}
-                  chipRow={chipRow}
-                  selected={widget.id === selectedId}
-                  onSelect={onSelect}
-                  scale={scale}
-                  uploads={uploads}
-                  tall={!hasChipRow(chipRow)}
-                />
-              ))}
-            </div>
-          </DndContext>
+        {/* Clipped when it fits so it can never spill; scrollable when zoomed in */}
+        <div className={fits ? "panel-viewport" : "panel-viewport scrollable"}>
+          <div
+            className="panel-scaler"
+            style={{
+              width: Math.round(panel.width * scale),
+              height: Math.round(panel.height * scale),
+              visibility: available > 0 ? "visible" : "hidden",
+            }}
+          >
+            <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+              <div
+                className={showCells ? "panel gridded" : "panel"}
+                style={{
+                  width: panel.width,
+                  height: panel.height,
+                  transform: `scale(${scale})`,
+                  ...backdrop,
+                }}
+                onPointerDown={(event) => {
+                  if (event.target === event.currentTarget) onSelect(null);
+                }}
+              >
+                {showCells && <GridCells grid={grid} panel={panel} chipRow={chipRow} />}
+                {widgets.map((widget) => (
+                  <DraggableWidget
+                    key={widget.id}
+                    widget={widget}
+                    size={widgetSize(manifest, widget, uploads, chipRow)}
+                    type={widgetType(manifest, widget)}
+                    chipRow={chipRow}
+                    selected={widget.id === selectedId}
+                    onSelect={onSelect}
+                    scale={scale}
+                    uploads={uploads}
+                    tall={!hasChipRow(chipRow)}
+                  />
+                ))}
+              </div>
+            </DndContext>
+          </div>
         </div>
       </div>
 
-      {/* Docked to the canvas rather than sitting in a toolbar above it. Snap
-          and zoom describe how this view behaves and change nothing that gets
-          pushed to the panel, so they belong to the canvas rather than to the
-          bar of things that edit the layout. As two of four groups in a shared
-          toolbar they were also the two most often scrolled off a phone. */}
-      {onZoom && (
-        <div className="canvas-dock">
-          <div className="dock-group" role="group" aria-label="Snap">
-            {SNAP_MODES.map(({ id, label, hint }) => (
-              <button
-                key={id}
-                className={id === snapMode ? "chip active" : "chip"}
-                onClick={() => onSnap(id)}
-                title={`Snap to ${hint}`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-          <div className="dock-group" role="group" aria-label="Zoom">
-            {ZOOM_LEVELS.map(({ label, value }) => (
-              <button
-                key={label}
-                className={value === zoom ? "chip active" : "chip"}
-                onClick={() => onZoom(value)}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+      {/* What the design draws under the canvas: the grid you are snapping to
+          and where the chip row sits, both stated rather than controlled, plus
+          the keys worth knowing. A sibling of the well rather than a child,
+          because the well centres its contents and this line wants the column's
+          full width to put the keys at the far end.
 
-          {/* The chip row is back beside them. It is a page setting rather than
-              a view setting, so it does not strictly belong to a dock of view
-              controls -- but it is the one page setting whose effect you can
-              only judge by looking at the canvas: turning it off gives every
-              card on the page the row's height, and every widget moves. Set it
-              from a list of pages and you are choosing blind.
-
-              Labelled, because "Off" among Snap and Zoom would otherwise read
-              as a third way to turn one of those off. */}
-          {onChipRow && (
-            <>
-              <span>Chips</span>
-              <div className="dock-group" role="group" aria-label="Chip row">
-                {CHIP_ROW_POSITIONS.map(({ id, label }) => (
-                  <button
-                    key={id}
-                    className={id === chipRow ? "chip active" : "chip"}
-                    onClick={() => onChipRow(id)}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
+          Snap, zoom and the chip row are all in the toolbar now, which is where
+          1a puts them -- one bar, with a divider doing the separating that a
+          second row of controls was doing before. This line only reports. */}
+      {mod && (
+        <div className="canvas-foot">
+          <span>
+            Grid {grid.cols} × {grid.rows} · gap {grid.gap} · cell {grid.unit_w} ×{" "}
+            {grid.unit_h}
+          </span>
+          <span>{hasChipRow(chipRow) ? `Chip row ${chipRow}` : "No chip row"}</span>
+          <span className="foot-keys">
+            {mod}Z undo · {mod}D duplicate
+          </span>
         </div>
       )}
-    </div>
+    </>
   );
 }

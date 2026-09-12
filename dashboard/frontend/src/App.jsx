@@ -641,10 +641,19 @@ export default function App() {
               canAddWidget={Boolean(manifest)}
               undo={undo}
               redo={redo}
-              duplicate={() => duplicateWidget(selectedId)}
               canUndo={history.canUndo}
               canRedo={history.canRedo}
-              canDuplicate={Boolean(selected)}
+              snapMode={snapMode}
+              onSnap={setSnapMode}
+              zoom={zoom}
+              onZoom={setZoom}
+              chipRow={chipRow}
+              onChipRow={(next) => activePage && setChipRow(activePage.id, next)}
+              hasSelection={Boolean(selected)}
+              onFront={() => setLayer(selectedId, "front")}
+              onBack={() => setLayer(selectedId, "back")}
+              onDuplicate={() => duplicateWidget(selectedId)}
+              onDelete={() => removeWidget(selectedId)}
               mod={MOD}
             />
 
@@ -661,9 +670,7 @@ export default function App() {
               grid={grid}
               chipRow={chipRow}
               zoom={zoom}
-              onZoom={setZoom}
-              onSnap={setSnapMode}
-              onChipRow={(next) => activePage && setChipRow(activePage.id, next)}
+              mod={MOD}
             />
           </main>
 
@@ -681,8 +688,6 @@ export default function App() {
             onSetOptions={setOptions}
             onSetSize={setSize}
             onSetLayer={setLayer}
-            onDuplicate={duplicateWidget}
-            onRemove={removeWidget}
             onClose={() => setSelectedId(null)}
           />
 
