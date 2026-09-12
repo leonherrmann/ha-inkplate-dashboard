@@ -17,7 +17,14 @@
 // this has to fail quietly, because a strip of the wrong colour is a far
 // smaller problem than an editor that will not start.
 
-export function blendHostBackground(colour) {
+// The band takes --host-band, which the stylesheet sets per breakpoint: the tab
+// bar's own surface where there is a tab bar above it, so the two read as one
+// surface running to the bottom edge, and the ground where there is not.
+const band = () =>
+  getComputedStyle(document.documentElement).getPropertyValue("--host-band").trim() ||
+  "#efece6";
+
+export function blendHostBackground() {
   let restore = () => {};
 
   try {
@@ -37,12 +44,23 @@ export function blendHostBackground(colour) {
     const previous = targets.map((el) => el.style.backgroundColor);
 
     // Inline, so it beats the theme's stylesheet rule without !important.
-    targets.forEach((el) => {
-      el.style.backgroundColor = colour;
-    });
+    const paint = () => {
+      const colour = band();
+      targets.forEach((el) => {
+        el.style.backgroundColor = colour;
+      });
+    };
+    paint();
+
+    // Turning the phone crosses the breakpoint, and the band has to change with
+    // it -- the tab bar's surface is only the right colour while there is a tab
+    // bar above the band.
+    const narrow = window.matchMedia("(max-width: 820px)");
+    narrow.addEventListener("change", paint);
 
     restore = () => {
       try {
+        narrow.removeEventListener("change", paint);
         targets.forEach((el, i) => {
           el.style.backgroundColor = previous[i];
         });
