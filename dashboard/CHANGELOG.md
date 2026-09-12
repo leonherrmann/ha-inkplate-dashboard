@@ -1,5 +1,27 @@
 # Changelog
 
+## 2026.9.38
+
+- **Fixes the orientation being the wrong way round.** Since 2026.9.19 the two
+  choices have been labelled backwards: a panel nobody had touched showed
+  "Upside down" as its setting, and choosing "Upright" turned it over. 0° is
+  upright, which is what the firmware has always meant by it. Only the labels
+  change — if your panel is the right way up today, it stays that way and there
+  is nothing to redo. If you had picked "Upright" to correct it, pick "Upside
+  down" once and it will agree with itself again.
+- **Waiting on the panel no longer looks like a missed Push.** The two states
+  wore the same colour and call for opposite responses. A sleeping panel now
+  says so in its own colour, and says that pushing again will not help — it
+  collects the layout when it next wakes.
+- **When the panel refuses a layout, it says why on screen.** The reason was
+  only ever a tooltip on a badge, which is no use on a phone. The Device screen
+  now leads with what the panel is showing against what is stored here, and what
+  to do about it.
+- **Pickers say why they are empty.** An option that only accepts one kind of
+  entity now says so instead of just looking like a short list, and lists that
+  are empty because the add-on has no Home Assistant credentials say that rather
+  than looking like an empty house.
+
 ## 2026.9.37
 
 - **The Device, Images and Pages screens are rebuilt**, and the editor's toolbar
