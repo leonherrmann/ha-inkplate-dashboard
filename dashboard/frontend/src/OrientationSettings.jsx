@@ -12,12 +12,25 @@ import { OrientIcon } from "./Icons.jsx";
 // would not be a setting -- it would be a second grid, a second set of widget
 // sizes, and a second version of every layout anyone has already built.
 
-// 180 is "Normal" because that is the way up the panel is actually hung. Only
-// the words changed -- the degrees are still the degrees, so stored layouts
-// need no migration.
+// 0 is upright. These two were the other way round between 2026-09-08 and
+// 2026-09-12, on the stated grounds that it "matches the firmware" -- it does
+// not, and the firmware says so twice:
+//
+//   ConfigManager.cpp  "the orientation someone looking at the panel calls 0
+//                      -- the way it has always looked -- is rotation 2", and
+//                      naming it otherwise "would mean a fresh device shipping
+//                      as 180 degrees, which is nonsense to the person reading
+//                      it"
+//   sim/host/UiCheck   check(model.orientation() == 0, "so the panel has not
+//                      turned over")
+//
+// The symptom was quiet: DEFAULT_ORIENTATION is 0, so a panel nobody had
+// touched showed "Upside down" as its setting, and choosing "Upright" sent 180
+// and actually turned it over. Only the labels move here -- the degrees are
+// still the degrees, so stored layouts need no migration.
 export const ORIENTATIONS = [
-  { degrees: 180, label: "Upright", hint: "The usual way up" },
-  { degrees: 0, label: "Upside down", hint: "Turned the other way up" },
+  { degrees: 0, label: "Upright", hint: "The usual way up" },
+  { degrees: 180, label: "Upside down", hint: "Turned the other way up" },
 ];
 
 export const DEFAULT_ORIENTATION = 0;

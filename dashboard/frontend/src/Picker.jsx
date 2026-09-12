@@ -1,6 +1,8 @@
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 
+import { InfoIcon, WarningIcon } from "./Icons.jsx";
+
 // The shell every picker in the editor shares: entities, devices, rooms and
 // widgets. They were four hand-rolled modals that had drifted -- three had an
 // area filter and one did not, two closed on Escape and the widget list was not
@@ -131,6 +133,40 @@ export function PickerRows({ rows, value, onPick, empty = "Nothing matches." }) 
         </button>
       ))}
       {rows.length === 0 && <p className="hint picker-empty">{empty}</p>}
+    </div>
+  );
+}
+
+// What an option will and will not accept -- design 1d. An option pinned to one
+// domain silently drops everything else, and without this the list simply looks
+// short: "where is my sensor" has no answer on screen.
+export function PickerLimit({ domain }) {
+  if (!domain) return null;
+  return (
+    <p className="picker-limit">
+      <InfoIcon size={13} width={2} />
+      <span>
+        This option only accepts the <b>{domain}</b> domain
+      </span>
+    </p>
+  );
+}
+
+// Every list in the editor comes from Home Assistant, and with no credentials
+// they all come back empty at once -- which reads as "this room has nothing in
+// it" rather than "nothing has been fetched". The design gives it a card
+// because the pickers are not broken and should not look it.
+export function PickerNoLink() {
+  return (
+    <div className="note danger">
+      <div className="note-head">
+        <WarningIcon size={16} />
+        No Home Assistant link
+      </div>
+      <p>
+        Entity, device and area lists come back empty because the add-on has no
+        credentials. The pickers are not broken — there is nothing to show yet.
+      </p>
     </div>
   );
 }

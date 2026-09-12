@@ -54,13 +54,18 @@ const SECTIONS = [
 // the same as the add-on genuinely not knowing.
 function syncState(status) {
   if (!status) {
-    return { tone: "unknown", label: "Unknown", detail: "Waiting for the add-on." };
+    return {
+      tone: "unknown",
+      label: "Unknown",
+      detail: "Waiting for the add-on.",
+      note: "Nothing has been heard from the add-on yet.",
+    };
   }
   if (!status.draft_pushed) {
     return {
       tone: "pending",
       label: "Changes not pushed",
-      detail: "Edits are saved here but have not been sent to the device.",
+      detail: "Edits are saved here and nothing has been sent.",
       // The only state pressing Push actually resolves
       nudge: true,
     };
@@ -71,26 +76,38 @@ function syncState(status) {
     return {
       tone: "unknown",
       label: "Unknown",
-      detail: "The device has not reported which layout it is showing.",
+      detail:
+        "The panel has never been heard from, so there is no manifest: no widget types, no grid, no sizes.",
+      note: "It publishes its manifest at boot. Check it is on the same MQTT broker.",
     };
   }
   if (applied.ok === false) {
     return {
       tone: "bad",
-      label: "Device refused it",
-      detail: applied.error || "The device could not build the layout it was sent.",
+      label: "The device refused it",
+      detail: `It could not build version ${applied.version ?? status.pushed_version ?? "?"}.`,
+      // Shown as text rather than only as a tooltip: it is the one thing on
+      // screen that says which widget is at fault.
+      error: applied.error || "No reason was given.",
     };
   }
-  // Sent, but the panel has not confirmed that version. Normal for a device in
-  // its night sleep, which collects the push when it next wakes.
+  // Sent, but the panel has not confirmed that version. Its own tone, because
+  // this is the state that looks most like "not pushed" and calls for the
+  // opposite response -- a device in its night sleep collects the push when it
+  // next wakes, and pressing Push again changes nothing.
   if (applied.version !== status.pushed_version) {
     return {
-      tone: "pending",
-      label: "Awaiting device",
-      detail: "The layout was sent; the device has not confirmed it yet.",
+      tone: "waiting",
+      label: "Awaiting the device",
+      detail: `Version ${status.pushed_version ?? "?"} is out on the broker. The panel will collect it when it next wakes.`,
+      note: "Pushing again will not help",
     };
   }
-  return { tone: "ok", label: "In sync", detail: "The panel is showing this layout." };
+  return {
+    tone: "ok",
+    label: "In sync",
+    detail: "The panel is drawing exactly what is stored here. Nothing to do.",
+  };
 }
 
 function useStatus() {
@@ -746,6 +763,7 @@ export default function App() {
       {tab === "device" && (
         <DeviceTab
           status={status}
+          sync={sync}
           lastSeenAge={lastSeenAge}
           sleep={layout.sleep}
           onSleepChange={(next) => persist({ ...layout, sleep: next })}

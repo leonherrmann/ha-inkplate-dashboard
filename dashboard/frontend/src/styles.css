@@ -1641,6 +1641,25 @@ textarea:focus {
   }
 }
 
+/* What an option will accept, in the blue of a statement rather than the red of
+   a fault: nothing is wrong, the list is simply narrower than it looks. */
+.picker-limit {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  border-radius: 999px;
+  padding: 7px 12px;
+  font-size: 11px;
+  line-height: 1.4;
+  background: var(--tint-blue);
+  color: var(--on-blue);
+}
+
+.picker-limit svg {
+  flex: none;
+}
+
 /* ---------- the pages screen ---------- */
 
 /* The list, and a column beside it for what the list adds up to -- design 1c. */

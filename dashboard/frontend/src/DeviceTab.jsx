@@ -5,6 +5,7 @@ import RefreshSettings from "./RefreshSettings.jsx";
 import OrientationSettings from "./OrientationSettings.jsx";
 import TimerSettings from "./TimerSettings.jsx";
 import DeviceReports from "./DeviceReports.jsx";
+import SyncCard from "./SyncCard.jsx";
 import Sparkline from "./Sparkline.jsx";
 import * as api from "./api.js";
 import { Battery, formatAge, formatUptime, signalLabel } from "./DeviceStats.jsx";
@@ -118,6 +119,7 @@ function Fact({ value, label, tone }) {
 
 export default function DeviceTab({
   status,
+  sync,
   lastSeenAge,
   sleep,
   onSleepChange,
@@ -374,6 +376,11 @@ export default function DeviceTab({
         </div>
 
         <div className="side-column">
+          {/* Design 1h, at the head of the column: whether the panel is showing
+              what is stored here is the first thing to know about it, and the
+              five states call for five different responses. */}
+          <SyncCard sync={sync} lastSeenAge={lastSeenAge} onPush={onPush} />
+
           <DeviceOverrides overrides={status?.overrides} onAdopt={onPush} onPush={onPush} />
 
           {(status?.current_page || pageLocked) && (
