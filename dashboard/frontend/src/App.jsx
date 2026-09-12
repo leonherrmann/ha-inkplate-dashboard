@@ -617,32 +617,32 @@ export default function App() {
 
       {tab === "design" && (
         <div className="workspace">
-          <div className="pages-column">
-            {/* What the page header used to carry, beside the pages it is
-                about: which device, how it is, and the one action that sends
-                anything to it. */}
-            <DeviceCard
-              status={status}
-              panel={panel}
-              lastSeenAge={lastSeenAge}
-              sync={sync}
-              onPush={push}
-              onOpenDevice={() => setTab("device")}
-            />
+          {/* What the page header used to carry: which device, how it is, and
+              the one action that sends anything to it. Its own grid area rather
+              than sharing a wrapper with the page list, because the two want
+              different places on a phone -- the device leads there, above the
+              canvas, while the pages stay below it. */}
+          <DeviceCard
+            status={status}
+            panel={panel}
+            lastSeenAge={lastSeenAge}
+            sync={sync}
+            onPush={push}
+            onOpenDevice={() => setTab("device")}
+          />
 
-            <PageList
-              pages={pages}
-              activeId={activePage?.id}
-              currentPageId={status?.current_page}
-              pageLocked={Boolean(status?.page_locked)}
-              rotation={layout.rotation}
-              onSelect={(id) => {
-                setActivePageId(id);
-                setSelectedId(null);
-              }}
-              onAdd={() => setTab("pages")}
-            />
-          </div>
+          <PageList
+            pages={pages}
+            activeId={activePage?.id}
+            currentPageId={status?.current_page}
+            pageLocked={Boolean(status?.page_locked)}
+            rotation={layout.rotation}
+            onSelect={(id) => {
+              setActivePageId(id);
+              setSelectedId(null);
+            }}
+            onAdd={() => setTab("pages")}
+          />
 
           <main>
             <PageBar

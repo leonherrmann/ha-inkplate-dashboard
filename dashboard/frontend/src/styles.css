@@ -91,15 +91,34 @@ body {
   overscroll-behavior: none;
 }
 
-/* Three washes of accent over the ground, fixed so they sit behind the whole
-   app rather than scrolling with it. */
+/* Three washes of accent over the ground, sitting behind the whole app rather
+   than scrolling with it.
+
+   This was `background-attachment: fixed` on the body, which iOS does not
+   implement in an iframe -- and the add-on is always in one, because Home
+   Assistant serves it through ingress. The background was painted into a box
+   the size of `100vh` and simply stopped, leaving bare white below the tab bar
+   on a phone. A fixed layer of its own paints the visual viewport instead,
+   which is what was wanted in the first place.
+
+   dvh, so the layer follows the viewport when iOS shows and hides its chrome;
+   vh first for anything that does not know dvh. */
 body {
   min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--ground);
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
   background-color: var(--ground);
   background-image: radial-gradient(120% 90% at 8% -10%, rgba(122, 90, 245, 0.2), transparent 60%),
     radial-gradient(90% 80% at 100% 0%, rgba(242, 179, 51, 0.28), transparent 58%),
     radial-gradient(100% 100% at 60% 110%, rgba(18, 163, 160, 0.18), transparent 62%);
-  background-attachment: fixed;
 }
 
 h1,
@@ -947,7 +966,10 @@ textarea:focus {
   border: 0;
 }
 
-.device-ident > span {
+/* The text half only. This used to be `> span`, which also matched the mark
+   beside it and replaced its `display: grid` -- so `place-items: center` had
+   nothing to centre and the icon sat in the top-left corner of the disc. */
+.device-ident > .device-text {
   display: block;
   min-width: 0;
 }
@@ -1350,8 +1372,22 @@ textarea:focus {
   /* The design's own widths: 206 and 296. The extra 14px they had over the
      toolbar's column is the difference between it fitting and wrapping. */
   grid-template-columns: 206px minmax(0, 1fr) 296px;
-  grid-template-areas: "pages canvas inspector";
+  /* Four areas rather than three. The device and the page list read as one
+     column here, but they part company on a phone: the device goes to the top
+     of the screen and the pages stay under the canvas. */
+  grid-template-areas:
+    "device canvas inspector"
+    "pages  canvas inspector";
+  grid-template-rows: auto auto;
   align-items: start;
+}
+
+.workspace > .device-card {
+  grid-area: device;
+}
+
+.workspace > .page-list-card {
+  grid-area: pages;
 }
 
 .workspace > main {
@@ -1360,16 +1396,6 @@ textarea:focus {
   display: flex;
   flex-direction: column;
   gap: 14px;
-}
-
-.pages-column {
-  grid-area: pages;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  /* Not stretched to the canvas column: the list is as tall as its pages, and
-     stretching left the rotation note stranded at the foot of empty glass. */
-  align-self: start;
 }
 
 .inspector {
@@ -3740,8 +3766,10 @@ input[type="range"]::-moz-range-thumb {
   .workspace {
     grid-template-columns: minmax(0, 1fr) 290px;
     grid-template-areas:
+      "device inspector"
       "canvas inspector"
-      "pages inspector";
+      "pages  inspector";
+    grid-template-rows: auto auto auto;
   }
 
   .images-tab {
@@ -3819,12 +3847,18 @@ input[type="range"]::-moz-range-thumb {
     font-weight: 600;
   }
 
+  /* The device leads on a phone. Which panel you are editing onto, whether it
+     is awake and whether anything is waiting to be sent are the first things
+     worth knowing, and Push is the one button on this screen you came to press
+     -- it was four scrolls down, under the canvas and the page list. */
   .workspace {
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
+      "device"
       "canvas"
       "pages"
       "inspector";
+    grid-template-rows: auto auto auto auto;
   }
 
   /* The toast clears the tab bar rather than sitting behind it */

@@ -25,7 +25,7 @@ export default function DeviceCard({ status, panel, lastSeenAge, sync, onPush, o
         <span className="device-mark">
           <MonitorIcon size={17} />
         </span>
-        <span>
+        <span className="device-text">
           <span className="device-name">Inkplate 5</span>
           <span className="device-spec">
             {panel.width} × {panel.height} · 1-bit
