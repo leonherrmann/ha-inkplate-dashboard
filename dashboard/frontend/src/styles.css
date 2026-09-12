@@ -148,16 +148,28 @@ code {
 }
 
 /* Visible to a screen reader, to nothing else */
+/* Present to a screen reader, absent to everything else.
+
+   The !important is deliberate and is why this works at all. A utility like
+   this has to beat whatever styles the element it lands on, and a bare class is
+   (0,1,0) -- so `input[type="file"]` at (0,1,1) won, the hidden file input on
+   the Images screen kept `width: 100%`, and an invisible 390px box hung off the
+   side of the page and made the whole screen scroll sideways. Exactly the trap
+   `input[type="search"]` set for `.picker-search`.
+
+   clip-path as well as clip: the latter is deprecated and only still honoured
+   for compatibility. */
 .sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-  border: 0;
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0 0 0 0) !important;
+  clip-path: inset(50%) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
 }
 
 /* ---------- shell ---------- */
@@ -399,7 +411,10 @@ code {
   margin: 0;
 }
 
-.card-head > button {
+/* The first button takes the free space; anything after it follows on. This was
+   `> button`, so a head with two of them gave both an auto margin and they
+   pushed each other out of the card. */
+.card-head > button:first-of-type {
   margin-left: auto;
 }
 
@@ -410,6 +425,17 @@ code {
   gap: 9px;
   font-size: 14.5px;
   font-weight: 700;
+}
+
+/* A head with a title, a badge and two actions does not fit a phone on one
+   line, and without this it did not try: the actions ran off the side of the
+   card and took the whole page's width with them. */
+.card-head {
+  flex-wrap: wrap;
+}
+
+.card-head > button {
+  white-space: nowrap;
 }
 
 .card-head b,
@@ -2644,9 +2670,46 @@ input.picker-search {
 img.screenshot {
   display: block;
   max-width: 100%;
+  /* The img carries width and height attributes -- the panel's real pixels, so
+     the space is reserved before it loads. max-width alone then shrinks the
+     width and leaves the height at the attribute's 720, which stretched the
+     panel into a tall smear on any screen narrower than 1280. */
+  height: auto;
   background: #fff;
   border-radius: 4px;
   box-shadow: 0 0 0 1px rgba(27, 26, 31, 0.3);
+}
+
+/* What the panel runs against what is on offer. This had no rules at all after
+   the stylesheet was rewritten, so it fell back to a plain block of inline
+   spans and read as "Runningv2026.9.36 → Offeredv2026.9.36The panel fetches and
+   installs it itself" -- four facts with nothing between them. */
+.version-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 9px;
+  margin-top: 12px;
+  font-size: 12.5px;
+}
+
+.version-row > span {
+  color: var(--ink-60);
+}
+
+.version-row > b {
+  font-weight: 700;
+}
+
+.version-row svg {
+  flex: none;
+  color: var(--ink-40);
+}
+
+/* Trailing, and the first thing to drop to its own line when the row wraps */
+.version-row .spacer {
+  margin-left: auto;
+  font-size: 11.5px;
 }
 
 /* ---------- device entity list ---------- */
