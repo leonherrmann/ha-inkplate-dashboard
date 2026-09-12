@@ -3895,7 +3895,13 @@ input[type="range"]::-moz-range-thumb {
        the join would shimmer. */
     background: var(--tabbar);
     border-top: 1px solid var(--ink-12);
-    padding: 8px 6px calc(12px + env(safe-area-inset-bottom, 0px));
+    /* 6 rather than 12 at the foot. Under ingress the frame already stops above
+       the home indicator, so that clearance is given to us and a generous pad
+       of our own is added on top of it -- 12 + 34 put the labels 46px off the
+       bottom where iOS puts its own at about 42, which is what made the bar
+       look like it was hovering. env() stays for the unframed case, where we
+       own the viewport and the inset is ours to leave. */
+    padding: 8px 6px calc(6px + env(safe-area-inset-bottom, 0px));
   }
 
   .tabbar-item {
