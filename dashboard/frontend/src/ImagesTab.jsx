@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as api from "./api.js";
 import ImageEditor from "./ImageEditor.jsx";
 import GridSizePicker from "./GridSizePicker.jsx";
-import { TrashIcon, WarningIcon } from "./Icons.jsx";
+import { ImageIcon, RefreshIcon, TrashIcon, WarningIcon } from "./Icons.jsx";
 import { DITHERS } from "./dither.js";
 
 // Uploading a picture to the panel.
@@ -118,6 +118,24 @@ export default function ImagesTab({ grid, panel, onMessage }) {
   const [selected, setSelected] = useState(null);
   const fileInput = useRef(null);
 
+  // Photo albums. They live on this screen rather than on the photo widget
+  // because an album is a *source*: configured once, shown by any number of
+  // widgets. Asking for the share link inside a widget's options would mean
+  // pasting it again per widget, with no one place to see what is configured.
+  const [albums, setAlbums] = useState([]);
+  const [albumRefresh, setAlbumRefresh] = useState({});
+  const [pickedAlbum, setPickedAlbum] = useState(null);
+  const [addingAlbum, setAddingAlbum] = useState(false);
+  const [albumUrl, setAlbumUrl] = useState("");
+  const [albumName, setAlbumName] = useState("");
+  const [albumLimit, setAlbumLimit] = useState(25);
+  const [albumBusy, setAlbumBusy] = useState(false);
+  // What the limit slider is showing while it is being dragged. Its own state
+  // because the committed value only changes when the drag ends -- reading the
+  // album's limit straight off would leave the number and the fill frozen under
+  // the thumb, which reads as a slider that does not work.
+  const [limitDraft, setLimitDraft] = useState(25);
+
   const reload = () =>
     api
       .getImages()
@@ -129,11 +147,28 @@ export default function ImagesTab({ grid, panel, onMessage }) {
       })
       .catch((problem) => onMessage(problem.message));
 
+  const reloadAlbums = () =>
+    api
+      .getAlbums()
+      .then((data) => {
+        setAlbums(data.albums || []);
+        setAlbumRefresh(data.refresh || {});
+      })
+      .catch((problem) => onMessage(problem.message));
+
   useEffect(() => {
     reload();
     // The device reports on its own timer, so a freshly uploaded image turns
     // from "not yet" to "on device" a minute or so later without a page reload.
     const timer = setInterval(reload, 10000);
+    return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    reloadAlbums();
+    // Faster than the image poll: rendering runs in the background at seconds a
+    // picture, and the counts and the progress line only move if this asks.
+    const timer = setInterval(reloadAlbums, 5000);
     return () => clearInterval(timer);
   }, []);
 
@@ -204,8 +239,78 @@ export default function ImagesTab({ grid, panel, onMessage }) {
       onMessage(problem.message);
     }
   };
+  // Only one thing is ever on the right, so choosing any of them clears the
+  // rest. Without this, opening an album while a picture was being cropped left
+  // both panes rendered one under the other.
+  const showOnly = (what) => {
+    if (what !== "upload") reset();
+    if (what !== "image") setSelected(null);
+    if (what !== "album") setPickedAlbum(null);
+    setAddingAlbum(what === "new-album");
+  };
+
+  const addAlbum = async () => {
+    if (!albumUrl.trim()) return;
+    setAlbumBusy(true);
+    try {
+      const album = await api.addAlbum({ url: albumUrl, name: albumName, limit: albumLimit });
+      onMessage(`Added ${album.name} — ${album.available} photos, rendering now`);
+      setAlbumUrl("");
+      setAlbumName("");
+      showOnly("album");
+      setPickedAlbum(album.id);
+      reloadAlbums();
+    } catch (problem) {
+      onMessage(problem.message);
+    } finally {
+      setAlbumBusy(false);
+    }
+  };
+
+  const removeAlbum = async (album) => {
+    if (
+      !window.confirm(
+        `Remove "${album.name}"? Any photo widget showing it will go blank, and its ` +
+          `pictures will be deleted from the panel.`
+      )
+    )
+      return;
+    try {
+      await api.deleteAlbum(album.id);
+      onMessage(`Removed ${album.name}`);
+      setPickedAlbum(null);
+      reloadAlbums();
+    } catch (problem) {
+      onMessage(problem.message);
+    }
+  };
+
+  // Committed when the slider is let go rather than on every tick: each change
+  // is a PATCH and a re-render of whatever the new limit adds or drops.
+  const commitLimit = async (album, limit) => {
+    if (limit === album.limit) return;
+    try {
+      await api.updateAlbum(album.id, { limit });
+      reloadAlbums();
+    } catch (problem) {
+      onMessage(problem.message);
+    }
+  };
+
+  const refreshAlbumsNow = async () => {
+    try {
+      await api.refreshAlbums();
+      onMessage("Checking the albums for new photos…");
+      reloadAlbums();
+    } catch (problem) {
+      onMessage(problem.message);
+    }
+  };
+
   const held = images.find((one) => one.name === selected) || null;
+  const album = albums.find((one) => one.id === pickedAlbum) || null;
   const editing = Boolean(file);
+  const albumPictures = albums.reduce((total, one) => total + (one.rendered || 0), 0);
   const ditherOf = (entry) => (entry.mode === "exact" ? "threshold" : entry.dither || "atkinson");
 
   return (
@@ -230,7 +335,7 @@ export default function ImagesTab({ grid, panel, onMessage }) {
                 key={image.name}
                 className={`image-row${active ? " active" : ""}${missing ? " missing" : ""}`}
                 onClick={() => {
-                  reset();
+                  showOnly("image");
                   setSelected(image.name);
                 }}
               >
@@ -264,10 +369,65 @@ export default function ImagesTab({ grid, panel, onMessage }) {
             accept="image/*"
             className="sr-only"
             onChange={(event) => {
-              setSelected(null);
+              showOnly("upload");
               pick(event.target.files?.[0] || null);
             }}
           />
+        </div>
+
+        {/* Albums are a second library on this screen, not a section inside the
+            first: a picture is something you framed, an album is a source that
+            fills itself. They share the column because both answer "what can a
+            widget show", and both are chosen the same way. */}
+        <div>
+          <div className="eyebrow">
+            {albums.length} album{albums.length === 1 ? "" : "s"}
+            {albumPictures ? ` · ${albumPictures} pictures` : ""}
+          </div>
+          <h2 style={{ fontSize: 24 }}>Albums</h2>
+        </div>
+
+        <div className="image-list">
+          {albums.map((one) => (
+            <button
+              key={one.id}
+              className={`image-row${pickedAlbum === one.id ? " active" : ""}${
+                one.last_error ? " missing" : ""
+              }`}
+              onClick={() => {
+                showOnly("album");
+                setPickedAlbum(one.id);
+                // Set here rather than in an effect: the poll refreshes the
+                // album list every five seconds, and an effect watching the
+                // album would snap the slider back mid-drag.
+                setLimitDraft(one.limit);
+              }}
+            >
+              <span className="image-row-thumb">
+                {one.last_error ? <WarningIcon size={18} /> : <ImageIcon size={18} />}
+              </span>
+              <span className="image-row-text">
+                <b>{one.name}</b>
+                <small>
+                  {one.last_error
+                    ? "could not be read"
+                    : `${one.rendered} of ${one.available} rendered`}
+                </small>
+              </span>
+            </button>
+          ))}
+
+          <button
+            className="add-button stacked"
+            onClick={() => {
+              showOnly("new-album");
+            }}
+          >
+            + Add an iCloud album
+            <span style={{ fontWeight: 400, fontSize: 11 }}>
+              A shared album's Public Website link
+            </span>
+          </button>
         </div>
 
         {!baseUrl && (
@@ -287,14 +447,168 @@ export default function ImagesTab({ grid, panel, onMessage }) {
       </div>
 
       <section className="card">
-        {!editing && !held && (
+        {!editing && !held && !album && !addingAlbum && (
           <>
             <div className="eyebrow">Nothing selected</div>
             <p className="hint" style={{ marginTop: 8 }}>
               Choose a picture to see exactly what the panel draws, or upload a new one. The
               preview is the stored bitmap, so it is the real dither rather than an impression
-              of it.
+              of it. An album fills itself instead — a photo widget rotates through one.
             </p>
+          </>
+        )}
+
+        {album && (
+          <>
+            <div className="screen-head">
+              <div>
+                <div className="eyebrow">iCloud shared album</div>
+                <h3 style={{ fontSize: 21 }}>{album.name}</h3>
+              </div>
+              <button
+                style={{ marginLeft: "auto" }}
+                onClick={refreshAlbumsNow}
+                disabled={albumRefresh.running}
+              >
+                <RefreshIcon size={14} />
+                {albumRefresh.running ? "Refreshing…" : "Refresh"}
+              </button>
+            </div>
+
+            {albumRefresh.running && (
+              <div className="note info" style={{ marginTop: 16 }}>
+                <div className="note-head">
+                  {albumRefresh.album ? `Reading ${albumRefresh.album}` : "Reading the albums"}
+                </div>
+                <p>
+                  Rendered {albumRefresh.rendered || 0}
+                  {albumRefresh.total ? ` of ${albumRefresh.total}` : ""} pictures. Each is
+                  cropped and dithered here, which takes a few seconds.
+                </p>
+              </div>
+            )}
+
+            {album.last_error && (
+              <div className="note danger" style={{ marginTop: 16 }}>
+                <div className="note-head">
+                  <WarningIcon size={16} />
+                  iCloud would not give us this album
+                </div>
+                <p>
+                  {album.last_error} The pictures already on the panel are kept, so the widget
+                  carries on showing them.
+                </p>
+              </div>
+            )}
+
+            <div className="facts" style={{ gridTemplateColumns: "1fr 1fr", marginTop: 16 }}>
+              <div className="fact">
+                <small>In the album</small>
+                <b>{album.available}</b>
+              </div>
+              <div className="fact">
+                <small>Rendered</small>
+                <b className={album.rendered ? "ok" : undefined}>{album.rendered}</b>
+              </div>
+            </div>
+
+            <label className="field-block" style={{ marginTop: 16 }}>
+              <span className="slider-head">
+                Keep the newest <b>{limitDraft}</b>
+              </span>
+              {/* Committed on release rather than on every tick: each change is
+                  a PATCH and a re-render of whatever the new limit adds or
+                  drops. The draft is what moves under the thumb meanwhile. */}
+              <input
+                type="range"
+                className="track-cool"
+                style={{ "--fill": `${limitDraft}%` }}
+                min="1"
+                max="100"
+                value={limitDraft}
+                onChange={(event) => setLimitDraft(Number(event.target.value))}
+                onPointerUp={() => commitLimit(album, limitDraft)}
+                onKeyUp={() => commitLimit(album, limitDraft)}
+              />
+            </label>
+
+            <div className="upload-actions">
+              <p className="hint">
+                Pictures are rendered only for the widgets that show them, at each size, crop
+                and border in use — so a bigger album is a slower refresh and a fuller card.
+                Widgets showing this album go blank if it is removed.
+              </p>
+              <button className="danger" onClick={() => removeAlbum(album)}>
+                <TrashIcon size={14} />
+                Remove
+              </button>
+            </div>
+          </>
+        )}
+
+        {addingAlbum && (
+          <>
+            <div className="screen-head">
+              <div>
+                <div className="eyebrow">iCloud shared album</div>
+                <h3 style={{ fontSize: 21 }}>Add an album</h3>
+              </div>
+            </div>
+
+            <label className="field-block" style={{ marginTop: 16 }}>
+              <span>Share link</span>
+              <input
+                value={albumUrl}
+                onChange={(event) => setAlbumUrl(event.target.value)}
+                placeholder="https://www.icloud.com/sharedalbum/#B0z5qAGN1JIFd3y"
+              />
+            </label>
+
+            <div className="note info" style={{ marginTop: 12 }}>
+              <div className="note-head">Where to find it</div>
+              <p>
+                In Photos, open the album, share it, and turn on <b>Public Website</b> — then
+                paste the link it gives you. Nothing is signed in to: the link is all iCloud
+                needs, and the add-on only ever reads.
+              </p>
+            </div>
+
+            <label className="field-block" style={{ marginTop: 16 }}>
+              <span>Name (optional)</span>
+              <input
+                value={albumName}
+                onChange={(event) => setAlbumName(event.target.value)}
+                placeholder="whatever the album is called"
+              />
+            </label>
+
+            <label className="field-block" style={{ marginTop: 16 }}>
+              <span className="slider-head">
+                Keep the newest <b>{albumLimit}</b>
+              </span>
+              <input
+                type="range"
+                className="track-cool"
+                style={{ "--fill": `${albumLimit}%` }}
+                min="1"
+                max="100"
+                value={albumLimit}
+                onChange={(event) => setAlbumLimit(Number(event.target.value))}
+              />
+            </label>
+
+            <div className="upload-actions">
+              <p className="hint">
+                The link is checked with iCloud before the album is saved. Rendering its
+                pictures happens afterwards and takes a few seconds each.
+              </p>
+              <button className="primary" disabled={albumBusy || !albumUrl.trim()} onClick={addAlbum}>
+                {albumBusy ? "Checking…" : "Add album"}
+              </button>
+              <button onClick={() => showOnly(null)} disabled={albumBusy}>
+                Cancel
+              </button>
+            </div>
           </>
         )}
 

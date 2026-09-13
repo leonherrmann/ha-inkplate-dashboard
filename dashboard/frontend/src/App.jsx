@@ -166,6 +166,9 @@ export default function App() {
   const [devices, setDevices] = useState([]);
   const [areas, setAreas] = useState([]);
   const [uploads, setUploads] = useState([]);
+  // The photo widget picks one of these by name. Kept beside the uploads
+  // because they come from the same tab and are refreshed by the same events.
+  const [albums, setAlbums] = useState([]);
   const [tab, setTab] = useState("design");
   const [activePageId, setActivePageId] = useState(null);
   const [selectedId, setSelectedId] = useState(null);
@@ -224,6 +227,19 @@ export default function App() {
     // Named in the image widget's picker alongside the built-in icons
     api.getImages().then((data) => setUploads(data.images || [])).catch(() => setUploads([]));
   }, []);
+
+  // The photo widget's album picker, which the firmware cannot supply: albums
+  // are the add-on's own.
+  //
+  // Re-read on the way back to the design tab rather than once at startup. The
+  // picker shows how many of an album's pictures are rendered, and rendering
+  // happens in the background over minutes -- so a count fetched at mount is
+  // stale by the time anyone opens the widget, and reads as nothing having
+  // happened.
+  useEffect(() => {
+    if (tab !== "design") return;
+    api.getAlbums().then((data) => setAlbums(data.albums || [])).catch(() => setAlbums([]));
+  }, [tab]);
 
   // Every layout change funnels through here, which is what makes undo a single
   // line rather than an inverse per kind of edit: the layout as it stands is
@@ -699,6 +715,7 @@ export default function App() {
             devices={devices}
             areas={areas}
             uploads={uploads}
+            albums={albums}
             layer={widgets.findIndex((one) => one.id === selected?.id)}
             layerCount={widgets.length}
             onSetOption={setOption}
@@ -756,6 +773,10 @@ export default function App() {
           onMessage={(text) => {
             setMessage(text);
             api.getImages().then((data) => setUploads(data.images || [])).catch(() => {});
+            // An album added or removed here changes what the photo widget's
+            // picker can offer, and the Design tab is not remounted on the way
+            // back to it.
+            api.getAlbums().then((data) => setAlbums(data.albums || [])).catch(() => {});
           }}
         />
       )}

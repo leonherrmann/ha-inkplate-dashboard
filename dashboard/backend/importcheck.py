@@ -27,6 +27,8 @@ MODULES = [
     "adopt",
     "store",
     "images",
+    "icloud",
+    "albums",
     "weather",
     "firmware",
     "mqtt",

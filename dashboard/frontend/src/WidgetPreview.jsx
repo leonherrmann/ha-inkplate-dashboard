@@ -163,6 +163,32 @@ function TextPreview({ options, sizeId }) {
   );
 }
 
+// A photograph belongs to the user and changes on a timer, so unlike every
+// other card there is nothing here that could be screenshotted from the
+// firmware and nothing stable to approximate. What the canvas does have to get
+// right is the *shape*: the footprint, and whether it is framed -- the border
+// option is the one that decides how it sits among the other cards, and it is
+// the only one of a photo widget's four that is visible from across the page.
+//
+// Deliberately not the real picture. Naming it would mean building the add-on's
+// filename a third time, in a third language, and the failure mode of getting
+// it wrong is a preview that silently shows nothing.
+function PhotoPreview({ options }) {
+  const body = (
+    <div className="pv-photo">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="3" y="5" width="18" height="14" rx="2" />
+        <circle cx="8.5" cy="10" r="1.5" />
+        <path d="M21 16l-5-5-4 4-2-2-7 6" />
+      </svg>
+      <span>{options.album || "no album"}</span>
+    </div>
+  );
+  // No frame means the picture runs to the widget's edge with square corners,
+  // which is exactly what Frame would contradict.
+  return (options.border || "on") === "off" ? body : <Frame>{body}</Frame>;
+}
+
 function Placeholder({ type }) {
   return (
     <Frame className="pv-placeholder">
@@ -180,6 +206,7 @@ const previews = {
   update: UpdatePreview,
   weather: WeatherPreview,
   image: ImagePreview,
+  photo: PhotoPreview,
   text: TextPreview,
 };
 

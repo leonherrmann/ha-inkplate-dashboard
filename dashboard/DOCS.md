@@ -108,7 +108,8 @@ To point it at a real Home Assistant for the bridge and entity pickers, also set
 |---|---|
 | Clock | No — the device syncs its own time over NTP |
 | Battery | No — reads the on-board battery directly |
-| Image | No — draws a picture flashed into the firmware |
+| Image | No — draws one picture, uploaded here or flashed into the firmware |
+| Photo album | No — rotates through an iCloud shared album, fetched by this add-on |
 | Climate | Yes — temperature, humidity and radiator entities |
 | Weather | Yes — a `weather.` entity, forecast fetched by this add-on |
 
@@ -122,11 +123,33 @@ placeable — it just renders as a labelled placeholder in the editor.
 
 ### Images
 
-The image widget draws pictures compiled into the firmware from
-`images/photos/` in the firmware repository. To add one, drop a PNG in that folder, run
-`python3 iconConvert.py`, and reflash; it appears in the picker as `photos_<name>`. For
-the editor to show a thumbnail rather than a grey box, copy the PNG to
-`dashboard/frontend/public/photos/photos_<name>.png` here as well.
+Upload a picture in the **Images** tab. Frame it by dragging, set brightness, contrast
+and the dither, and the preview shows the actual 1-bit result — the panel has no grey, so
+what you see there is what it will draw. The add-on converts it to the exact pixel size
+the widget occupies and the panel downloads it to its SD card; nothing is decoded on the
+device.
 
-Uploading images to the device at runtime, and storing them on an SD card, are not
-supported yet.
+Pictures can also be compiled into the firmware from `images/photos/` in the firmware
+repository: drop a PNG there, run `python3 iconConvert.py`, and reflash. They appear in
+the picker as `photos_<name>`. An upload of the same name wins over a built-in one.
+
+### Photo albums
+
+A **photo album** widget cycles through an iCloud shared album — set the rotation
+interval, whether to crop to fill or fit the whole picture in, and whether to draw a
+border.
+
+Add the album in the **Images** tab, not on the widget: an album is a source, and any
+number of widgets can show it. In Photos, share an album, turn on **Public Website**, and
+paste the link. Nothing is signed in to — the link is all iCloud needs, and the add-on
+only ever reads. Apple publishes no API for this, so it speaks the same undocumented
+endpoint Apple's own web viewer uses, and could break if they change it.
+
+Pictures are rendered only for the widgets that actually show them. Each combination of
+album, widget size, crop and border is a separate set of images on the SD card, so two
+widgets showing one album at different sizes cost twice the space. Albums are re-read
+every six hours, and on demand with **Refresh**.
+
+Keep albums small. Every picture is dithered here in Python, which takes a few seconds
+each, and every picture costs an entry in the manifest sent to the panel — which has a
+16 KB limit on it. The default is to keep the newest 25.

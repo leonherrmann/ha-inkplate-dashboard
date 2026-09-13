@@ -12,8 +12,10 @@ from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+import albums
 import firmware
 import ha_timer
+import icloud
 import images
 import reports
 import store
@@ -92,6 +94,45 @@ async def publish_images() -> None:
     link.publish_images(images.manifest(base))
 
 
+# How often to ask iCloud whether an album has changed.
+#
+# Six hours, not minutes: a shared album is something people add holiday photos
+# to, not a feed, and every refresh that does find something new spends seconds
+# per picture dithering it. The Refresh button in the Images tab is there for
+# when someone has just added one and does not want to wait.
+ALBUM_POLL_SECONDS = 6 * 3600
+
+# Long enough after start-up that the first poll does not compete with the
+# device's boot, the entity discovery and the firmware check for the same CPU.
+ALBUM_FIRST_POLL_SECONDS = 120
+
+
+async def refresh_albums() -> dict[str, Any]:
+    """Bring the albums' pictures into line with the layout, then tell the device.
+
+    The layout is the draft rather than what was pushed, deliberately: someone
+    who has just dropped a photo widget on a page wants its pictures rendered
+    before they push, not after.
+    """
+    return await albums.refresh(store.load(), on_change=publish_images)
+
+
+async def poll_albums() -> None:
+    """Re-read every configured album on a slow timer."""
+    await asyncio.sleep(ALBUM_FIRST_POLL_SECONDS)
+    while True:
+        try:
+            await refresh_albums()
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            # Same reasoning as the screenshot watcher: a poller that dies takes
+            # the albums with it silently, and the symptom would be photos that
+            # quietly stopped updating weeks later.
+            log.exception("Album poll stumbled")
+        await asyncio.sleep(ALBUM_POLL_SECONDS)
+
+
 async def watch_screenshots() -> None:
     """Tell Home Assistant when a new screenshot has arrived.
 
@@ -150,7 +191,9 @@ async def lifespan(app: FastAPI):
     )
     await publish_firmware()
     watcher = asyncio.create_task(watch_screenshots())
+    albums_poller = asyncio.create_task(poll_albums())
     yield
+    albums_poller.cancel()
     watcher.cancel()
     await firmware.store.stop()
     await ha_timer.mirror.stop()
@@ -238,11 +281,25 @@ async def get_layout() -> dict[str, Any]:
 
 @app.put("/api/layout")
 async def put_layout(layout: dict[str, Any]) -> dict[str, Any]:
+    # Which album pictures the layout wants, before and after. A photo widget
+    # added, resized, or switched between fill and fit needs a different set of
+    # pictures rendered, and the alternative to noticing here is making the user
+    # press Refresh after every such edit and wonder why.
+    #
+    # Compared rather than refreshed unconditionally: this endpoint is called on
+    # every edit in the browser -- every drag, every option -- and a refresh
+    # reads iCloud and can dither for minutes.
+    was = albums.variants_in(store.load())
+
     store.save(layout)
     # Adding, removing or renaming a page changes the options on the Page
     # select in Home Assistant. On save rather than on push, because the list
     # the editor is showing is the saved one.
     link.announce()
+
+    if albums.variants_in(layout) != was:
+        asyncio.create_task(refresh_albums())
+
     return {"ok": True}
 
 
@@ -379,7 +436,10 @@ async def get_images() -> dict[str, Any]:
     """
     reported = (link.stats or {}).get("images") or {}
     return {
-        "images": images.listing(),
+        # Uploads only. An album's pictures are images in every other respect,
+        # but nobody picks one by name and a single album would bury the list
+        # this and the widget inspector's image picker are both built from.
+        "images": images.uploads(),
         "base_url": await image_base_url(),
         "device": reported,
         # Absent on firmware older than the image support, which is different
@@ -441,6 +501,92 @@ async def get_image_preview(name: str) -> FileResponse:
     if not os.path.isfile(path):
         raise HTTPException(status_code=404, detail="No such image")
     return FileResponse(path, media_type="image/png")
+
+
+# --- photo albums ------------------------------------------------------------
+
+
+@app.get("/api/albums")
+async def get_albums() -> dict[str, Any]:
+    """The configured albums, and how many pictures each has rendered.
+
+    The counts are per album rather than per variant: someone looking at this
+    list wants to know the album is working, and a variant is an implementation
+    detail of which widget shows it.
+    """
+    rendered: dict[str, int] = {}
+    for entry in images.listing():
+        owner = entry.get("album")
+        if owner:
+            rendered[owner] = rendered.get(owner, 0) + 1
+
+    return {
+        "albums": [
+            {**album, "rendered": rendered.get(album["id"], 0)}
+            for album in albums.listing()
+        ],
+        "refresh": albums.status(),
+    }
+
+
+@app.post("/api/albums")
+async def post_album(body: dict[str, Any]) -> dict[str, Any]:
+    """Add a shared album from its public link.
+
+    Rendering is not waited for. Reading the album takes a moment and dithering
+    it takes minutes, so the album is saved once iCloud has confirmed it exists
+    and the pictures follow in the background -- otherwise the browser would sit
+    on a spinner for the length of a holiday.
+    """
+    try:
+        album = await albums.add(
+            body.get("url") or "",
+            body.get("name") or "",
+            int(body.get("limit") or albums.DEFAULT_LIMIT),
+        )
+    except (albums.AlbumError, icloud.AlbumError) as error:
+        raise HTTPException(status_code=400, detail=str(error))
+    except (TypeError, ValueError) as error:
+        raise HTTPException(status_code=400, detail=f"That is not a usable limit ({error}).")
+
+    asyncio.create_task(refresh_albums())
+    return album
+
+
+@app.patch("/api/albums/{album_id}")
+async def patch_album(album_id: str, body: dict[str, Any]) -> dict[str, Any]:
+    try:
+        album = albums.update(album_id, **body)
+    except albums.AlbumError as error:
+        raise HTTPException(status_code=404, detail=str(error))
+    except (TypeError, ValueError) as error:
+        raise HTTPException(status_code=400, detail=str(error))
+
+    # A changed limit means pictures to render or to drop, so this is not just
+    # a settings write.
+    asyncio.create_task(refresh_albums())
+    return album
+
+
+@app.delete("/api/albums/{album_id}")
+async def delete_album(album_id: str) -> dict[str, Any]:
+    if not albums.remove(album_id):
+        raise HTTPException(status_code=404, detail="No such album")
+    # Its rendered pictures go in the sweep at the end of a refresh, which also
+    # republishes the manifest so the device clears them off its card.
+    asyncio.create_task(refresh_albums())
+    return {"ok": True}
+
+
+@app.post("/api/albums/refresh")
+async def post_album_refresh() -> dict[str, Any]:
+    """Re-read every album now, rather than waiting for the poll.
+
+    Returns immediately with the running status: a refresh can take minutes, and
+    the Images tab polls `GET /api/albums` to follow it.
+    """
+    asyncio.create_task(refresh_albums())
+    return albums.status()
 
 
 @app.get("/api/firmware")
