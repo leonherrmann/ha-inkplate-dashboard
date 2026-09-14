@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026.9.44
+
+Pairs with firmware `v2026.9.43`.
+
+- **A full-screen photo with its border off now fills the whole panel.** It
+  used to sit inside the same 30px margin every card does, which read as a
+  border on a widget meant to cover the entire screen. A photo widget with a
+  chip row on its page, or with the border left on, is unaffected.
+
 ## 2026.9.43
 
 Pairs with firmware `v2026.9.42`.
