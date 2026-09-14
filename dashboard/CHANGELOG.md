@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026.9.45
+
+Firmware-unrelated: this is an add-on-only fix for 2026.9.44 not actually
+taking effect.
+
+- **A full-screen photo already rendered under the old, bordered-looking size
+  now corrects itself.** The check that decides whether a picture needs
+  re-rendering only compared its source photo against what iCloud last served,
+  so a picture whose *pixels* were supposed to change -- like 2026.9.44's
+  full-screen bleed -- but whose source photo had not, was never redone. Hit
+  Refresh in the Images tab (or wait for the next poll) to have an affected
+  album correct itself immediately rather than in up to six hours.
+
 ## 2026.9.44
 
 Pairs with firmware `v2026.9.43`.
