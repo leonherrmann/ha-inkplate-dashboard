@@ -367,15 +367,24 @@ def starved(layout: dict[str, Any]) -> list[str]:
     )
 
 
-def _stored_hashes() -> dict[str, str]:
-    """Which album pictures are already rendered, by name.
+def _stored_renders() -> dict[str, tuple[str, tuple[int, int]]]:
+    """Which album pictures are already rendered, by name, and at what size.
 
     The source photo's iCloud checksum is what decides whether a rendering is
     still current, and it is kept in the image index rather than in a file of
-    its own so that deleting an image cannot leave a stale "already done" behind.
+    its own so that deleting an image cannot leave a stale "already done"
+    behind. The size travels with it for a narrower reason: it is not part of
+    the *name* (the name is the widget's grid box, unchanged whether or not a
+    variant bleeds past it -- see photo_size), so a change to what pixels a
+    variant renders at, like PhotoCard's full-screen bleed, would otherwise be
+    invisible to this check. The photo's checksum had not changed, so nothing
+    told a refresh the existing file was now the wrong size, and it stayed
+    that way indefinitely. Comparing the size too is what makes a change here
+    self-healing on the next refresh instead of needing every affected album
+    re-added by hand.
     """
     return {
-        entry["name"]: entry.get("source", "")
+        entry["name"]: (entry.get("source", ""), (entry.get("width", 0), entry.get("height", 0)))
         for entry in images.listing()
         if entry.get("album")
     }
@@ -450,7 +459,7 @@ async def _refresh(
         ", ".join(sorted(variant.prefix for variant in wanted)) or "nothing",
     )
 
-    already = _stored_hashes()
+    already = _stored_renders()
     keep: set[str] = set()
     rendered = 0
     changed = False
@@ -513,7 +522,8 @@ async def _refresh(
                 todo = [
                     variant
                     for variant in variants
-                    if already.get(variant.name(index)) != photo["checksum"]
+                    if already.get(variant.name(index))
+                    != (photo["checksum"], variant.photo_size)
                 ]
                 keep.update(variant.name(index) for variant in variants)
                 if not todo:
