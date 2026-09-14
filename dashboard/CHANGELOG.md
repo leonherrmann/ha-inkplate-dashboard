@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026.9.47
+
+- **The photo picker's thumbnails now actually appear.** Every tile in
+  2026.9.46 was a broken image: thumbnails are filed one directory per album
+  and only the parent directory was being created, so each one failed to save
+  and came back as a 404.
+
 ## 2026.9.46
 
 Add-on only. Firmware stays on `v2026.9.43`.

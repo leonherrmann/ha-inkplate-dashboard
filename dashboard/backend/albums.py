@@ -539,7 +539,11 @@ async def thumbnail(album_id: str, guid: str) -> str:
     async with aiohttp.ClientSession(timeout=icloud.TIMEOUT) as session:
         data = await icloud.download(session, url)
 
-    os.makedirs(THUMBS_DIR, exist_ok=True)
+    # The album's own directory, not THUMBS_DIR: thumbnails are filed one
+    # directory per album so forgetting one is a single rmtree. Creating only
+    # the parent here left every write failing with ENOENT, which reached the
+    # browser as a 404 per tile and a picker full of broken images.
+    os.makedirs(_thumb_dir(album_id), exist_ok=True)
     # Written beside and renamed, so a half-written file is never served --
     # the same rule the layout store follows after a truncation race deleted
     # somebody's album. See store.py.
