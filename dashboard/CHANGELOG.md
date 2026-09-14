@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026.9.43
+
+Pairs with firmware `v2026.9.42`.
+
+- **The Pages screen can lock and unlock the panel itself.** Locking a page used
+  to mean walking over to the device and holding its right button; the live
+  row now has a padlock button that does the same thing over MQTT. The page
+  held that way shows a padlock instead of a dot.
+- **The button that puts a page on the panel now shows an eye, not a
+  checkmark** — the checkmark read as marking correctness, and this action
+  never was that.
+
 ## 2026.9.42
 
 Photo album fixes, all found on a real panel the day albums shipped.
