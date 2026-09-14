@@ -316,6 +316,25 @@ def status() -> dict[str, Any]:
     return dict(_state)
 
 
+def starved(layout: dict[str, Any]) -> list[str]:
+    """Variants some widget asks for that have no pictures rendered at all.
+
+    A photo widget whose variant is starved draws ALBUM IS EMPTY, and until
+    something renders it, it always will. Rendering only happens on a refresh,
+    and a refresh only happens on a layout change or on the slow poll -- so
+    without this, a widget that ended up empty for any reason stayed empty for
+    six hours. The poll uses it to come back sooner.
+    """
+    held = {entry["name"] for entry in images.listing() if entry.get("album")}
+    configured = set(_load())
+    return sorted(
+        variant.prefix
+        for variant in variants_in(layout)
+        if variant.album in configured
+        and not any(name.startswith(variant.prefix) for name in held)
+    )
+
+
 def _stored_hashes() -> dict[str, str]:
     """Which album pictures are already rendered, by name.
 
@@ -380,10 +399,19 @@ async def _refresh(
                 "A photo widget names album '%s', which is not configured", album_id
             )
 
+    log.info(
+        "Album refresh: the layout wants %s",
+        ", ".join(sorted(variant.prefix for variant in wanted)) or "nothing",
+    )
+
     already = _stored_hashes()
     keep: set[str] = set()
     rendered = 0
     changed = False
+
+    # Albums this pass positively read and got photographs for. Only these have
+    # their old pictures swept -- see the prune at the bottom for why.
+    processed: set[str] = set()
 
     async with aiohttp.ClientSession(timeout=icloud.TIMEOUT) as session:
         for album_id, variants in by_album.items():
@@ -403,10 +431,35 @@ async def _refresh(
                 keep.update(name for name in already if name.startswith(f"{album_id}_"))
                 continue
 
-            photos = (found.get("photos") or [])[: album.get("limit", DEFAULT_LIMIT)]
-            album["available"] = len(found.get("photos") or [])
+            available = found.get("photos") or []
+            album["available"] = len(available)
+
+            # An album that answers with nothing is not the same as an album
+            # that is empty, and from here the two are indistinguishable: a
+            # shared album whose asset URLs did not come back this time reads as
+            # zero photos with no error at all. Treating that as authoritative
+            # swept every rendered picture off the panel, and nothing rendered
+            # them again -- so this leaves the album alone instead.
+            if not available:
+                held = sum(1 for name in already if name.startswith(f"{album_id}_"))
+                log.warning(
+                    "Album %s came back with no photos. Keeping the %d picture(s) "
+                    "already rendered rather than sweeping them: an album that "
+                    "failed quietly and one that is genuinely empty look alike.",
+                    album["name"], held,
+                )
+                album["last_error"] = (
+                    "iCloud returned no photos. If the album really is empty this "
+                    "will clear itself; if not, the link may have stopped working."
+                )
+                album["last_refresh"] = time.time()
+                continue
+
+            photos = available[: album.get("limit", DEFAULT_LIMIT)]
             album["last_error"] = ""
             album["last_refresh"] = time.time()
+            # Read, and it had photographs. Now its old renderings can be swept.
+            processed.add(album_id)
 
             _state["total"] = _state.get("total", 0) + len(photos) * len(variants)
 
@@ -446,14 +499,44 @@ async def _refresh(
                     changed = True
                     _state["rendered"] = rendered
 
-    # Anything album-owned that no widget asks for any more: a deleted album, a
-    # widget resized, a crop or border toggled, or a photo past the limit.
-    dropped = images.remove_where(
-        lambda entry: not entry.get("album") or entry["name"] in keep
-    )
+    # What to sweep. This used to be "anything album-owned not in keep", which
+    # treated one refresh as the whole truth -- and any pass that failed to see
+    # an album for any reason deleted every picture it had. That is what
+    # happened on 2026-09-14: 25 rendered photos went in one pass, the panel
+    # drew ALBUM IS EMPTY, and nothing rendered them again because the layout
+    # had not changed and so nothing triggered another render.
+    #
+    # So a picture is only swept when this pass positively knows it is unwanted:
+    # either its album is gone from the configuration, which is someone deleting
+    # it, or its album was read successfully *and had photographs* and this name
+    # was not among them. Anything else -- an album not in the layout this pass,
+    # a read that failed, a read that came back empty -- is left alone.
+    #
+    # The cost is that a genuinely stale rendering can linger until the album is
+    # next read properly. That is much the better failure: disc space against a
+    # blank widget nobody can get back.
+    configured = set(albums)
+
+    def unwanted(entry: dict[str, Any]) -> bool:
+        owner = entry.get("album")
+        if not owner:
+            return False  # an upload, never an album's to sweep
+        if owner not in configured:
+            return True  # the album was deleted, which is the intent
+        if owner not in processed:
+            return False  # not read this pass, so nothing is known about it
+        return entry["name"] not in keep
+
+    doomed = [entry["name"] for entry in images.listing() if unwanted(entry)]
+    if doomed:
+        log.info(
+            "Dropping %d album picture(s) nothing shows any more: %s",
+            len(doomed),
+            ", ".join(sorted(doomed)[:6]) + ("…" if len(doomed) > 6 else ""),
+        )
+    dropped = images.remove_where(lambda entry: not unwanted(entry))
     if dropped:
         changed = True
-        log.info("Dropped %d album pictures nothing shows any more", dropped)
 
     _save(albums)
 

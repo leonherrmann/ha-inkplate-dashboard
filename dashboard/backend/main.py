@@ -117,8 +117,18 @@ async def refresh_albums() -> dict[str, Any]:
     return await albums.refresh(store.load(), on_change=publish_images)
 
 
+# How soon to come back when a photo widget has no pictures at all. Six hours is
+# the right cadence for "has anything been added to the album", and far too slow
+# for "this widget is showing ALBUM IS EMPTY and only a render will fix it".
+ALBUM_RETRY_SECONDS = 600
+
+
 async def poll_albums() -> None:
-    """Re-read every configured album on a slow timer."""
+    """Re-read every configured album on a slow timer.
+
+    Faster while any widget is starved, because that is a panel with a blank
+    card on it rather than a panel that is merely a few hours out of date.
+    """
     await asyncio.sleep(ALBUM_FIRST_POLL_SECONDS)
     while True:
         try:
@@ -130,7 +140,21 @@ async def poll_albums() -> None:
             # the albums with it silently, and the symptom would be photos that
             # quietly stopped updating weeks later.
             log.exception("Album poll stumbled")
-        await asyncio.sleep(ALBUM_POLL_SECONDS)
+
+        wait = ALBUM_POLL_SECONDS
+        try:
+            starving = albums.starved(store.load())
+            if starving:
+                log.warning(
+                    "These photo widgets have no pictures yet: %s. Trying again in %d "
+                    "minutes rather than waiting for the next full poll.",
+                    ", ".join(starving), ALBUM_RETRY_SECONDS // 60,
+                )
+                wait = ALBUM_RETRY_SECONDS
+        except Exception:
+            log.exception("Could not work out whether any album is starved")
+
+        await asyncio.sleep(wait)
 
 
 async def watch_screenshots() -> None:
