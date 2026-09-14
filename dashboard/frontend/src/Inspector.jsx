@@ -4,6 +4,8 @@ import AreaPicker, { MAX_ROOM_ENTITIES } from "./AreaPicker.jsx";
 import DeviceEntities from "./DeviceEntities.jsx";
 import { imagePreviewUrl } from "./api.js";
 import { LAYER_MOVES, widgetSize, widgetType } from "./layout.js";
+import { categoryLabel, categoryTone } from "./format.js";
+import { HomeIcon } from "./Icons.jsx";
 
 // The room card's band readings, and how to find each one in an area.
 //
@@ -59,7 +61,7 @@ function roomRoles(available) {
   };
 }
 
-function Option({ option, widget, value, entities, devices, areas, uploads, capacity, onChange, onChangeMany }) {
+function Option({ option, widget, value, entities, devices, areas, uploads, albums, capacity, onChange, onChangeMany }) {
   // Picking a device sets three things at once, which is why this one option
   // reaches for onChangeMany: the id, so it can be re-resolved later; the
   // resolved entity list, which is what the panel actually renders; and the
@@ -177,6 +179,31 @@ function Option({ option, widget, value, entities, devices, areas, uploads, capa
     );
   }
 
+  // The one option type whose values the firmware does not know. Every other
+  // list here comes from the manifest -- the icons compiled in, the choices the
+  // firmware accepts -- but albums are configured in the Images tab and the
+  // panel only ever sees their pictures, so the list comes from our own API.
+  if (option.type === "album") {
+    return (
+      <>
+        <select value={value || ""} onChange={(event) => onChange(event.target.value)}>
+          <option value="">— none —</option>
+          {(albums || []).map((album) => (
+            <option key={album.id} value={album.id}>
+              {`${album.name} (${album.rendered} ready)`}
+            </option>
+          ))}
+        </select>
+        {albums?.length === 0 && (
+          <p className="hint">
+            No albums yet. Add one in the Images tab — a photo widget shows an album
+            rather than a picture, so there is nothing to choose until there is one.
+          </p>
+        )}
+      </>
+    );
+  }
+
   // The firmware ships the icon names it can resolve, so this cannot produce
   // something it will fail to draw.
   if (option.type === "icon") {
@@ -248,20 +275,19 @@ export default function Inspector({
   devices,
   areas,
   uploads,
+  albums,
   layer,
   layerCount,
   onSetOption,
   onSetOptions,
   onSetSize,
   onSetLayer,
-  onDuplicate,
-  onRemove,
   onClose,
 }) {
   if (!widget) {
     return (
       <aside className="inspector">
-        <h2>Options</h2>
+        <div className="eyebrow">Options</div>
         <p className="hint">Tap a widget on the panel to edit it.</p>
       </aside>
     );
@@ -296,16 +322,33 @@ export default function Inspector({
   // thermostat among the plugs is how the old arrangement went wrong.
   const takenByBand = ROOM_ROLES.map((role) => widget.options?.[role.key]).filter(Boolean);
 
+  // What kind of thing this is, in the category's own words
+  const group = categoryLabel(manifest, type?.category);
+
   return (
     <aside className="inspector open">
       <div className="inspector-head">
-        <h2>{type?.label || widget.type}</h2>
-        <button className="icon-button" onClick={onClose} aria-label="Close">
+        {/* The accent is the widget's category, which the manifest names and
+            orders, so a category added in a later firmware arrives with a tone
+            rather than with none. */}
+        <span className={`token lg ${categoryTone(type?.category)}`}>
+          <HomeIcon size={19} />
+        </span>
+        <div style={{ minWidth: 0 }}>
+          <div className="inspector-meta">
+            {group ? `${group} · ` : ""}
+            {type?.label || widget.type}
+          </div>
+          {/* The name the user gave it leads: on a page of six room cards
+              "Room" is the one thing that does not tell them apart. */}
+          <h2>{widget.options?.name || type?.label || widget.type}</h2>
+        </div>
+        <button className="icon-button plain" onClick={onClose} aria-label="Close">
           ×
         </button>
       </div>
 
-      <div className="inspector-meta">
+      <div className="hint">
         {widget.x}, {widget.y} · {size.width}×{size.height}
       </div>
 
@@ -326,13 +369,11 @@ export default function Inspector({
                 }
                 onClick={() => onSetSize(widget.id, option.id)}
               >
-                {option.label}
-                {/* A self-sizing variant has no cell count worth showing */}
-                {option.cols > 0 && option.rows > 0 && (
-                  <small>
-                    {option.cols}×{option.rows}
-                  </small>
-                )}
+                {/* A self-sizing variant has no cell count worth showing, so
+                    it falls back to the name the firmware gave it. */}
+                {option.cols > 0 && option.rows > 0
+                  ? `${option.cols}×${option.rows}`
+                  : option.label}
               </button>
             ))}
           </div>
@@ -369,6 +410,7 @@ export default function Inspector({
               devices={devices}
               areas={areas}
               uploads={uploads}
+              albums={albums}
               capacity={capacity}
               onChange={(next) => onSetOption(widget.id, option.key, next)}
               onChangeMany={(patch) => onSetOptions(widget.id, patch)}
@@ -427,12 +469,12 @@ export default function Inspector({
         </div>
       )}
 
-      <div className="inspector-actions">
-        <button onClick={() => onDuplicate(widget.id)}>Duplicate</button>
-        <button className="danger" onClick={() => onRemove(widget.id)}>
-          Remove
-        </button>
-      </div>
+      {/* Duplicate and Remove were here as well until the toolbar grew the
+          design's four selection actions. Two buttons that do the same thing on
+          the same widget, one on each side of the canvas, is a question the
+          reader has to answer ("do these differ?") before they can use either.
+          The toolbar keeps them, because that is where 1a draws them and it is
+          the side the selection is on. */}
     </aside>
   );
 }

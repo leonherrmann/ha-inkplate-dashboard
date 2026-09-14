@@ -53,6 +53,15 @@ MAX_HEIGHT = 720
 # the card styling, and this is the only thing on this side that needs it.
 CORNER_RADIUS = 16
 
+# CARD_BORDER, and the radius of the white body *inside* a card's frame.
+#
+# A photo widget with its border on is drawn by the firmware as a normal card --
+# frame, then the picture inset into the body -- so the picture has to be the
+# body's shape exactly. Anything else shows as a white crescent in each corner
+# where the photo's square edge fails to reach the body's curve.
+CARD_BORDER = 4
+INNER_RADIUS = CORNER_RADIUS - CARD_BORDER
+
 
 class ImageError(ValueError):
     """Raised for anything the user can fix by uploading something else."""
@@ -176,6 +185,23 @@ def _cover(image: Image.Image, width: int, height: int) -> Image.Image:
     return ImageOps.fit(image, (width, height), method=Image.LANCZOS, centering=(0.5, 0.5))
 
 
+def _contain(image: Image.Image, width: int, height: int) -> Image.Image:
+    """Scale until the whole picture fits, and pad the rest with paper.
+
+    The other half of the photo widget's crop choice. `_cover` is right almost
+    always -- letterboxing looks like a mistake -- but it cannot show a tall
+    photograph in a landscape widget without throwing most of it away, and
+    someone who wants the whole picture should be able to have it.
+
+    Padded with white rather than black: the panel's paper is white, so this
+    reads as a photo sitting on the page rather than as one in a dark box.
+    """
+    fitted = ImageOps.contain(image, (width, height), method=Image.LANCZOS)
+    canvas = Image.new("L", (width, height), 255)
+    canvas.paste(fitted, ((width - fitted.width) // 2, (height - fitted.height) // 2))
+    return canvas
+
+
 def _round_corners(bitmap: Image.Image, radius: int) -> Image.Image:
     """Clear the corners to paper, so the image reads as a card rather than a
     rectangle dropped on the page.
@@ -196,10 +222,16 @@ def _round_corners(bitmap: Image.Image, radius: int) -> Image.Image:
     return Image.composite(bitmap, Image.new("1", (width, height), 1), mask)
 
 
-def _finish(bitmap: Image.Image, rounded: bool) -> tuple[bytes, bytes, int, int]:
-    """A 1-bit image to (blob, preview_png, width, height)."""
-    if rounded:
-        bitmap = _round_corners(bitmap, CORNER_RADIUS)
+def _finish(bitmap: Image.Image, radius: int) -> tuple[bytes, bytes, int, int]:
+    """A 1-bit image to (blob, preview_png, width, height).
+
+    `radius` is a radius rather than the boolean it started as, because a photo
+    widget's picture has to match the *body* of a card it is inset into, which
+    is a tighter curve than a card's outer corner. Zero leaves the corners
+    square.
+    """
+    if radius > 0:
+        bitmap = _round_corners(bitmap, radius)
     width, height = bitmap.size
     payload = _pack(bitmap)
     blob = HEADER.pack(MAGIC, VERSION, 0, width, height) + payload
@@ -241,7 +273,7 @@ def convert_prepared(
             f"than {MAX_WIDTH}x{MAX_HEIGHT}."
         )
 
-    return _finish(_dither(source.convert("L"), dither), rounded)
+    return _finish(_dither(source.convert("L"), dither), CORNER_RADIUS if rounded else 0)
 
 
 def convert(
@@ -304,7 +336,7 @@ def convert(
 
     # "exact" never rounds: it exists precisely so that what was drawn is what
     # is drawn, and quietly eating its corners would break that promise.
-    return _finish(bitmap, rounded and mode == "photo")
+    return _finish(bitmap, CORNER_RADIUS if (rounded and mode == "photo") else 0)
 
 
 # --- stored set -------------------------------------------------------------
@@ -382,6 +414,82 @@ def store(
     return entry
 
 
+def store_photo(
+    name: str,
+    data: bytes,
+    width: int,
+    height: int,
+    fill: bool = True,
+    radius: int = 0,
+    dither: str = "atkinson",
+    album: str = "",
+    source: str = "",
+) -> dict[str, Any]:
+    """One picture of a photo album, rendered to a widget's exact footprint.
+
+    Separate from `store` because an album photo is not an upload: nobody framed
+    it in the editor, so the geometry is decided here rather than in the browser,
+    and the entry is tagged with the album that owns it so the Images tab can
+    keep a hundred holiday snaps out of the list of pictures someone chose.
+
+    `radius` comes from the widget's border setting rather than from a
+    preference -- see INNER_RADIUS.
+    """
+    name = normalise_name(name)
+
+    # `picture` rather than `source`, which is the name the rest of this module
+    # uses for a decoded image: here `source` is already the iCloud checksum
+    # parameter, and shadowing it put a PIL object in the index.
+    try:
+        picture = Image.open(io.BytesIO(data))
+        picture.load()
+    except Exception as error:
+        raise ImageError(f"That photo is not an image PIL can read ({error}).") from error
+
+    # Same trap as an upload from a phone, and for the same reason: iCloud
+    # serves the sensor's own orientation in EXIF and PIL is the one reader that
+    # does not apply it. See convert() above.
+    picture = ImageOps.exif_transpose(picture)
+    if picture.mode in ("RGBA", "LA", "P"):
+        picture = picture.convert("RGBA")
+        flattened = Image.new("RGBA", picture.size, (255, 255, 255, 255))
+        flattened.alpha_composite(picture)
+        picture = flattened
+
+    grey = picture.convert("L")
+    framed = _cover(grey, width, height) if fill else _contain(grey, width, height)
+    blob, preview, width, height = _finish(_dither(framed, dither), radius)
+
+    os.makedirs(IMAGES_DIR, exist_ok=True)
+    with open(blob_path(name), "wb") as handle:
+        handle.write(blob)
+    with open(preview_path(name), "wb") as handle:
+        handle.write(preview)
+
+    entry = {
+        "name": name,
+        "mode": "photo",
+        "rounded": radius > 0,
+        "dither": dither,
+        "width": width,
+        "height": height,
+        "bytes": len(blob),
+        "sha256": hashlib.sha256(blob).hexdigest(),
+        # What makes this an album's picture rather than someone's upload.
+        "album": album,
+        # The iCloud checksum of the photo this was rendered from, so the next
+        # refresh can tell an unchanged picture from one that needs redoing.
+        # Kept in the index rather than in a file beside it: deleting an image
+        # must not leave an "already done" behind that stops it coming back.
+        "source": source,
+    }
+
+    index = _load_index()
+    index[name] = entry
+    _save_index(index)
+    return entry
+
+
 def remove(name: str) -> bool:
     index = _load_index()
     if name not in index:
@@ -396,10 +504,68 @@ def remove(name: str) -> bool:
     return True
 
 
+def remove_where(keep: Any) -> int:
+    """Drop every stored image `keep(entry)` rejects. Returns how many went.
+
+    Albums are re-rendered wholesale rather than patched, so this is how the
+    pictures of a deleted album, or of a widget that changed size, stop being
+    advertised to the device -- which then sweeps them off its card.
+    """
+    index = _load_index()
+    doomed = [name for name, entry in index.items() if not keep(entry)]
+    for name in doomed:
+        del index[name]
+        for path in (blob_path(name), preview_path(name)):
+            try:
+                os.remove(path)
+            except OSError:
+                pass
+    if doomed:
+        _save_index(index)
+    return len(doomed)
+
+
 def listing() -> list[dict[str, Any]]:
     return sorted(_load_index().values(), key=lambda entry: entry["name"])
 
 
+def uploads() -> list[dict[str, Any]]:
+    """Only the pictures someone chose, for the Images tab and the editor.
+
+    An album's photos are images in every other respect, but nobody picks one by
+    name and a full album would bury the list.
+    """
+    return [entry for entry in listing() if not entry.get("album")]
+
+
+# What one manifest entry costs, near enough, against the device's 16KB MQTT
+# buffer (MQTT_BUFFER_SIZE in MQTTManager.h). A payload over that is not
+# truncated, it is dropped -- and the symptom is a panel that silently stops
+# hearing about new images -- so this is worth a warning before it happens.
+MANIFEST_BUDGET_BYTES = 16384
+MANIFEST_WARN_BYTES = 14000
+
+# Only these reach the device. Everything else in an entry -- the mode, the
+# dither, which album it came from -- exists for the editor, and with an album's
+# worth of photos in the list those fields are most of the payload.
+DEVICE_FIELDS = ("name", "width", "height", "bytes", "sha256")
+
+
 def manifest(base_url: str) -> dict[str, Any]:
     """What the device needs to decide which blobs to fetch."""
-    return {"base_url": base_url.rstrip("/"), "images": listing()}
+    entries = [
+        {field: entry[field] for field in DEVICE_FIELDS if field in entry}
+        for entry in listing()
+    ]
+    built = {"base_url": base_url.rstrip("/"), "images": entries}
+
+    # Cheap, and the alternative is finding out from a panel that stopped
+    # updating. json is imported at the top of this module already.
+    size = len(json.dumps(built))
+    if size > MANIFEST_WARN_BYTES:
+        log.warning(
+            "The image manifest is %d bytes, against the device's %d byte MQTT "
+            "buffer. Shrink an album's photo limit before it stops arriving.",
+            size, MANIFEST_BUDGET_BYTES,
+        )
+    return built

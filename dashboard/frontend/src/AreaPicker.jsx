@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 
-import { Picker, PickerSearch, PickerTiles } from "./Picker.jsx";
+import { Picker, PickerNoLink, PickerSearch, PickerTiles } from "./Picker.jsx";
 
 // Picking an *area* for the room widget. Home Assistant's area registry is
 // websocket-only and the panel has no credentials for it, so the editor
@@ -32,6 +32,8 @@ function Body({ areas, value, onPick }) {
       area,
     }));
   }, [areas, query]);
+
+  if (areas.length === 0) return <PickerNoLink />;
 
   return (
     <>

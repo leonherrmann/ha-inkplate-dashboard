@@ -1,16 +1,17 @@
 import { useCallback, useEffect, useState } from "react";
 
-import DeviceSummary from "./DeviceStats.jsx";
+import DeviceCard from "./DeviceCard.jsx";
 import DeviceTab from "./DeviceTab.jsx";
 import ImagesTab from "./ImagesTab.jsx";
 import Inspector from "./Inspector.jsx";
 import Panel from "./Panel.jsx";
 import PageBar from "./PageBar.jsx";
+import PageList from "./PageList.jsx";
 import PagesTab from "./PagesTab.jsx";
-import ThemeToggle from "./ThemeToggle.jsx";
 import WidgetPicker from "./WidgetPicker.jsx";
 import * as api from "./api.js";
 import { useHistory } from "./history.js";
+import { GridIcon, ImageIcon, LayersIcon, SlidersIcon } from "./Icons.jsx";
 import {
   DEFAULT_CHIP_ROW,
   DEFAULT_SNAP,
@@ -36,11 +37,14 @@ import {
 const APPLE = typeof navigator !== "undefined" && /Mac|iP(hone|ad|od)/.test(navigator.platform || navigator.userAgent);
 const MOD = APPLE ? "⌘" : "Ctrl+";
 
-const TABS = [
-  { id: "design", label: "Design" },
-  { id: "pages", label: "Pages" },
-  { id: "images", label: "Images" },
-  { id: "device", label: "Device" },
+// Four places to be, in the rail on a desktop and the tab bar on a phone. The
+// page-wide header and its row of tabs are gone: identity, device health and
+// Push moved into the editor's own column, beside the pages they act on.
+const SECTIONS = [
+  { id: "design", label: "Editor", Icon: GridIcon },
+  { id: "pages", label: "Pages", Icon: LayersIcon },
+  { id: "device", label: "Device", Icon: SlidersIcon },
+  { id: "images", label: "Images", Icon: ImageIcon },
 ];
 
 // What the panel is showing versus what is in the editor, in words the reader
@@ -50,13 +54,18 @@ const TABS = [
 // the same as the add-on genuinely not knowing.
 function syncState(status) {
   if (!status) {
-    return { tone: "unknown", label: "Unknown", detail: "Waiting for the add-on." };
+    return {
+      tone: "unknown",
+      label: "Unknown",
+      detail: "Waiting for the add-on.",
+      note: "Nothing has been heard from the add-on yet.",
+    };
   }
   if (!status.draft_pushed) {
     return {
       tone: "pending",
       label: "Changes not pushed",
-      detail: "Edits are saved here but have not been sent to the device.",
+      detail: "Edits are saved here and nothing has been sent.",
       // The only state pressing Push actually resolves
       nudge: true,
     };
@@ -67,26 +76,38 @@ function syncState(status) {
     return {
       tone: "unknown",
       label: "Unknown",
-      detail: "The device has not reported which layout it is showing.",
+      detail:
+        "The panel has never been heard from, so there is no manifest: no widget types, no grid, no sizes.",
+      note: "It publishes its manifest at boot. Check it is on the same MQTT broker.",
     };
   }
   if (applied.ok === false) {
     return {
       tone: "bad",
-      label: "Device refused it",
-      detail: applied.error || "The device could not build the layout it was sent.",
+      label: "The device refused it",
+      detail: `It could not build version ${applied.version ?? status.pushed_version ?? "?"}.`,
+      // Shown as text rather than only as a tooltip: it is the one thing on
+      // screen that says which widget is at fault.
+      error: applied.error || "No reason was given.",
     };
   }
-  // Sent, but the panel has not confirmed that version. Normal for a device in
-  // its night sleep, which collects the push when it next wakes.
+  // Sent, but the panel has not confirmed that version. Its own tone, because
+  // this is the state that looks most like "not pushed" and calls for the
+  // opposite response -- a device in its night sleep collects the push when it
+  // next wakes, and pressing Push again changes nothing.
   if (applied.version !== status.pushed_version) {
     return {
-      tone: "pending",
-      label: "Awaiting device",
-      detail: "The layout was sent; the device has not confirmed it yet.",
+      tone: "waiting",
+      label: "Awaiting the device",
+      detail: `Version ${status.pushed_version ?? "?"} is out on the broker. The panel will collect it when it next wakes.`,
+      note: "Pushing again will not help",
     };
   }
-  return { tone: "ok", label: "In sync", detail: "The panel is showing this layout." };
+  return {
+    tone: "ok",
+    label: "In sync",
+    detail: "The panel is drawing exactly what is stored here. Nothing to do.",
+  };
 }
 
 function useStatus() {
@@ -145,6 +166,9 @@ export default function App() {
   const [devices, setDevices] = useState([]);
   const [areas, setAreas] = useState([]);
   const [uploads, setUploads] = useState([]);
+  // The photo widget picks one of these by name. Kept beside the uploads
+  // because they come from the same tab and are refreshed by the same events.
+  const [albums, setAlbums] = useState([]);
   const [tab, setTab] = useState("design");
   const [activePageId, setActivePageId] = useState(null);
   const [selectedId, setSelectedId] = useState(null);
@@ -203,6 +227,19 @@ export default function App() {
     // Named in the image widget's picker alongside the built-in icons
     api.getImages().then((data) => setUploads(data.images || [])).catch(() => setUploads([]));
   }, []);
+
+  // The photo widget's album picker, which the firmware cannot supply: albums
+  // are the add-on's own.
+  //
+  // Re-read on the way back to the design tab rather than once at startup. The
+  // picker shows how many of an album's pictures are rendered, and rendering
+  // happens in the background over minutes -- so a count fetched at mount is
+  // stale by the time anyone opens the widget, and reads as nothing having
+  // happened.
+  useEffect(() => {
+    if (tab !== "design") return;
+    api.getAlbums().then((data) => setAlbums(data.albums || [])).catch(() => setAlbums([]));
+  }, [tab]);
 
   // Every layout change funnels through here, which is what makes undo a single
   // line rather than an inverse per kind of edit: the layout as it stands is
@@ -351,9 +388,10 @@ export default function App() {
   // every row 34px taller, so the pitch changes and a widget has to be put back
   // on the row it was on rather than nudged by a constant. regridY does that.
   //
-  // Takes the page id rather than assuming the one being edited: the setting
-  // now lives in the Pages tab, where any page's row can be changed without
-  // first navigating to it.
+  // Takes the page id rather than assuming the one being edited. Only the
+  // canvas dock calls it now, which always means the active page -- but the
+  // confirm below names the page it is about, and a function that has to be
+  // told which page that is cannot name the wrong one.
   const setChipRow = (pageId, next) => {
     const page = pages.find((one) => one.id === pageId);
     if (!page) return;
@@ -554,122 +592,138 @@ export default function App() {
 
   return (
     <div className="app">
-      {/* One row at every width. The device summary used to take a row of its
-          own on a phone and the actions another, which put three bands above
-          the tabs before anything was edited. The summary is a button to the
-          Device tab, so on a narrow screen it collapses to its dot and the tab
-          it leads to carries the rest. */}
-      <header>
-        <div className="brand">
-          <span className="brand-mark" aria-hidden="true" />
-          <h1>
-            INKPLATE<em>DASHBOARD</em>
-          </h1>
-        </div>
-
-        <DeviceSummary
-          online={status?.online}
-          stats={status?.stats}
-          charging={status?.charging}
-          lastSeenAge={lastSeenAge}
-          onOpen={() => setTab("device")}
-        />
-
-        <div className="actions">
-          <ThemeToggle />
-          {/* The state is the button's own caption on a narrow screen, where
-              a separate chip for it was a third of the row. */}
-          <span className={`sync ${sync.tone}`} title={sync.detail}>
-            {sync.label}
-          </span>
-          {/* Nudged only when pressing Push is what would help. Waiting on a
-              sleeping device is not something the button can hurry. */}
-          <button className={sync.nudge ? "primary nudge" : "primary"} onClick={push}>
-            Push
-          </button>
-        </div>
-      </header>
-
-      <nav className="tabs main-tabs">
-        {TABS.map((entry) => (
+      <nav className="rail" aria-label="Sections">
+        {SECTIONS.map(({ id, label, Icon }) => (
           <button
-            key={entry.id}
-            className={tab === entry.id ? "tab active" : "tab"}
-            onClick={() => setTab(entry.id)}
+            key={id}
+            className={tab === id ? "rail-item active" : "rail-item"}
+            onClick={() => setTab(id)}
+            title={label}
+            aria-label={label}
+            aria-current={tab === id ? "page" : undefined}
           >
-            {entry.label}
+            <Icon size={19} width={tab === id ? 2 : 1.9} />
           </button>
         ))}
       </nav>
 
-      {!manifest && (
-        <div className="banner">
-          Waiting for the device to publish its widget manifest. It does that at boot, so
-          power it on and check it is using the same MQTT broker.
-        </div>
-      )}
+      <nav className="tabbar" aria-label="Sections">
+        {SECTIONS.map(({ id, label, Icon }) => (
+          <button
+            key={id}
+            className={tab === id ? "tabbar-item active" : "tabbar-item"}
+            onClick={() => setTab(id)}
+            aria-current={tab === id ? "page" : undefined}
+          >
+            <span className="tabbar-glyph">
+              <Icon size={tab === id ? 17 : 19} width={tab === id ? 2 : 1.9} />
+            </span>
+            <span>{label}</span>
+          </button>
+        ))}
+      </nav>
+
+      <div className="main">
+        {!manifest && (
+          <div className="banner">
+            Waiting for the device to publish its widget manifest. It does that at boot, so
+            power it on and check it is using the same MQTT broker.
+          </div>
+        )}
 
       {tab === "design" && (
-        <>
-          <PageBar
+        <div className="workspace">
+          {/* What the page header used to carry: which device, how it is, and
+              the one action that sends anything to it. Its own grid area rather
+              than sharing a wrapper with the page list, because the two want
+              different places on a phone -- the device leads there, above the
+              canvas, while the pages stay below it. */}
+          <DeviceCard
+            status={status}
+            panel={panel}
+            lastSeenAge={lastSeenAge}
+            sync={sync}
+            onPush={push}
+            onOpenDevice={() => setTab("device")}
+          />
+
+          <PageList
             pages={pages}
             activeId={activePage?.id}
             currentPageId={status?.current_page}
             pageLocked={Boolean(status?.page_locked)}
+            rotation={layout.rotation}
             onSelect={(id) => {
               setActivePageId(id);
               setSelectedId(null);
             }}
-            onAddWidget={() => setAdding(true)}
-            canAddWidget={Boolean(manifest)}
-            undo={undo}
-            redo={redo}
-            duplicate={() => duplicateWidget(selectedId)}
-            canUndo={history.canUndo}
-            canRedo={history.canRedo}
-            canDuplicate={Boolean(selected)}
-            mod={MOD}
+            onAdd={() => setTab("pages")}
           />
 
-          <div className="workspace">
-            <main>
-              <Panel
-                panel={panel}
-                widgets={widgets}
-                manifest={manifest}
-                uploads={uploads}
-                selectedId={selectedId}
-                onSelect={setSelectedId}
-                onMove={moveWidget}
-                onResize={setSize}
-                snapMode={snapMode}
-                grid={grid}
-                chipRow={chipRow}
-                zoom={zoom}
-                onZoom={setZoom}
-                onSnap={setSnapMode}
-              />
-            </main>
-
-            <Inspector
-              widget={selected}
-              manifest={manifest}
+          <main>
+            <PageBar
+              pages={pages}
+              activeId={activePage?.id}
+              currentPageId={status?.current_page}
+              pageLocked={Boolean(status?.page_locked)}
+              onSelect={(id) => {
+                setActivePageId(id);
+                setSelectedId(null);
+              }}
+              onAddWidget={() => setAdding(true)}
+              canAddWidget={Boolean(manifest)}
+              undo={undo}
+              redo={redo}
+              canUndo={history.canUndo}
+              canRedo={history.canRedo}
+              snapMode={snapMode}
+              onSnap={setSnapMode}
+              zoom={zoom}
+              onZoom={setZoom}
               chipRow={chipRow}
-              entities={entities}
-              devices={devices}
-              areas={areas}
-              uploads={uploads}
-              layer={widgets.findIndex((one) => one.id === selected?.id)}
-              layerCount={widgets.length}
-              onSetOption={setOption}
-              onSetOptions={setOptions}
-              onSetSize={setSize}
-              onSetLayer={setLayer}
-              onDuplicate={duplicateWidget}
-              onRemove={removeWidget}
-              onClose={() => setSelectedId(null)}
+              onChipRow={(next) => activePage && setChipRow(activePage.id, next)}
+              hasSelection={Boolean(selected)}
+              onFront={() => setLayer(selectedId, "front")}
+              onBack={() => setLayer(selectedId, "back")}
+              onDuplicate={() => duplicateWidget(selectedId)}
+              onDelete={() => removeWidget(selectedId)}
+              mod={MOD}
             />
-          </div>
+
+            <Panel
+              panel={panel}
+              widgets={widgets}
+              manifest={manifest}
+              uploads={uploads}
+              selectedId={selectedId}
+              onSelect={setSelectedId}
+              onMove={moveWidget}
+              onResize={setSize}
+              snapMode={snapMode}
+              grid={grid}
+              chipRow={chipRow}
+              zoom={zoom}
+              mod={MOD}
+            />
+          </main>
+
+          <Inspector
+            widget={selected}
+            manifest={manifest}
+            chipRow={chipRow}
+            entities={entities}
+            devices={devices}
+            areas={areas}
+            uploads={uploads}
+            albums={albums}
+            layer={widgets.findIndex((one) => one.id === selected?.id)}
+            layerCount={widgets.length}
+            onSetOption={setOption}
+            onSetOptions={setOptions}
+            onSetSize={setSize}
+            onSetLayer={setLayer}
+            onClose={() => setSelectedId(null)}
+          />
 
           {adding && (
             <WidgetPicker
@@ -679,7 +733,7 @@ export default function App() {
               onClose={() => setAdding(false)}
             />
           )}
-        </>
+        </div>
       )}
 
       {tab === "pages" && (
@@ -687,8 +741,10 @@ export default function App() {
           layout={layout}
           currentPageId={status?.current_page}
           pageLocked={Boolean(status?.page_locked)}
+          manifest={manifest}
+          uploads={uploads}
+          panel={panel}
           onChange={persist}
-          onSetChipRow={setChipRow}
           onAddPage={addPage}
           onEditPage={(id) => {
             setActivePageId(id);
@@ -717,6 +773,10 @@ export default function App() {
           onMessage={(text) => {
             setMessage(text);
             api.getImages().then((data) => setUploads(data.images || [])).catch(() => {});
+            // An album added or removed here changes what the photo widget's
+            // picker can offer, and the Design tab is not remounted on the way
+            // back to it.
+            api.getAlbums().then((data) => setAlbums(data.albums || [])).catch(() => {});
           }}
         />
       )}
@@ -724,6 +784,7 @@ export default function App() {
       {tab === "device" && (
         <DeviceTab
           status={status}
+          sync={sync}
           lastSeenAge={lastSeenAge}
           sleep={layout.sleep}
           onSleepChange={(next) => persist({ ...layout, sleep: next })}
@@ -745,9 +806,14 @@ export default function App() {
           onShowInfo={() =>
             api.showDeviceInfo().then(() => setMessage("Device info sent to the panel"))
           }
+          onPush={push}
         />
       )}
 
+      </div>
+
+      {/* Outside .main so the fixed toast is positioned by the viewport rather
+          than by a flex column that may have scrolled. */}
       {message && (
         <div className="toast" role="status" onClick={() => setMessage(null)}>
           {message.text}

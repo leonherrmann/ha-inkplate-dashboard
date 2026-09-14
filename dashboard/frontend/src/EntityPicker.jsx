@@ -1,6 +1,14 @@
 import { useMemo, useState } from "react";
 
-import { Picker, PickerCrumbs, PickerRows, PickerSearch, PickerTiles } from "./Picker.jsx";
+import {
+  Picker,
+  PickerCrumbs,
+  PickerLimit,
+  PickerNoLink,
+  PickerRows,
+  PickerSearch,
+  PickerTiles,
+} from "./Picker.jsx";
 import { entityKind, kindLabel, kindsPresent } from "./entityKinds.js";
 
 // Picking one entity out of several hundred, which was the slowest part of
@@ -114,9 +122,16 @@ function Body({ entities, value, domain, onPick }) {
     trail.push({ label: `${rows.length} to choose from` });
   }
 
+  // Nothing at all, rather than nothing matching a step: every list in the
+  // editor is fetched from Home Assistant together, so an empty one here means
+  // the fetch, not the filter.
+  if (entities.length === 0) return <PickerNoLink />;
+
   return (
     <>
       <PickerSearch value={query} onChange={setQuery} placeholder="Search by name or id…" />
+
+      <PickerLimit domain={domain} />
 
       {!needle && <PickerCrumbs trail={trail} />}
 

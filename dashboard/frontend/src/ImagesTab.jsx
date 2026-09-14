@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as api from "./api.js";
 import ImageEditor from "./ImageEditor.jsx";
 import GridSizePicker from "./GridSizePicker.jsx";
+import { ImageIcon, RefreshIcon, TrashIcon, WarningIcon } from "./Icons.jsx";
 import { DITHERS } from "./dither.js";
 
 // Uploading a picture to the panel.
@@ -113,7 +114,27 @@ export default function ImagesTab({ grid, panel, onMessage }) {
   const [customWidth, setCustomWidth] = useState(400);
   const [customHeight, setCustomHeight] = useState(300);
   const [busy, setBusy] = useState(false);
+  // Which stored picture the library is showing, when nothing is being uploaded
+  const [selected, setSelected] = useState(null);
   const fileInput = useRef(null);
+
+  // Photo albums. They live on this screen rather than on the photo widget
+  // because an album is a *source*: configured once, shown by any number of
+  // widgets. Asking for the share link inside a widget's options would mean
+  // pasting it again per widget, with no one place to see what is configured.
+  const [albums, setAlbums] = useState([]);
+  const [albumRefresh, setAlbumRefresh] = useState({});
+  const [pickedAlbum, setPickedAlbum] = useState(null);
+  const [addingAlbum, setAddingAlbum] = useState(false);
+  const [albumUrl, setAlbumUrl] = useState("");
+  const [albumName, setAlbumName] = useState("");
+  const [albumLimit, setAlbumLimit] = useState(25);
+  const [albumBusy, setAlbumBusy] = useState(false);
+  // What the limit slider is showing while it is being dragged. Its own state
+  // because the committed value only changes when the drag ends -- reading the
+  // album's limit straight off would leave the number and the fill frozen under
+  // the thumb, which reads as a slider that does not work.
+  const [limitDraft, setLimitDraft] = useState(25);
 
   const reload = () =>
     api
@@ -126,11 +147,28 @@ export default function ImagesTab({ grid, panel, onMessage }) {
       })
       .catch((problem) => onMessage(problem.message));
 
+  const reloadAlbums = () =>
+    api
+      .getAlbums()
+      .then((data) => {
+        setAlbums(data.albums || []);
+        setAlbumRefresh(data.refresh || {});
+      })
+      .catch((problem) => onMessage(problem.message));
+
   useEffect(() => {
     reload();
     // The device reports on its own timer, so a freshly uploaded image turns
     // from "not yet" to "on device" a minute or so later without a page reload.
     const timer = setInterval(reload, 10000);
+    return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    reloadAlbums();
+    // Faster than the image poll: rendering runs in the background at seconds a
+    // picture, and the counts and the progress line only move if this asks.
+    const timer = setInterval(reloadAlbums, 5000);
     return () => clearInterval(timer);
   }, []);
 
@@ -201,145 +239,586 @@ export default function ImagesTab({ grid, panel, onMessage }) {
       onMessage(problem.message);
     }
   };
+  // Only one thing is ever on the right, so choosing any of them clears the
+  // rest. Without this, opening an album while a picture was being cropped left
+  // both panes rendered one under the other.
+  const showOnly = (what) => {
+    if (what !== "upload") reset();
+    if (what !== "image") setSelected(null);
+    if (what !== "album") setPickedAlbum(null);
+    setAddingAlbum(what === "new-album");
+  };
+
+  const addAlbum = async () => {
+    if (!albumUrl.trim()) return;
+    setAlbumBusy(true);
+    try {
+      const album = await api.addAlbum({ url: albumUrl, name: albumName, limit: albumLimit });
+      onMessage(`Added ${album.name} — ${album.available} photos, rendering now`);
+      setAlbumUrl("");
+      setAlbumName("");
+      showOnly("album");
+      setPickedAlbum(album.id);
+      reloadAlbums();
+    } catch (problem) {
+      onMessage(problem.message);
+    } finally {
+      setAlbumBusy(false);
+    }
+  };
+
+  const removeAlbum = async (album) => {
+    if (
+      !window.confirm(
+        `Remove "${album.name}"? Any photo widget showing it will go blank, and its ` +
+          `pictures will be deleted from the panel.`
+      )
+    )
+      return;
+    try {
+      await api.deleteAlbum(album.id);
+      onMessage(`Removed ${album.name}`);
+      setPickedAlbum(null);
+      reloadAlbums();
+    } catch (problem) {
+      onMessage(problem.message);
+    }
+  };
+
+  // Committed when the slider is let go rather than on every tick: each change
+  // is a PATCH and a re-render of whatever the new limit adds or drops.
+  const commitLimit = async (album, limit) => {
+    if (limit === album.limit) return;
+    try {
+      await api.updateAlbum(album.id, { limit });
+      reloadAlbums();
+    } catch (problem) {
+      onMessage(problem.message);
+    }
+  };
+
+  const refreshAlbumsNow = async () => {
+    try {
+      await api.refreshAlbums();
+      onMessage("Checking the albums for new photos…");
+      reloadAlbums();
+    } catch (problem) {
+      onMessage(problem.message);
+    }
+  };
+
+  const held = images.find((one) => one.name === selected) || null;
+  const album = albums.find((one) => one.id === pickedAlbum) || null;
+  const editing = Boolean(file);
+  const albumPictures = albums.reduce((total, one) => total + (one.rendered || 0), 0);
+  const ditherOf = (entry) => (entry.mode === "exact" ? "threshold" : entry.dither || "atkinson");
 
   return (
-    <div className="tab-panel images-tab">
-      {!baseUrl && (
-        <div className="banner">
-          <strong>The panel cannot download images yet.</strong> The add-on could not work
-          out your Home Assistant address by itself. Open this add-on's{" "}
-          <em>Configuration</em> tab and set <code>image_base_url</code> to the address you
-          use to reach Home Assistant, with port 8098 — for example{" "}
-          <code>http://192.168.1.50:8098</code> — then restart the add-on. Uploading and
-          previewing work regardless; only the download to the panel is affected.
+    <div className="images-tab">
+      <div className="side-column">
+        <div>
+          <div className="eyebrow">
+            {images.length} held
+            {deviceReports ? ` · panel holds ${onDevice.length}` : ""}
+          </div>
+          <h2 style={{ fontSize: 24 }}>Images</h2>
         </div>
-      )}
 
-      <section className="card upload">
-        <h2>Add an image</h2>
+        <div className="image-list">
+          {images.map((image) => {
+            // Three states, not two: the panel might not be reporting at all,
+            // which is different from it reporting that it has nothing.
+            const missing = deviceReports && !onDevice.includes(image.name);
+            const active = !editing && selected === image.name;
+            return (
+              <button
+                key={image.name}
+                className={`image-row${active ? " active" : ""}${missing ? " missing" : ""}`}
+                onClick={() => {
+                  showOnly("image");
+                  setSelected(image.name);
+                }}
+              >
+                {missing ? (
+                  <span className="image-row-thumb">
+                    <WarningIcon size={18} />
+                  </span>
+                ) : (
+                  <img className="image-row-thumb" src={api.imagePreviewUrl(image.name)} alt="" draggable={false} />
+                )}
+                <span className="image-row-text">
+                  <b>{image.name}</b>
+                  <small>
+                    {missing
+                      ? "not on the panel yet"
+                      : `${image.width} × ${image.height} · ${ditherOf(image)} · ${prettyBytes(image.bytes)}`}
+                  </small>
+                </span>
+              </button>
+            );
+          })}
 
-        {/* Step one. Everything below it depends on there being a file, so
-            until there is one this is the only thing on screen. */}
-        <div className="step">
-          <span className="step-mark">1</span>
-          <div className="step-body">
-            <label className="field">
-              <span>Picture</span>
+          <button className="add-button stacked" onClick={() => fileInput.current?.click()}>
+            + Upload a picture
+            <span style={{ fontWeight: 400, fontSize: 11 }}>Names: a–z, 0–9, _ and -, up to 32</span>
+          </button>
+
+          <input
+            ref={fileInput}
+            type="file"
+            accept="image/*"
+            className="sr-only"
+            onChange={(event) => {
+              showOnly("upload");
+              pick(event.target.files?.[0] || null);
+            }}
+          />
+        </div>
+
+        {/* Albums are a second library on this screen, not a section inside the
+            first: a picture is something you framed, an album is a source that
+            fills itself. They share the column because both answer "what can a
+            widget show", and both are chosen the same way. */}
+        <div>
+          <div className="eyebrow">
+            {albums.length} album{albums.length === 1 ? "" : "s"}
+            {albumPictures ? ` · ${albumPictures} pictures` : ""}
+          </div>
+          <h2 style={{ fontSize: 24 }}>Albums</h2>
+        </div>
+
+        <div className="image-list">
+          {albums.map((one) => (
+            <button
+              key={one.id}
+              className={`image-row${pickedAlbum === one.id ? " active" : ""}${
+                one.last_error ? " missing" : ""
+              }`}
+              onClick={() => {
+                showOnly("album");
+                setPickedAlbum(one.id);
+                // Set here rather than in an effect: the poll refreshes the
+                // album list every five seconds, and an effect watching the
+                // album would snap the slider back mid-drag.
+                setLimitDraft(one.limit);
+              }}
+            >
+              <span className="image-row-thumb">
+                {one.last_error ? <WarningIcon size={18} /> : <ImageIcon size={18} />}
+              </span>
+              <span className="image-row-text">
+                <b>{one.name}</b>
+                <small>
+                  {one.last_error
+                    ? "could not be read"
+                    : `${one.rendered} of ${one.available} rendered`}
+                </small>
+              </span>
+            </button>
+          ))}
+
+          <button
+            className="add-button stacked"
+            onClick={() => {
+              showOnly("new-album");
+            }}
+          >
+            + Add an iCloud album
+            <span style={{ fontWeight: 400, fontSize: 11 }}>
+              A shared album's Public Website link
+            </span>
+          </button>
+        </div>
+
+        {!baseUrl && (
+          <div className="note danger">
+            <div className="note-head">
+              <WarningIcon size={16} />
+              The panel cannot download images yet
+            </div>
+            <p>
+              The add-on could not work out your Home Assistant address by itself. Set{" "}
+              <code>image_base_url</code> in this add-on's <b>Configuration</b> tab — for example{" "}
+              <code>http://192.168.1.50:8098</code> — then restart it. Uploading and previewing
+              work regardless; only the download to the panel is affected.
+            </p>
+          </div>
+        )}
+      </div>
+
+      <section className="card">
+        {!editing && !held && !album && !addingAlbum && (
+          <>
+            <div className="eyebrow">Nothing selected</div>
+            <p className="hint" style={{ marginTop: 8 }}>
+              Choose a picture to see exactly what the panel draws, or upload a new one. The
+              preview is the stored bitmap, so it is the real dither rather than an impression
+              of it. An album fills itself instead — a photo widget rotates through one.
+            </p>
+          </>
+        )}
+
+        {album && (
+          <>
+            <div className="screen-head">
+              <div>
+                <div className="eyebrow">iCloud shared album</div>
+                <h3 style={{ fontSize: 21 }}>{album.name}</h3>
+              </div>
+              <button
+                style={{ marginLeft: "auto" }}
+                onClick={refreshAlbumsNow}
+                disabled={albumRefresh.running}
+              >
+                <RefreshIcon size={14} />
+                {albumRefresh.running ? "Refreshing…" : "Refresh"}
+              </button>
+            </div>
+
+            {albumRefresh.running && (
+              <div className="note info" style={{ marginTop: 16 }}>
+                <div className="note-head">
+                  {albumRefresh.album ? `Reading ${albumRefresh.album}` : "Reading the albums"}
+                </div>
+                <p>
+                  Rendered {albumRefresh.rendered || 0}
+                  {albumRefresh.total ? ` of ${albumRefresh.total}` : ""} pictures. Each is
+                  cropped and dithered here, which takes a few seconds.
+                </p>
+              </div>
+            )}
+
+            {album.last_error && (
+              <div className="note danger" style={{ marginTop: 16 }}>
+                <div className="note-head">
+                  <WarningIcon size={16} />
+                  iCloud would not give us this album
+                </div>
+                <p>
+                  {album.last_error} The pictures already on the panel are kept, so the widget
+                  carries on showing them.
+                </p>
+              </div>
+            )}
+
+            <div className="facts" style={{ gridTemplateColumns: "1fr 1fr", marginTop: 16 }}>
+              <div className="fact">
+                <small>In the album</small>
+                <b>{album.available}</b>
+              </div>
+              <div className="fact">
+                <small>Rendered</small>
+                <b className={album.rendered ? "ok" : undefined}>{album.rendered}</b>
+              </div>
+            </div>
+
+            <label className="field-block" style={{ marginTop: 16 }}>
+              <span className="slider-head">
+                Keep the newest <b>{limitDraft}</b>
+              </span>
+              {/* Committed on release rather than on every tick: each change is
+                  a PATCH and a re-render of whatever the new limit adds or
+                  drops. The draft is what moves under the thumb meanwhile. */}
               <input
-                ref={fileInput}
-                type="file"
-                accept="image/*"
-                onChange={(event) => pick(event.target.files?.[0] || null)}
+                type="range"
+                className="track-cool"
+                style={{ "--fill": `${limitDraft}%` }}
+                min="1"
+                max="100"
+                value={limitDraft}
+                onChange={(event) => setLimitDraft(Number(event.target.value))}
+                onPointerUp={() => commitLimit(album, limitDraft)}
+                onKeyUp={() => commitLimit(album, limitDraft)}
               />
             </label>
-            {file && (
-              <label className="field">
-                <span>Name</span>
-                <input
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
-                  placeholder="hallway"
-                />
-              </label>
-            )}
-          </div>
-        </div>
 
-        {file && (
+            <div className="upload-actions">
+              <p className="hint">
+                Pictures are rendered only for the widgets that show them, at each size, crop
+                and border in use — so a bigger album is a slower refresh and a fuller card.
+                Widgets showing this album go blank if it is removed.
+              </p>
+              <button className="danger" onClick={() => removeAlbum(album)}>
+                <TrashIcon size={14} />
+                Remove
+              </button>
+            </div>
+          </>
+        )}
+
+        {addingAlbum && (
           <>
-            <div className="step">
-              <span className="step-mark">2</span>
-              <div className="step-body">
-                {/* A div and not a <label>, deliberately. A label names a
-                    single control, so wrapping a group of buttons in one hands
-                    every button the whole label's text as its accessible name.
-                    The dither group was fixed for exactly this once already;
-                    these two had the same fault and kept it. */}
-                <div className="field" role="group" aria-label="Kind of picture">
-                  <span>Kind</span>
-                  {/* Two cards rather than two chips: each carries a sentence
-                      explaining what it does to the picture, and a chip lays
-                      its label and its hint on one line -- which ran them
-                      together as "PhotoCropped to fill, then dithered" and
-                      made each one wide enough to take a row of its own. */}
-                  <div className="choice-cards">
-                    {MODES.map((entry) => (
-                      <button
-                        key={entry.id}
-                        type="button"
-                        className={mode === entry.id ? "choice-card active" : "choice-card"}
-                        onClick={() => setMode(entry.id)}
-                      >
-                        <b>{entry.label}</b>
-                        <small>{entry.hint}</small>
-                      </button>
-                    ))}
+            <div className="screen-head">
+              <div>
+                <div className="eyebrow">iCloud shared album</div>
+                <h3 style={{ fontSize: 21 }}>Add an album</h3>
+              </div>
+            </div>
+
+            <label className="field-block" style={{ marginTop: 16 }}>
+              <span>Share link</span>
+              <input
+                value={albumUrl}
+                onChange={(event) => setAlbumUrl(event.target.value)}
+                placeholder="https://www.icloud.com/sharedalbum/#B0z5qAGN1JIFd3y"
+              />
+            </label>
+
+            <div className="note info" style={{ marginTop: 12 }}>
+              <div className="note-head">Where to find it</div>
+              <p>
+                In Photos, open the album, share it, and turn on <b>Public Website</b> — then
+                paste the link it gives you. Nothing is signed in to: the link is all iCloud
+                needs, and the add-on only ever reads.
+              </p>
+            </div>
+
+            <label className="field-block" style={{ marginTop: 16 }}>
+              <span>Name (optional)</span>
+              <input
+                value={albumName}
+                onChange={(event) => setAlbumName(event.target.value)}
+                placeholder="whatever the album is called"
+              />
+            </label>
+
+            <label className="field-block" style={{ marginTop: 16 }}>
+              <span className="slider-head">
+                Keep the newest <b>{albumLimit}</b>
+              </span>
+              <input
+                type="range"
+                className="track-cool"
+                style={{ "--fill": `${albumLimit}%` }}
+                min="1"
+                max="100"
+                value={albumLimit}
+                onChange={(event) => setAlbumLimit(Number(event.target.value))}
+              />
+            </label>
+
+            <div className="upload-actions">
+              <p className="hint">
+                The link is checked with iCloud before the album is saved. Rendering its
+                pictures happens afterwards and takes a few seconds each.
+              </p>
+              <button className="primary" disabled={albumBusy || !albumUrl.trim()} onClick={addAlbum}>
+                {albumBusy ? "Checking…" : "Add album"}
+              </button>
+              <button onClick={() => showOnly(null)} disabled={albumBusy}>
+                Cancel
+              </button>
+            </div>
+          </>
+        )}
+
+        {held && !editing && (
+          <>
+            <div className="screen-head">
+              <div>
+                <div className="eyebrow">Stored · the real dither</div>
+                <h3 style={{ fontSize: 21 }}>{held.name}</h3>
+              </div>
+            </div>
+
+            <div className="editor-split" style={{ marginTop: 16 }}>
+              <div className="editor-stage">
+                <div className="editor-figure">
+                  <img src={api.imagePreviewUrl(held.name)} alt={held.name} />
+                  <span className="crop-tag result">
+                    1-bit · {held.width} × {held.height}
+                  </span>
+                </div>
+              </div>
+
+              <div className="editor-controls">
+                <div className="facts" style={{ gridTemplateColumns: "1fr 1fr" }}>
+                  <div className="fact">
+                    <small>Size</small>
+                    <b>{held.width} × {held.height}</b>
+                  </div>
+                  <div className="fact">
+                    <small>Dither</small>
+                    <b>{ditherOf(held)}</b>
+                  </div>
+                  <div className="fact">
+                    <small>Stored</small>
+                    <b>{prettyBytes(held.bytes)}</b>
+                  </div>
+                  <div className="fact">
+                    <small>On the panel</small>
+                    <b className={onDevice.includes(held.name) ? "ok" : undefined}>
+                      {deviceReports ? (onDevice.includes(held.name) ? "Yes" : "Not yet") : "Unknown"}
+                    </b>
                   </div>
                 </div>
+                <button className="danger" onClick={() => remove(held)}>
+                  <TrashIcon size={14} />
+                  Delete
+                </button>
+              </div>
+            </div>
 
-                {/* Only photos get scaled, so only photos need a target size */}
-                {mode === "photo" ? (
-                  <div className="field" role="group" aria-label="Size on the panel">
-                    <span>Size</span>
-                    <div className="size-picker">
+            <div className="upload-actions">
+              <p className="hint">
+                This is the stored bitmap, the same bytes the panel fetches. Deleting it blanks
+                any widget showing it.
+              </p>
+            </div>
+          </>
+        )}
+
+        {editing && (
+          <>
+            <div className="screen-head">
+              <div>
+                <div className="eyebrow">Crop · preview is the real dither</div>
+                <h3 style={{ fontSize: 21 }}>{name || "New picture"}</h3>
+              </div>
+              <div className="seg" role="group" aria-label="Kind" style={{ marginLeft: "auto" }}>
+                {MODES.map((entry) => (
+                  <button
+                    key={entry.id}
+                    className={mode === entry.id ? "active" : undefined}
+                    onClick={() => setMode(entry.id)}
+                    title={entry.hint}
+                  >
+                    {entry.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {mode === "photo" ? (
+              <div style={{ marginTop: 16 }}>
+                <ImageEditor
+                  file={file}
+                  target={target}
+                  ditherName={ditherName}
+                  brightness={brightness}
+                  contrast={contrast}
+                  onReady={onEditorReady}
+                >
+                  <label className="field-block">
+                    <span className="slider-head">
+                      Brightness <b>{brightness > 0 ? `+${brightness}` : brightness}</b>
+                    </span>
+                    <input
+                      type="range"
+                      className="track-warm"
+                      style={{ "--fill": `${(brightness + 100) / 2}%` }}
+                      min="-100"
+                      max="100"
+                      value={brightness}
+                      onChange={(event) => setBrightness(Number(event.target.value))}
+                    />
+                  </label>
+
+                  <label className="field-block">
+                    <span className="slider-head">
+                      Contrast <b>{contrast > 0 ? `+${contrast}` : contrast}</b>
+                    </span>
+                    <input
+                      type="range"
+                      className="track-cool"
+                      style={{ "--fill": `${(contrast + 100) / 2}%` }}
+                      min="-100"
+                      max="100"
+                      value={contrast}
+                      onChange={(event) => setContrast(Number(event.target.value))}
+                    />
+                  </label>
+
+                  {/* A group rather than a <label>: a label wrapping several
+                      buttons hands each of them the others' text as its name. */}
+                  <div className="field-block inspector-section" role="group" aria-label="Dither">
+                    <span>Dither</span>
+                    <div className="choice-cards">
+                      {Object.entries(DITHERS).map(([id, entry]) => (
+                        <button
+                          key={id}
+                          className={ditherName === id ? "choice active" : "choice"}
+                          onClick={() => setDitherName(id)}
+                          aria-pressed={ditherName === id}
+                          title={entry.hint}
+                        >
+                          <span className="choice-mark" />
+                          <b>{entry.label}</b>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <label className="solid switch">
+                    <span>
+                      <b style={{ fontSize: 12.5 }}>Round the corners</b>
+                      <small className="hint" style={{ display: "block" }}>
+                        matches the widget radius
+                      </small>
+                    </span>
+                    <input
+                      type="checkbox"
+                      style={{ marginLeft: "auto" }}
+                      checked={rounded}
+                      onChange={(event) => setRounded(event.target.checked)}
+                    />
+                  </label>
+                </ImageEditor>
+
+                <div className="upload-size">
+                  <label className="field">
+                    <span>Name</span>
+                    <input
+                      value={name}
+                      onChange={(event) => setName(event.target.value)}
+                      placeholder="hallway"
+                    />
+                  </label>
+
+                  <div className="field-block" role="group" aria-label="Size on the panel">
+                    <span>Size on the panel — {target.width} × {target.height}</span>
+                    <div className="pill-row">
                       {SIZE_MODES.map((entry) => (
                         <button
                           key={entry.id}
-                          type="button"
-                          className={sizeMode === entry.id ? "chip active" : "chip"}
+                          className={sizeMode === entry.id ? "pill active" : "pill"}
                           onClick={() => setSizeMode(entry.id)}
                         >
                           {entry.label}
                         </button>
                       ))}
                     </div>
-
                     {sizeMode === "grid" && (
-                      <GridSizePicker
-                        grid={grid}
-                        cols={cols}
-                        rows={rows}
-                        onChange={(nextCols, nextRows) => {
-                          setCols(nextCols);
-                          setRows(nextRows);
-                        }}
-                      />
+                      <div style={{ marginTop: 10 }}>
+                        <GridSizePicker
+                          grid={grid}
+                          cols={cols}
+                          rows={rows}
+                          onChange={(nextCols, nextRows) => {
+                            setCols(nextCols);
+                            setRows(nextRows);
+                          }}
+                        />
+                      </div>
                     )}
-
-                    {sizeMode === "full" && (
-                      <p className="hint">
-                        The whole panel, {panel.width}×{panel.height}.
-                      </p>
-                    )}
-
-                    {/* The API has always taken any size; only this form was
-                        limited to the grid presets. Sliders rather than number
-                        fields: the useful gesture here is "a bit wider", and
-                        the readout carries the exact number for when it is not. */}
                     {sizeMode === "custom" && (
-                      <div className="custom-size">
+                      <div className="custom-size" style={{ marginTop: 10 }}>
                         <label className="field">
-                          <span>
-                            Width <b>{target.width} px</b>
-                          </span>
+                          <span>Width</span>
                           <input
-                            type="range"
-                            min="16"
+                            type="number"
+                            min="1"
                             max={panel.width}
-                            step="2"
                             value={customWidth}
                             onChange={(event) => setCustomWidth(Number(event.target.value))}
                           />
                         </label>
                         <label className="field">
-                          <span>
-                            Height <b>{target.height} px</b>
-                          </span>
+                          <span>Height</span>
                           <input
-                            type="range"
-                            min="16"
+                            type="number"
+                            min="1"
                             max={panel.height}
-                            step="2"
                             value={customHeight}
                             onChange={(event) => setCustomHeight(Number(event.target.value))}
                           />
@@ -347,136 +826,40 @@ export default function ImagesTab({ grid, panel, onMessage }) {
                       </div>
                     )}
                   </div>
-                ) : (
-                  <p className="hint">
-                    Uploaded as-is at its own pixel size, with anything darker than
-                    mid-grey becoming black. Draw it at the size you want it drawn.
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {mode === "photo" && (
-              <div className="step">
-                <span className="step-mark">3</span>
-                <div className="step-body">
-                  <span className="field-title">Framing and tone</span>
-                  <div className="editor-split">
-                    <ImageEditor
-                      file={file}
-                      target={target}
-                      ditherName={ditherName}
-                      brightness={brightness}
-                      contrast={contrast}
-                      onReady={onEditorReady}
-                    />
-
-                    <div className="editor-knobs">
-                      <label className="field">
-                        <span>
-                          Brightness <b>{brightness > 0 ? `+${brightness}` : brightness}</b>
-                        </span>
-                        <input
-                          type="range"
-                          min="-100"
-                          max="100"
-                          value={brightness}
-                          onChange={(event) => setBrightness(Number(event.target.value))}
-                        />
-                      </label>
-
-                      <label className="field">
-                        <span>
-                          Contrast <b>{contrast > 0 ? `+${contrast}` : contrast}</b>
-                        </span>
-                        <input
-                          type="range"
-                          min="-100"
-                          max="100"
-                          value={contrast}
-                          onChange={(event) => setContrast(Number(event.target.value))}
-                        />
-                      </label>
-
-                      <div className="field" role="group" aria-label="Dither">
-                        <span>Dither</span>
-                        <div className="size-picker">
-                          {Object.entries(DITHERS).map(([id, entry]) => (
-                            <button
-                              key={id}
-                              type="button"
-                              className={ditherName === id ? "chip active" : "chip"}
-                              onClick={() => setDitherName(id)}
-                              title={entry.hint}
-                            >
-                              {entry.label}
-                            </button>
-                          ))}
-                        </div>
-                        <p className="hint">{DITHERS[ditherName].hint}</p>
-                      </div>
-
-                      <label className="toggle">
-                        <input
-                          type="checkbox"
-                          checked={rounded}
-                          onChange={(event) => setRounded(event.target.checked)}
-                        />
-                        <span>
-                          Round the corners
-                          <small>
-                            To a widget's radius, so the photo sits among them. The corners
-                            become white, not transparent — the panel has no alpha.
-                          </small>
-                        </span>
-                      </label>
-                    </div>
-                  </div>
                 </div>
               </div>
+            ) : (
+              <>
+                <label className="field" style={{ marginTop: 16 }}>
+                  <span>Name</span>
+                  <input
+                    value={name}
+                    onChange={(event) => setName(event.target.value)}
+                    placeholder="hallway"
+                  />
+                </label>
+                <p className="hint" style={{ marginTop: 12 }}>
+                  Uploaded as-is at its own pixel size, with anything darker than mid-grey
+                  becoming black. Draw it at the size you want it drawn.
+                </p>
+              </>
             )}
 
             <div className="upload-actions">
-              <button className="primary" disabled={busy} onClick={upload}>
-                {busy ? "Converting…" : `Upload ${target.width}×${target.height}`}
-              </button>
-              <button onClick={reset} disabled={busy}>
+              <p className="hint" style={{ maxWidth: 460 }}>
+                {mode === "photo"
+                  ? "Uploads as a greyscale bitmap at final size, so the backend only packs it — the preview and the panel agree pixel for pixel."
+                  : "Uploaded exactly as drawn, thresholded rather than dithered."}
+              </p>
+              <button className="spacer" onClick={reset}>
                 Cancel
+              </button>
+              <button className="primary" disabled={busy} onClick={upload}>
+                {busy ? "Converting…" : "Upload"}
               </button>
             </div>
           </>
         )}
-      </section>
-
-      <section className="card">
-        <div className="card-head">
-          <h2>Images ({images.length})</h2>
-          {baseUrl && (
-            <small className="hint">
-              The panel downloads from <code>{baseUrl}</code>
-            </small>
-          )}
-        </div>
-        {images.length === 0 && <p className="hint">Nothing uploaded yet.</p>}
-
-        <div className="image-grid">
-          {images.map((image) => (
-            <figure key={image.name} className="image-item">
-              {/* The stored preview, so this is exactly what the panel renders */}
-              <img src={api.imagePreviewUrl(image.name)} alt={image.name} />
-              <figcaption>
-                <strong>{image.name}</strong>
-                <small>
-                  {image.mode} · {image.width}×{image.height} · {prettyBytes(image.bytes)}
-                </small>
-                <DeviceBadge name={image.name} have={onDevice} reports={deviceReports} />
-              </figcaption>
-              <button className="danger" onClick={() => remove(image)}>
-                Delete
-              </button>
-            </figure>
-          ))}
-        </div>
       </section>
     </div>
   );

@@ -87,3 +87,27 @@ export const deleteImage = (name) =>
 
 // What the panel will actually show, dithering and all
 export const imagePreviewUrl = (name) => `${base}/images/${encodeURIComponent(name)}/preview.png`;
+
+// Photo albums. Adding one checks the link with iCloud before it returns, so
+// this can take a second; rendering the pictures happens afterwards in the
+// background and is followed by polling getAlbums().
+export const getAlbums = () => request("albums");
+
+export const addAlbum = ({ url, name, limit }) =>
+  request("albums", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ url, name, limit }),
+  });
+
+export const updateAlbum = (id, fields) =>
+  request(`albums/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(fields),
+  });
+
+export const deleteAlbum = (id) =>
+  request(`albums/${encodeURIComponent(id)}`, { method: "DELETE" });
+
+export const refreshAlbums = () => request("albums/refresh", { method: "POST" });

@@ -1,3 +1,5 @@
+import { TimerIcon } from "./Icons.jsx";
+
 // How often a running timer redraws itself on the panel.
 //
 // Only the two the panel's own settings screen offers. A third value here
@@ -21,43 +23,54 @@ export default function TimerSettings({ tickMs, onChange, autoStart, onAutoStart
   const chosen = TIMER_TICKS.find((one) => one.ms === ms);
 
   return (
-    <section className="group">
-      <h3>Timer updates</h3>
-
-      {/* A group rather than a <label>: wrapping several controls in a label
-          makes a screen reader read every one of them as the name of each. That
-          exact defect has been fixed in this editor twice already. */}
-      <div className="field" role="group" aria-label="Timer update rate">
-        <span>Redraw</span>
-        <select
-          value={String(ms)}
-          onChange={(event) => onChange(Number(event.target.value))}
-        >
-          {TIMER_TICKS.map((option) => (
-            <option key={option.ms} value={String(option.ms)}>
-              {option.label}
-            </option>
-          ))}
-        </select>
+    <section className="card">
+      <div className="card-head">
+        <span className="token yellow">
+          <TimerIcon size={16} />
+        </span>
+        <b>Timers</b>
       </div>
 
-      <p className="hint">{chosen ? chosen.hint : ""}</p>
+      {/* A group rather than a <label>: a label wrapping several buttons hands
+          each of them the others' text as its accessible name. */}
+      <div className="group-actions" role="group" aria-label="Timer update rate">
+        <span style={{ fontSize: 12, color: "var(--ink-60)" }}>Update rate</span>
+        <div className="seg" style={{ marginLeft: "auto" }}>
+          {TIMER_TICKS.map((option) => (
+            <button
+              key={option.ms}
+              className={ms === option.ms ? "active" : undefined}
+              onClick={() => onChange(option.ms)}
+              aria-pressed={ms === option.ms}
+              title={option.hint}
+            >
+              {option.ms / 1000} s
+            </button>
+          ))}
+        </div>
+      </div>
 
-      <div className="field" role="group" aria-label="Pomodoro auto-start">
-        <span>Pomodoro</span>
-        <label className="switch">
+      <p className="hint">Display cadence only — it does not change the timer itself.</p>
+
+      <div className="inspector-section" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div>
+          <b style={{ fontSize: 13.5 }}>Pomodoro auto-start</b>
+          <div className="hint">Next interval begins on its own</div>
+        </div>
+        <label className="switch" style={{ marginLeft: "auto" }}>
+          <span className="sr-only">Pomodoro auto-start</span>
           <input
             type="checkbox"
             checked={autoStart !== false}
             onChange={(event) => onAutoStartChange(event.target.checked)}
           />
-          <span>Start the next block by itself</span>
         </label>
       </div>
 
       <p className="hint">
-        Off means a focus block or break ends and waits on the panel until you
-        press the middle button.
+        {autoStart === false
+          ? "A focus block or break ends and waits on the panel until you press the middle button."
+          : chosen?.hint || ""}
       </p>
     </section>
   );

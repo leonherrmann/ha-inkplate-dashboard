@@ -36,7 +36,7 @@ function coverScale(bitmapWidth, bitmapHeight, width, height) {
   return Math.max(width / bitmapWidth, height / bitmapHeight);
 }
 
-export default function ImageEditor({ file, target, ditherName, brightness, contrast, onReady }) {
+export default function ImageEditor({ file, target, ditherName, brightness, contrast, onReady, children }) {
   const [bitmap, setBitmap] = useState(null);
   const [rotation, setRotation] = useState(0);
   const [flipped, setFlipped] = useState(false);
@@ -44,6 +44,7 @@ export default function ImageEditor({ file, target, ditherName, brightness, cont
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [problem, setProblem] = useState("");
   const previewRef = useRef(null);
+  const sourceRef = useRef(null);
   const dragging = useRef(null);
 
   // Decoded with the orientation applied, which is the whole of the phone-photo
@@ -89,6 +90,23 @@ export default function ImageEditor({ file, target, ditherName, brightness, cont
     ? coverScale(rotated.width, rotated.height, target.width, target.height)
     : 1;
 
+  // The transform, in one place. The greyscale render, the upload and the source
+  // view beside it all paint through this, so what you frame is exactly what is
+  // dithered and exactly what is sent.
+  const paint = useCallback(
+    (context, width, height) => {
+      if (!bitmap) return;
+      const scale = baseScale * zoom;
+      context.save();
+      context.translate(width / 2 + offset.x, height / 2 + offset.y);
+      context.rotate((rotation * Math.PI) / 180);
+      context.scale(flipped ? -scale : scale, scale);
+      context.drawImage(bitmap, -bitmap.width / 2, -bitmap.height / 2);
+      context.restore();
+    },
+    [bitmap, baseScale, zoom, offset, rotation, flipped]
+  );
+
   // Draws the photo into a canvas of exactly the target size and returns the
   // greyscale bytes. The one place the geometry is decided, used by both the
   // preview and the upload so they cannot disagree.
@@ -108,13 +126,7 @@ export default function ImageEditor({ file, target, ditherName, brightness, cont
     context.imageSmoothingEnabled = true;
     context.imageSmoothingQuality = "high";
 
-    const scale = baseScale * zoom;
-    context.save();
-    context.translate(width / 2 + offset.x, height / 2 + offset.y);
-    context.rotate((rotation * Math.PI) / 180);
-    context.scale(flipped ? -scale : scale, scale);
-    context.drawImage(bitmap, -bitmap.width / 2, -bitmap.height / 2);
-    context.restore();
+    paint(context, width, height);
 
     const pixels = context.getImageData(0, 0, width, height).data;
     const gray = new Uint8ClampedArray(width * height);
@@ -122,7 +134,24 @@ export default function ImageEditor({ file, target, ditherName, brightness, cont
       gray[i] = luma(pixels[i * 4], pixels[i * 4 + 1], pixels[i * 4 + 2]);
     }
     return levels(gray, brightness, contrast);
-  }, [bitmap, rotated, target, baseScale, zoom, offset, rotation, flipped, brightness, contrast]);
+  }, [bitmap, rotated, target, paint, brightness, contrast]);
+
+  // The photo as framed, in colour, beside the 1-bit result. The design pairs
+  // them because a dither is impossible to judge without the original next to
+  // it -- you cannot tell a bad crop from a bad threshold otherwise.
+  useEffect(() => {
+    const canvas = sourceRef.current;
+    if (!canvas || !bitmap) return;
+    const { width, height } = target;
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext("2d");
+    context.fillStyle = "#fff";
+    context.fillRect(0, 0, width, height);
+    context.imageSmoothingEnabled = true;
+    context.imageSmoothingQuality = "high";
+    paint(context, width, height);
+  }, [bitmap, target, paint]);
 
   // The live preview: the real dither, over the real pixels, at the real size.
   useEffect(() => {
@@ -235,56 +264,81 @@ export default function ImageEditor({ file, target, ditherName, brightness, cont
   if (!bitmap) return null;
 
   return (
-    <div className="image-editor">
-      <div
-        className="editor-stage"
-        style={{ aspectRatio: `${target.width} / ${target.height}` }}
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={endDrag}
-        onPointerCancel={endDrag}
-      >
-        <canvas
-          ref={previewRef}
-          className="editor-preview"
-          aria-label="Preview of what the panel will show"
-        />
+    <div className="editor-split">
+      {/* Source and result side by side. Dragging happens on the source, which
+          is the one you are aiming -- the result is the consequence. */}
+      <div className="editor-stage">
+        <div
+          className="editor-figure"
+          style={{ aspectRatio: `${target.width} / ${target.height}` }}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={endDrag}
+          onPointerCancel={endDrag}
+        >
+          <canvas ref={sourceRef} aria-label="The photo as it is framed" />
+          <span className="editor-grid" aria-hidden="true" />
+          <span className="crop-tag">drag to pan</span>
+        </div>
       </div>
 
-      <p className="hint">
-        Drag to move the photo. {target.width}×{target.height} px, dithered exactly
-        as the panel will draw it.
-      </p>
+      <div className="editor-stage">
+        <div className="editor-figure" style={{ aspectRatio: `${target.width} / ${target.height}` }}>
+          <canvas ref={previewRef} aria-label="Preview of what the panel will show" />
+          <span className="crop-tag result">
+            1-bit result · {target.width} × {target.height}
+          </span>
+        </div>
+      </div>
 
       <div className="editor-controls">
-        <label>
-          <span>Zoom</span>
+        <div className="field-block" role="group" aria-label="Rotate">
+          <span>Rotate</span>
+          <div className="seg">
+            {[0, 90, 180, 270].map((degrees) => (
+              <button
+                key={degrees}
+                className={rotation === degrees ? "active" : undefined}
+                onClick={() => setRotation(degrees)}
+                aria-pressed={rotation === degrees}
+              >
+                {degrees}°
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <label className="field-block">
+          <span className="slider-head">
+            Zoom <b>{zoom.toFixed(1)}×</b>
+          </span>
           <input
             type="range"
-            min="1"
+            className="track-blue"
+            style={{ "--fill": `${((zoom - 1) / (MAX_ZOOM - 1)) * 100}%` }}
+            min="100"
             max={MAX_ZOOM * 100}
             value={Math.round(zoom * 100)}
             onChange={(event) => setZoom(Math.max(1, Number(event.target.value) / 100))}
           />
         </label>
 
+        {/* Brightness, contrast, the dither and the corners belong to the
+            upload rather than to the framing, so the parent owns them and
+            passes them in here, where the design puts them. */}
+        {children}
+
         <div className="editor-buttons">
-          <button type="button" className="chip" onClick={() => turn(-1)}>
-            Rotate left
-          </button>
-          <button type="button" className="chip" onClick={() => turn(1)}>
-            Rotate right
-          </button>
           <button
             type="button"
-            className={flipped ? "chip active" : "chip"}
+            className={flipped ? "pill active" : "pill"}
             onClick={() => setFlipped((current) => !current)}
           >
             Mirror
           </button>
           <button
             type="button"
-            className="chip"
+            className="pill"
             onClick={() => {
               setZoom(1);
               setOffset({ x: 0, y: 0 });

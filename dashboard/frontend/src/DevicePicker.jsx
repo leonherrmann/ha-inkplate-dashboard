@@ -1,6 +1,13 @@
 import { useMemo, useState } from "react";
 
-import { Picker, PickerCrumbs, PickerRows, PickerSearch, PickerTiles } from "./Picker.jsx";
+import {
+  Picker,
+  PickerCrumbs,
+  PickerNoLink,
+  PickerRows,
+  PickerSearch,
+  PickerTiles,
+} from "./Picker.jsx";
 
 // Picking a *device* rather than an entity. Home Assistant's model is that a
 // device is the physical thing and entities hang off it, and for a sensor that
@@ -28,6 +35,10 @@ export const MAX_DEVICE_ENTITIES = 6;
 function Body({ devices, value, onPick }) {
   const [query, setQuery] = useState("");
   const [area, setArea] = useState(null);
+
+  // Hooks first, then the early return: an empty list is the no-credentials
+  // case, not an empty house.
+  const noLink = devices.length === 0;
 
   const areas = useMemo(() => {
     const counts = new Map();
@@ -71,6 +82,8 @@ function Body({ devices, value, onPick }) {
 
   const askArea = areas.length > 1;
   const step = !needle && askArea && area === null ? "area" : "rows";
+
+  if (noLink) return <PickerNoLink />;
 
   return (
     <>

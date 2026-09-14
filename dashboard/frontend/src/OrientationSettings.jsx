@@ -1,3 +1,5 @@
+import { OrientIcon } from "./Icons.jsx";
+
 // Which way up the panel is hung.
 //
 // Deliberately not called "rotation" anywhere the user can see it: this editor
@@ -10,12 +12,25 @@
 // would not be a setting -- it would be a second grid, a second set of widget
 // sizes, and a second version of every layout anyone has already built.
 
-// 180 is "Normal" because that is the way up the panel is actually hung. Only
-// the words changed -- the degrees are still the degrees, so stored layouts
-// need no migration.
+// 0 is upright. These two were the other way round between 2026-09-08 and
+// 2026-09-12, on the stated grounds that it "matches the firmware" -- it does
+// not, and the firmware says so twice:
+//
+//   ConfigManager.cpp  "the orientation someone looking at the panel calls 0
+//                      -- the way it has always looked -- is rotation 2", and
+//                      naming it otherwise "would mean a fresh device shipping
+//                      as 180 degrees, which is nonsense to the person reading
+//                      it"
+//   sim/host/UiCheck   check(model.orientation() == 0, "so the panel has not
+//                      turned over")
+//
+// The symptom was quiet: DEFAULT_ORIENTATION is 0, so a panel nobody had
+// touched showed "Upside down" as its setting, and choosing "Upright" sent 180
+// and actually turned it over. Only the labels move here -- the degrees are
+// still the degrees, so stored layouts need no migration.
 export const ORIENTATIONS = [
-  { degrees: 180, label: "Normal", hint: "The usual way up" },
-  { degrees: 0, label: "Upside down", hint: "Turned the other way up" },
+  { degrees: 0, label: "Upright", hint: "The usual way up" },
+  { degrees: 180, label: "Upside down", hint: "Turned the other way up" },
 ];
 
 export const DEFAULT_ORIENTATION = 0;
@@ -24,32 +39,37 @@ export default function OrientationSettings({ orientation, onChange }) {
   const degrees = Number(orientation ?? DEFAULT_ORIENTATION);
 
   return (
-    <section className="group">
-      <h3>Orientation</h3>
+    <section className="card">
+      <div className="card-head">
+        <span className="token blue">
+          <OrientIcon size={16} />
+        </span>
+        <b>Orientation</b>
+      </div>
 
       {/* A group rather than a <label>: wrapping several buttons in a label
           makes a screen reader read every one of them as the name of each,
-          so "Upside down" announces as "Orientation Normal Upside down". That
+          so "Upside down" announces as "Orientation Upright Upside down". That
           exact defect has been fixed in this editor twice already. */}
-      <div className="field" role="group" aria-label="Screen orientation">
-        <span>Screen</span>
-        <select
-          value={String(degrees)}
-          onChange={(event) => onChange(Number(event.target.value))}
-        >
-          {ORIENTATIONS.map((option) => (
-            <option key={option.degrees} value={String(option.degrees)}>
-              {option.label}
-            </option>
-          ))}
-        </select>
+      <div className="orient" role="group" aria-label="Screen orientation">
+        {ORIENTATIONS.map((option) => (
+          <button
+            key={option.degrees}
+            className={degrees === option.degrees ? "active" : undefined}
+            onClick={() => onChange(option.degrees)}
+            aria-pressed={degrees === option.degrees}
+            title={option.hint}
+          >
+            <span className="orient-screen" />
+            {option.label}
+          </button>
+        ))}
       </div>
 
       <p className="hint">
-        Turns the whole dashboard over, for a panel mounted the other way up.
-        The layout does not change — the same widgets stay in the same places,
-        the picture is simply the other way round. The screen flashes once when
-        it changes, because every pixel means something different afterwards.
+        Quarter turns are impossible — every widget fixes its box in pixels. The
+        screen flashes once when this changes, because every pixel means
+        something different afterwards.
       </p>
     </section>
   );

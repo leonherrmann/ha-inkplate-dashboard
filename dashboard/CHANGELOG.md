@@ -1,5 +1,115 @@
 # Changelog
 
+## 2026.9.40
+
+- **The tab bar reaches the bottom of the screen on a phone.** It was ending
+  short, with a strip of a different colour beneath it, and sat higher than a
+  tab bar should. Home Assistant stops the add-on's frame above the home
+  indicator and fills that band itself, so the add-on now gives the band the
+  bar's own colour and stops adding clearance on top of clearance it was already
+  being given. The labels sit where iOS puts its own.
+- The tab bar is a flat colour rather than a frosted one. It is the same shade
+  it always rendered as — a translucent bar has no fixed colour to match the
+  band to, and the join would have shimmered as the page scrolled behind it.
+
+## 2026.9.39
+
+Phone fixes, all of them found on one.
+
+- **Diagnostics no longer scrolls sideways.** The firmware card's two buttons
+  hung off the edge of the card and dragged the width of the whole page with
+  them, so everything sat shifted with its left edge off-screen.
+- **The screenshot from the panel is the right shape.** It was stretched tall on
+  any screen narrower than the panel itself.
+- **"Running 1.6.2 → Offered 1.7.0" reads as words again** rather than running
+  together into one unbroken line.
+- **The Images screen no longer scrolls sideways either.** Nothing was visible
+  there to explain it — an invisible element was hanging off the side of the
+  page.
+- **The device card is the first thing in the editor on a phone.** Which panel
+  you are editing onto, whether it is awake and whether anything is waiting to
+  be sent are what you open the editor to find out, and Push is the button you
+  came to press; it was below the canvas and the page list.
+- **No more bare white strip under the tab bar**, and the icon in the device
+  card sits in the middle of its circle instead of the corner.
+
+## 2026.9.38
+
+- **Fixes the orientation being the wrong way round.** Since 2026.9.19 the two
+  choices have been labelled backwards: a panel nobody had touched showed
+  "Upside down" as its setting, and choosing "Upright" turned it over. 0° is
+  upright, which is what the firmware has always meant by it. Only the labels
+  change — if your panel is the right way up today, it stays that way and there
+  is nothing to redo. If you had picked "Upright" to correct it, pick "Upside
+  down" once and it will agree with itself again.
+- **Waiting on the panel no longer looks like a missed Push.** The two states
+  wore the same colour and call for opposite responses. A sleeping panel now
+  says so in its own colour, and says that pushing again will not help — it
+  collects the layout when it next wakes.
+- **When the panel refuses a layout, it says why on screen.** The reason was
+  only ever a tooltip on a badge, which is no use on a phone. The Device screen
+  now leads with what the panel is showing against what is stored here, and what
+  to do about it.
+- **Pickers say why they are empty.** An option that only accepts one kind of
+  entity now says so instead of just looking like a short list, and lists that
+  are empty because the add-on has no Home Assistant credentials say that rather
+  than looking like an empty house.
+
+## 2026.9.37
+
+- **The Device, Images and Pages screens are rebuilt**, and the editor's toolbar
+  with them. 2026.9.36 brought the new look to the chrome and the canvas; this
+  finishes the other three screens rather than re-painting the old ones.
+- **The toolbar is one bar again.** Snap, zoom and the chip row sit on the left,
+  then bring-to-front, send-to-back, duplicate and delete for whatever you have
+  selected, then undo and redo at the far edge and Add widget. The strip of view
+  controls that used to sit under the canvas is now a line that simply tells you
+  the grid you are snapping to and where the chip row is.
+- **The chip row is back in the editor**, as a menu in the toolbar. It was on
+  each row of the Pages screen, where you had to choose it without being able to
+  see what it did — turning it off gives every card the chip row's height and
+  moves every widget on the page.
+- **Front, back, duplicate and delete are in the toolbar** rather than only in
+  the options panel on the far side of the canvas. They are gone from the panel,
+  so there is one of each rather than two.
+- **Pages says what a rotation adds up to.** A card beside the list gives the
+  full cycle as a clock, with each page's share of it drawn to scale. The
+  rotation switch and the default dwell moved up into the header. Each row is a
+  Queued/Paused pair rather than a toggle labelled with only one of its states,
+  and Edit, Show and Delete are icons.
+- **Device splits settings from diagnostics.** Orientation, refresh, night sleep
+  and timers are a grid of cards, with what the panel itself reports — including
+  any setting changed on the device — in a column beside them. Battery history,
+  the log and the firmware are behind Diagnostics.
+- **Images shows the picture and the result side by side.** Choosing a file
+  gives you the source with a crop you can pan and zoom, and the actual 1-bit
+  dither the panel will draw, next to each other rather than one after the
+  other.
+- Nothing about how the panel is driven has changed, and nothing in a layout
+  needs redoing. Same firmware as 2026.9.35.
+
+## 2026.9.36
+
+- **A new look.** The editor is rebuilt on a design of floating glass panels
+  over a warm ground: translucent cards, soft depth instead of hard shadows,
+  round corners throughout, and a single blue-to-violet gradient kept for
+  whichever action actually matters on the screen you are looking at.
+- **The header and its tabs are gone.** The four sections — Editor, Pages,
+  Device, Images — are a floating rail down the left on a desktop and a tab bar
+  along the bottom on a phone, so the chrome above the canvas is a bar rather
+  than three bands.
+- **The device moved in beside the pages.** Which panel it is, whether it is
+  online, its battery and signal, how many edits are waiting and the Push button
+  are one card at the top of the editor's left column, under a list of your
+  pages — so what you are editing and what you are editing it onto are in the
+  same place.
+- **A page is recognisable by its shape.** Rows on the Pages screen now carry a
+  real render of the page at thumbnail size rather than only its name.
+- **Dark mode is gone for now.** The design is light only. The editor no longer
+  follows Home Assistant's theme; a dark version may come back later.
+- Nothing about how the panel is driven has changed, and nothing in a layout
+  needs redoing. Same firmware as 2026.9.35.
+
 ## 2026.9.35
 
 - **Fixes the panel's timer restarting itself.** Pausing did not stop it, the
