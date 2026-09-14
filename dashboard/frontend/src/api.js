@@ -101,14 +101,26 @@ export const addAlbum = ({ url, name, limit }) =>
     body: JSON.stringify({ url, name, limit }),
   });
 
-export const updateAlbum = (id, fields) =>
-  request(`albums/${encodeURIComponent(id)}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(fields),
-  });
-
 export const deleteAlbum = (id) =>
   request(`albums/${encodeURIComponent(id)}`, { method: "DELETE" });
 
 export const refreshAlbums = () => request("albums/refresh", { method: "POST" });
+
+// Every photograph in an album, whether or not the panel renders it, so the
+// picker can offer the ones it is not showing. `force` skips the backend's
+// short cache, for the Check again button.
+export const getAlbumPhotos = (id, force = false) =>
+  request(`albums/${encodeURIComponent(id)}/photos${force ? "?force=true" : ""}`);
+
+// Which photographs to show. null hands the album back to its limit.
+export const setAlbumSelection = (id, selected) =>
+  request(`albums/${encodeURIComponent(id)}/selection`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ selected }),
+  });
+
+// Small copies for the picker, served by the add-on because iCloud's own URLs
+// are signed and expire. Immutable, so no cache-busting parameter.
+export const albumThumbUrl = (id, guid) =>
+  `${base}/albums/${encodeURIComponent(id)}/photos/${encodeURIComponent(guid)}/thumb.jpg`;

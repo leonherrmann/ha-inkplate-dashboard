@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as api from "./api.js";
 import ImageEditor from "./ImageEditor.jsx";
 import GridSizePicker from "./GridSizePicker.jsx";
-import { ImageIcon, RefreshIcon, TrashIcon, WarningIcon } from "./Icons.jsx";
+import { CheckIcon, ImageIcon, RefreshIcon, TrashIcon, WarningIcon } from "./Icons.jsx";
 import { DITHERS } from "./dither.js";
 
 // Uploading a picture to the panel.
@@ -148,11 +148,15 @@ export default function ImagesTab({ grid, panel, onMessage }) {
   const [albumName, setAlbumName] = useState("");
   const [albumLimit, setAlbumLimit] = useState(25);
   const [albumBusy, setAlbumBusy] = useState(false);
-  // What the limit slider is showing while it is being dragged. Its own state
-  // because the committed value only changes when the drag ends -- reading the
-  // album's limit straight off would leave the number and the fill frozen under
-  // the thumb, which reads as a slider that does not work.
-  const [limitDraft, setLimitDraft] = useState(25);
+
+  // The photo picker. `picker` is what the backend last told us about the open
+  // album; `marks` is the set of guids ticked in the grid, which is local until
+  // Save -- choosing photographs is a fiddly, several-click job and committing
+  // each tick would fire a re-render of the whole album per click.
+  const [picker, setPicker] = useState(null);
+  const [pickerBusy, setPickerBusy] = useState(false);
+  const [pickerError, setPickerError] = useState("");
+  const [marks, setMarks] = useState(null);
 
   const reload = () =>
     api
@@ -264,6 +268,14 @@ export default function ImagesTab({ grid, panel, onMessage }) {
     if (what !== "upload") reset();
     if (what !== "image") setSelected(null);
     if (what !== "album") setPickedAlbum(null);
+    if (what !== "album") {
+      // The grid is several hundred KB of thumbnails and a set of ticks that
+      // were never saved. Both belong to the album that was open, so leaving
+      // them behind would show one album's photographs under another's name.
+      setPicker(null);
+      setMarks(null);
+      setPickerError("");
+    }
     setAddingAlbum(what === "new-album");
   };
 
@@ -303,18 +315,6 @@ export default function ImagesTab({ grid, panel, onMessage }) {
     }
   };
 
-  // Committed when the slider is let go rather than on every tick: each change
-  // is a PATCH and a re-render of whatever the new limit adds or drops.
-  const commitLimit = async (album, limit) => {
-    if (limit === album.limit) return;
-    try {
-      await api.updateAlbum(album.id, { limit });
-      reloadAlbums();
-    } catch (problem) {
-      onMessage(problem.message);
-    }
-  };
-
   const refreshAlbumsNow = async () => {
     try {
       await api.refreshAlbums();
@@ -324,6 +324,83 @@ export default function ImagesTab({ grid, panel, onMessage }) {
       onMessage(problem.message);
     }
   };
+
+  // Reading an album is two round trips to Apple, so the grid is fetched when
+  // one is opened rather than kept for all of them.
+  const openPicker = async (albumId, force = false) => {
+    setPickerBusy(true);
+    setPickerError("");
+    try {
+      const data = await api.getAlbumPhotos(albumId, force);
+      setPicker(data);
+      setMarks(new Set(data.photos.filter((one) => one.chosen).map((one) => one.guid)));
+    } catch (problem) {
+      setPicker(null);
+      setMarks(null);
+      setPickerError(problem.message);
+    } finally {
+      setPickerBusy(false);
+    }
+  };
+
+  const toggleMark = (guid) =>
+    setMarks((current) => {
+      const next = new Set(current);
+      if (next.has(guid)) next.delete(guid);
+      else next.add(guid);
+      return next;
+    });
+
+  const saveSelection = async () => {
+    if (!picker || !marks) return;
+    if (marks.size === 0) {
+      setPickerError(
+        "Choose at least one photograph — a widget with none to draw says ALBUM IS EMPTY on the panel."
+      );
+      return;
+    }
+    setPickerBusy(true);
+    setPickerError("");
+    try {
+      await api.setAlbumSelection(picker.id, [...marks]);
+      onMessage(
+        `Showing ${marks.size} photo${marks.size === 1 ? "" : "s"} from ${picker.name} — rendering now`
+      );
+      await openPicker(picker.id);
+      reloadAlbums();
+    } catch (problem) {
+      setPickerError(problem.message);
+    } finally {
+      setPickerBusy(false);
+    }
+  };
+
+  // Back to "the newest N", which is what an album nobody has opened this for
+  // already does. Its own action rather than an empty selection, which the
+  // backend refuses for being indistinguishable from a mistake.
+  const clearSelection = async () => {
+    if (!picker) return;
+    setPickerBusy(true);
+    setPickerError("");
+    try {
+      await api.setAlbumSelection(picker.id, null);
+      onMessage(`${picker.name} is back to its photo limit`);
+      await openPicker(picker.id);
+      reloadAlbums();
+    } catch (problem) {
+      setPickerError(problem.message);
+    } finally {
+      setPickerBusy(false);
+    }
+  };
+
+  const marked = marks ? marks.size : 0;
+  // Whether the grid differs from what the backend is acting on, which is what
+  // decides if Save is worth offering.
+  const pickerDirty =
+    picker && marks
+      ? picker.photos.some((one) => one.chosen !== marks.has(one.guid))
+      : false;
 
   const held = images.find((one) => one.name === selected) || null;
   const album = albums.find((one) => one.id === pickedAlbum) || null;
@@ -415,10 +492,7 @@ export default function ImagesTab({ grid, panel, onMessage }) {
               onClick={() => {
                 showOnly("album");
                 setPickedAlbum(one.id);
-                // Set here rather than in an effect: the poll refreshes the
-                // album list every five seconds, and an effect watching the
-                // album would snap the slider back mid-drag.
-                setLimitDraft(one.limit);
+                openPicker(one.id);
               }}
             >
               <span className="image-row-thumb">
@@ -524,8 +598,12 @@ export default function ImagesTab({ grid, panel, onMessage }) {
                 <b>{album.available}</b>
               </div>
               <div className="fact">
-                <small>Keeping</small>
-                <b>{Math.min(album.limit, album.available || album.limit)}</b>
+                <small>Showing</small>
+                <b>
+                  {picker
+                    ? marked
+                    : Math.min(album.limit, album.available || album.limit)}
+                </b>
               </div>
               <div className="fact">
                 {/* Photographs ready, not files: each widget shape is its own
@@ -543,39 +621,107 @@ export default function ImagesTab({ grid, panel, onMessage }) {
               </p>
             )}
 
-            {album.available > album.limit && (
-              <div className="note info" style={{ marginTop: 16 }}>
+            {/* The picker. This replaced a "keep the newest N" slider: a
+                number is a poor way to say which photographs you want, and the
+                only way to find out what it had picked was to walk over to the
+                panel and wait for the rotation to come round. */}
+            {pickerError && (
+              <div className="note danger" style={{ marginTop: 16 }}>
                 <div className="note-head">
-                  {album.available - album.limit} photo
-                  {album.available - album.limit === 1 ? " is" : "s are"} not being shown
+                  <WarningIcon size={16} />
+                  Could not show this album's photos
                 </div>
-                <p>
-                  This album has {album.available} photos and is set to keep the newest{" "}
-                  {album.limit}. Raise the limit below to show more — every extra photo is
-                  a few more seconds of rendering and more space on the panel's card.
-                </p>
+                <p>{pickerError}</p>
               </div>
             )}
 
-            <label className="field-block" style={{ marginTop: 16 }}>
-              <span className="slider-head">
-                Keep the newest <b>{limitDraft}</b>
-              </span>
-              {/* Committed on release rather than on every tick: each change is
-                  a PATCH and a re-render of whatever the new limit adds or
-                  drops. The draft is what moves under the thumb meanwhile. */}
-              <input
-                type="range"
-                className="track-cool"
-                style={{ "--fill": `${limitDraft}%` }}
-                min="1"
-                max="100"
-                value={limitDraft}
-                onChange={(event) => setLimitDraft(Number(event.target.value))}
-                onPointerUp={() => commitLimit(album, limitDraft)}
-                onKeyUp={() => commitLimit(album, limitDraft)}
-              />
-            </label>
+            {!picker && pickerBusy && (
+              <p className="hint" style={{ marginTop: 16 }}>
+                Reading the album from iCloud…
+              </p>
+            )}
+
+            {picker && (
+              <>
+                <div className="screen-head" style={{ marginTop: 20 }}>
+                  <div>
+                    <div className="eyebrow">
+                      {marked} of {picker.photos.length} chosen
+                      {picker.explicit ? "" : " · by the photo limit, not by hand"}
+                    </div>
+                    <h4 style={{ fontSize: 16, margin: 0 }}>Which photos to show</h4>
+                  </div>
+                  <button
+                    style={{ marginLeft: "auto" }}
+                    onClick={() => setMarks(new Set(picker.photos.map((one) => one.guid)))}
+                    disabled={pickerBusy || marked === picker.photos.length}
+                  >
+                    All
+                  </button>
+                  <button onClick={() => setMarks(new Set())} disabled={pickerBusy || !marked}>
+                    None
+                  </button>
+                  <button onClick={() => openPicker(picker.id, true)} disabled={pickerBusy}>
+                    <RefreshIcon size={14} />
+                    Check again
+                  </button>
+                </div>
+
+                {!picker.explicit && (
+                  <p className="hint">
+                    Nothing has been chosen by hand, so the newest {picker.limit} are shown.
+                    Tick the ones you want and save to choose for yourself.
+                  </p>
+                )}
+
+                <div className="album-grid">
+                  {picker.photos.map((photo) => {
+                    const on = marks.has(photo.guid);
+                    return (
+                      <button
+                        key={photo.guid}
+                        type="button"
+                        className={`album-tile${on ? " chosen" : ""}`}
+                        onClick={() => toggleMark(photo.guid)}
+                        aria-pressed={on}
+                        title={photo.caption || undefined}
+                      >
+                        <img
+                          src={api.albumThumbUrl(picker.id, photo.guid)}
+                          alt={photo.caption || "Album photo"}
+                          loading="lazy"
+                        />
+                        <span className="album-tick" aria-hidden="true">
+                          {on ? <CheckIcon size={13} /> : null}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="upload-actions">
+                  <p className="hint">
+                    {/* Said plainly because it is the one surprise here: the
+                        panel downloads by position, so changing the set makes
+                        it re-fetch the pictures after the change. */}
+                    Changing which photos are shown renumbers the album, so the panel
+                    re-fetches the ones that moved. Each is a few seconds of rendering.
+                  </p>
+                  <button
+                    className="primary"
+                    onClick={saveSelection}
+                    disabled={pickerBusy || !pickerDirty}
+                  >
+                    {pickerBusy ? "Saving…" : `Show these ${marked}`}
+                  </button>
+                  {picker.explicit && (
+                    <button onClick={clearSelection} disabled={pickerBusy}>
+                      Use the limit instead
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
 
             <div className="upload-actions">
               <p className="hint">

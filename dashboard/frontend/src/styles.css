@@ -3060,6 +3060,73 @@ img.screenshot {
   box-shadow: 0 14px 26px -14px rgba(47, 91, 216, 0.95);
 }
 
+/* The album photo picker: every photograph in a shared album, chosen by
+   tapping. Small tiles rather than a list -- the only thing being decided is
+   "this one, not that one", which is a judgement about the picture and not
+   about anything written down beside it. */
+.album-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.album-tile {
+  position: relative;
+  padding: 0;
+  aspect-ratio: 1;
+  border: 1px solid var(--ink-12);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--ink-06);
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.album-tile img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  /* Unchosen photographs are dimmed rather than hidden: the grid is how you
+     find the one you want, so an excluded picture still has to be legible. */
+  opacity: 0.45;
+  filter: saturate(0.4);
+  transition: opacity 120ms ease, filter 120ms ease;
+}
+
+.album-tile.chosen img {
+  opacity: 1;
+  filter: none;
+}
+
+.album-tile.chosen {
+  border-color: transparent;
+  box-shadow: 0 0 0 3px var(--blue);
+}
+
+/* The tick sits on the picture, so it carries its own contrast rather than
+   relying on whatever happens to be underneath it. */
+.album-tick {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: inset 0 0 0 1px rgba(27, 26, 31, 0.18);
+  color: var(--blue);
+}
+
+.album-tile.chosen .album-tick {
+  background: var(--blue);
+  color: #fff;
+  box-shadow: none;
+}
+
 /* Held here but not yet fetched by the panel: dashed, because it is a picture
    that exists in one place and not the other. */
 .image-row.missing {

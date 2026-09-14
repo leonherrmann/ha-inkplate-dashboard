@@ -32,9 +32,11 @@ means a new photo is appended and the existing numbering does not move.
 """
 
 import asyncio
+import hashlib
 import json
 import logging
 import os
+import shutil
 import time
 from dataclasses import dataclass
 from typing import Any, Callable, Iterable
@@ -71,14 +73,36 @@ FULL_SCREEN_BOX = (
     GRID_ROWS * GRID_UNIT_H_OFF + (GRID_ROWS - 1) * GRID_GAP,
 )
 
-# How many pictures of an album to keep, unless the album says otherwise.
+# How many pictures of an album to keep when nobody has chosen individually.
 #
 # Deliberately small. Every photo is dithered in pure Python -- error diffusion
 # over a quarter of a million pixels, seconds each -- and every photo also costs
 # an entry in a manifest that has to fit the device's 16KB MQTT buffer. Twenty
 # five at two variants is already a minute of work and a third of the budget.
+#
+# This is now a *fallback*, not the only way to decide: an album with an
+# explicit `selected` list uses that instead. It still matters for an album
+# nobody has opened the picker for, which includes every album that existed
+# before the picker did -- dropping it would have silently rendered somebody's
+# five hundred photo album in full on upgrade.
 DEFAULT_LIMIT = 25
 MAX_LIMIT = 200
+
+# Thumbnails for the picker, cached under DATA_DIR. Small JPEGs straight from
+# iCloud, never dithered and never sent to the panel -- they exist only so the
+# editor can show what is in an album.
+#
+# Cached rather than hot-linked because iCloud's asset URLs are signed and
+# expire within the hour, so a browser holding one would show broken images the
+# next time the tab was opened.
+THUMBS_DIR = os.path.join(DATA_DIR, "album-thumbs")
+
+# How long a read of an album is reused for. The picker asks for the photo list
+# on every open, and each read is two round trips to Apple for something that
+# changes when somebody adds a holiday snap -- but it cannot be cached for
+# long either, since the download URLs inside it are what fetch the thumbnails
+# and those expire.
+PHOTOS_TTL_SECONDS = 300
 
 # An album id becomes part of every filename, and images.py allows 32
 # characters for the whole thing. The rest of the name -- "_1220x660_fb_000" --
@@ -255,6 +279,48 @@ def get(album_id: str) -> dict[str, Any] | None:
     return _load().get(album_id)
 
 
+def chosen(album: dict[str, Any], available: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Which of an album's photographs to render, in the order they are numbered.
+
+    Two ways an album can decide, and the order matters:
+
+    - An explicit `selected` list of guids, from the picker. Anything not in
+      the album any more is simply absent, so a photo deleted on somebody's
+      phone drops out without needing the selection rewritten.
+    - Otherwise the newest `limit`, which is what every album did before the
+      picker existed and what a freshly added one still does.
+
+    **The order is `available`'s, never the selection's.** `available` is
+    oldest-first (see icloud.photos), and the position in this list *is* the
+    number in the filename the device downloads by -- so sorting by anything
+    else, or letting the order follow the sequence somebody happened to tick
+    the boxes in, would renumber the whole album and make the panel re-fetch
+    every picture.
+
+    A selection that matches nothing currently in the album falls through to
+    the limit rather than rendering zero: an album whose photos were all
+    replaced would otherwise go blank with nothing on screen to say why, and
+    the panel draws ALBUM IS EMPTY for it.
+    """
+    selected = album.get("selected")
+    if selected:
+        wanted = set(selected)
+        picked = [photo for photo in available if photo["guid"] in wanted]
+        if picked:
+            return picked[:MAX_LIMIT]
+
+    # The first `limit`, which -- since `available` is oldest-first -- is the
+    # *oldest* of them, not the newest the editor's slider claims. That is a
+    # real discrepancy and it is deliberately left alone here: the position in
+    # this list is the number in the device's filenames, so changing which
+    # photos the limit picks would renumber every album still using it and cost
+    # the panel a full re-download of all of them. The picker above is the way
+    # out of it -- choose the photographs you want and the limit stops being
+    # consulted at all.
+    limit = max(1, min(int(album.get("limit") or DEFAULT_LIMIT), MAX_LIMIT))
+    return available[:limit]
+
+
 async def add(url: str, name: str = "", limit: int = DEFAULT_LIMIT) -> dict[str, Any]:
     """Register a shared album, after checking iCloud will actually serve it.
 
@@ -299,10 +365,40 @@ def update(album_id: str, **fields: Any) -> dict[str, Any]:
         album["name"] = str(fields["name"]).strip()
     if "limit" in fields and fields["limit"] is not None:
         album["limit"] = max(1, min(int(fields["limit"]), MAX_LIMIT))
+    if "selected" in fields:
+        album["selected"] = _clean_selection(fields["selected"])
 
     albums[album_id] = album
     _save(albums)
     return album
+
+
+def _clean_selection(raw: Any) -> list[str] | None:
+    """The guids of the photographs somebody ticked, or None for 'use the limit'.
+
+    None and [] are deliberately different things. None means nobody has
+    chosen, so the limit decides -- which is what every album did before the
+    picker existed. An empty list would mean "show nothing", and since a photo
+    widget with nothing to draw says ALBUM IS EMPTY on the panel, that is not
+    something to arrive at by accident: it is refused here and the caller is
+    told to remove the album instead.
+    """
+    if raw is None:
+        return None
+    if not isinstance(raw, (list, tuple)):
+        raise AlbumError("A selection has to be a list of photo ids.")
+
+    guids = [str(guid) for guid in raw if str(guid).strip()]
+    if not guids:
+        raise AlbumError(
+            "Choose at least one photograph. To stop showing this album "
+            "entirely, remove it or point the widget somewhere else."
+        )
+
+    # Deduplicated, but *not* sorted: order is meaningless here because
+    # `chosen()` numbers by the album's own oldest-first order, not by this.
+    # Sorting would only invite the belief that this list decides it.
+    return list(dict.fromkeys(guids))[:MAX_LIMIT]
 
 
 def remove(album_id: str) -> bool:
@@ -312,7 +408,146 @@ def remove(album_id: str) -> bool:
         return False
     del albums[album_id]
     _save(albums)
+    _sweep_thumbs(album_id)
+    _photo_cache.pop(album_id, None)
     return True
+
+
+# --- the picker ---------------------------------------------------------------
+#
+# Everything from here to the refresh section exists for the editor's photo
+# picker: reading an album without rendering it, and showing small copies of
+# photographs the panel may never be given.
+
+# album id -> (read_at, the album as iCloud last described it). See
+# PHOTOS_TTL_SECONDS: short, because the download URLs inside go stale.
+_photo_cache: dict[str, tuple[float, dict[str, Any]]] = {}
+
+
+async def read_photos(album_id: str, force: bool = False) -> dict[str, Any]:
+    """Every photograph in an album, whether or not the panel renders it.
+
+    Cached briefly. The picker re-reads on every open and each read is two
+    round trips to Apple, but the cache cannot be long-lived either: the
+    thumbnail URLs it holds are signed and expire.
+    """
+    album = get(album_id)
+    if not album:
+        raise AlbumError("No such album.")
+
+    cached = _photo_cache.get(album_id)
+    if cached and not force and time.time() - cached[0] < PHOTOS_TTL_SECONDS:
+        return cached[1]
+
+    found = await icloud.read(album["token"])
+    _photo_cache[album_id] = (time.time(), found)
+    return found
+
+
+async def photos_for_picker(album_id: str, force: bool = False) -> dict[str, Any]:
+    """The album as the picker shows it: every photo, and what is true of it.
+
+    `chosen` marks the ones that would be rendered as things stand -- from the
+    explicit selection if there is one, and from the limit if there is not, so
+    the picker opens showing what the panel is actually doing rather than an
+    empty grid somebody has to fill in before they can see anything.
+    """
+    album = get(album_id)
+    if not album:
+        raise AlbumError("No such album.")
+
+    found = await read_photos(album_id, force=force)
+    available = found.get("photos") or []
+    picked = {photo["guid"] for photo in chosen(album, available)}
+    rendered = {
+        entry["name"] for entry in images.listing() if entry.get("album") == album_id
+    }
+
+    return {
+        "id": album_id,
+        "name": album.get("name") or found.get("name") or "",
+        # Whether anything has been chosen by hand. The picker says "the newest
+        # N, because nobody has chosen" rather than pretending to a selection.
+        "explicit": bool(album.get("selected")),
+        "limit": album.get("limit", DEFAULT_LIMIT),
+        "rendered_count": len(rendered),
+        "photos": [
+            {
+                "guid": photo["guid"],
+                "width": photo.get("width", 0),
+                "height": photo.get("height", 0),
+                "created": photo.get("created", ""),
+                "caption": photo.get("caption", ""),
+                "chosen": photo["guid"] in picked,
+            }
+            # Newest first, the opposite of the order everything else here uses.
+            # The numbering the device needs is oldest-first and must stay that
+            # way, but a person opening a picker is looking for the photograph
+            # they took last, not their oldest -- so the *display* order is
+            # reversed and nothing downstream reads it.
+            for photo in reversed(available)
+        ],
+    }
+
+
+def _thumb_dir(album_id: str) -> str:
+    # A directory per album, so forgetting one is a single rmtree rather than
+    # a scan for files that happen to belong to it -- which could only work
+    # while the photo list was still cached, and so quietly leaked thumbnails
+    # for any album removed after the cache had expired.
+    #
+    # Both halves are hashed rather than trusted as filenames: the album id is
+    # ours and tame, but the guid comes from iCloud and reaches this through a
+    # URL, and one containing a slash or '..' would otherwise write wherever it
+    # liked.
+    stamp = hashlib.sha256(album_id.encode("utf-8")).hexdigest()[:16]
+    return os.path.join(THUMBS_DIR, stamp)
+
+
+def _thumb_path(album_id: str, guid: str) -> str:
+    stamp = hashlib.sha256(guid.encode("utf-8")).hexdigest()[:32]
+    return os.path.join(_thumb_dir(album_id), f"{stamp}.jpg")
+
+
+def _sweep_thumbs(album_id: str) -> None:
+    """Drop an album's cached thumbnails. Best effort: they are only a cache."""
+    shutil.rmtree(_thumb_dir(album_id), ignore_errors=True)
+
+
+async def thumbnail(album_id: str, guid: str) -> str:
+    """Path to a small JPEG of one photograph, fetching it if need be.
+
+    Served by the add-on rather than linked straight to iCloud because those
+    URLs are signed and expire within the hour, so a page left open would fill
+    with broken images.
+    """
+    path = _thumb_path(album_id, guid)
+    if os.path.isfile(path):
+        return path
+
+    found = await read_photos(album_id)
+    photo = next(
+        (one for one in (found.get("photos") or []) if one["guid"] == guid), None
+    )
+    if not photo:
+        raise AlbumError("No such photo in this album.")
+
+    url = photo.get("thumb_url") or photo.get("url")
+    if not url:
+        raise AlbumError("iCloud has no copy of this photo to show yet.")
+
+    async with aiohttp.ClientSession(timeout=icloud.TIMEOUT) as session:
+        data = await icloud.download(session, url)
+
+    os.makedirs(THUMBS_DIR, exist_ok=True)
+    # Written beside and renamed, so a half-written file is never served --
+    # the same rule the layout store follows after a truncation race deleted
+    # somebody's album. See store.py.
+    temporary = f"{path}.part"
+    with open(temporary, "wb") as handle:
+        handle.write(data)
+    os.replace(temporary, path)
+    return path
 
 
 # --- refreshing --------------------------------------------------------------
@@ -486,6 +721,11 @@ async def _refresh(
                 keep.update(name for name in already if name.startswith(f"{album_id}_"))
                 continue
 
+            # The picker reads the same thing, so let it have this one rather
+            # than asking Apple again a second later -- and, more usefully,
+            # so the grid reflects an album that was just re-read.
+            _photo_cache[album_id] = (time.time(), found)
+
             available = found.get("photos") or []
             album["available"] = len(available)
 
@@ -510,7 +750,10 @@ async def _refresh(
                 album["last_refresh"] = time.time()
                 continue
 
-            photos = available[: album.get("limit", DEFAULT_LIMIT)]
+            # The photographs somebody chose, or the limit when nobody has.
+            # Oldest-first either way, because the position in this list is the
+            # number the device downloads by -- see chosen().
+            photos = chosen(album, available)
             album["last_error"] = ""
             album["last_refresh"] = time.time()
             # Read, and it had photographs. Now its old renderings can be swept.

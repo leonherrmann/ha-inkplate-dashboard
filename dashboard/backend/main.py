@@ -643,6 +643,63 @@ async def post_album_refresh() -> dict[str, Any]:
     return albums.status()
 
 
+# Declared before the /{album_id} routes below would be a problem only if they
+# could match "refresh"; they cannot, since that one is a POST to a longer path.
+# These three are the photo picker.
+
+
+@app.get("/api/albums/{album_id}/photos")
+async def get_album_photos(album_id: str, force: bool = False) -> dict[str, Any]:
+    """Every photograph in an album, and which are being shown.
+
+    Reads iCloud rather than the rendered pictures, because the point is to
+    show what could be chosen -- including the ones nothing has rendered.
+    """
+    try:
+        return await albums.photos_for_picker(album_id, force=force)
+    except (albums.AlbumError, icloud.AlbumError) as error:
+        raise HTTPException(status_code=400, detail=str(error))
+
+
+@app.put("/api/albums/{album_id}/selection")
+async def put_album_selection(album_id: str, body: dict[str, Any]) -> dict[str, Any]:
+    """Choose which photographs the panel shows.
+
+    `selected: null` hands the album back to its limit, which is what an album
+    nobody has opened the picker for already does.
+    """
+    try:
+        album = albums.update(album_id, selected=body.get("selected"))
+    except albums.AlbumError as error:
+        raise HTTPException(status_code=400, detail=str(error))
+
+    # Pictures to render or to drop, and a renumbering besides -- see
+    # albums.chosen(). Not just a settings write.
+    asyncio.create_task(refresh_albums())
+    return album
+
+
+@app.get("/api/albums/{album_id}/photos/{guid}/thumb.jpg")
+async def get_album_thumb(album_id: str, guid: str) -> FileResponse:
+    """A small copy of one photograph, for the picker.
+
+    Served from here rather than linked straight to iCloud: those URLs are
+    signed and expire within the hour, so a tab left open would fill with
+    broken images.
+    """
+    try:
+        path = await albums.thumbnail(album_id, guid)
+    except (albums.AlbumError, icloud.AlbumError) as error:
+        raise HTTPException(status_code=404, detail=str(error))
+    # Cached hard: a thumbnail is immutable -- a different photograph is a
+    # different guid -- so the browser should never ask twice.
+    return FileResponse(
+        path,
+        media_type="image/jpeg",
+        headers={"Cache-Control": "public, max-age=604800, immutable"},
+    )
+
+
 @app.get("/api/firmware")
 async def get_firmware() -> dict[str, Any]:
     """What is held here, and what the device says it is running."""

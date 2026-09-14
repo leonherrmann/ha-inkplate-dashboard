@@ -78,6 +78,13 @@ TIMEOUT = aiohttp.ClientTimeout(total=60, connect=15)
 # derivative that still clears the bar wins.
 USEFUL_WIDTH = 1280
 
+# What the editor's picker shows. Nothing here is ever drawn on the panel -- it
+# exists so somebody can tell one photograph from another while choosing, at a
+# couple of hundred pixels in a grid -- so the *smallest* derivative Apple has
+# is the right one, and a whole album of them is a fraction of one full-size
+# download.
+THUMB_WIDTH = 400
+
 
 class AlbumError(RuntimeError):
     """Raised for anything the user can fix by pasting a different link."""
@@ -186,15 +193,22 @@ class SharedAlbum:
 
         wanted: list[dict[str, Any]] = []
         for item in stream.get("photos") or []:
-            derivative = _best_derivative(item.get("derivatives") or {})
+            derivatives = item.get("derivatives") or {}
+            derivative = _best_derivative(derivatives)
             if not derivative:
                 continue
+            thumb = _thumb_derivative(derivatives)
             wanted.append(
                 {
                     "guid": item.get("photoGuid") or "",
                     "checksum": derivative.get("checksum") or "",
                     "width": int(derivative.get("width") or 0),
                     "height": int(derivative.get("height") or 0),
+                    # The small copy the editor's picker shows. Its own
+                    # checksum, because the URL lookup below is keyed by
+                    # checksum and this is a different asset from the one the
+                    # panel gets.
+                    "thumb_checksum": (thumb or {}).get("checksum") or "",
                     # What decides the order, and so the numbering the device
                     # downloads by. See albums.py for why that has to be stable.
                     "created": str(item.get("batchDateCreated") or item.get("dateCreated") or ""),
@@ -214,6 +228,11 @@ class SharedAlbum:
         urls = await self._asset_urls(session, [photo["guid"] for photo in wanted])
         for photo in wanted:
             photo["url"] = urls.get(photo["checksum"], "")
+            # Falls back to the full-size URL rather than to nothing: a missing
+            # thumbnail would leave a blank tile in the picker with no way to
+            # tell which photograph it is, which is worse than one oversized
+            # download for the one photo Apple has no small copy of.
+            photo["thumb_url"] = urls.get(photo["thumb_checksum"], "") or photo["url"]
 
         missing = [photo for photo in wanted if not photo["url"]]
         if missing:
@@ -274,6 +293,35 @@ def _best_derivative(derivatives: dict[str, Any]) -> dict[str, Any] | None:
     if big_enough:
         return min(big_enough, key=lambda entry: entry["width"])
     return max(usable, key=lambda entry: entry["width"])
+
+
+def _thumb_derivative(derivatives: dict[str, Any]) -> dict[str, Any] | None:
+    """The version worth showing in the editor's picker.
+
+    The mirror of _best_derivative: the *largest* one that is still no wider
+    than a thumbnail needs, falling back to the smallest the album has when
+    every copy is bigger than that. Nothing here reaches the panel, so the only
+    thing that matters is that a person can recognise the photograph.
+    """
+    usable = []
+    for entry in derivatives.values():
+        if not isinstance(entry, dict) or not entry.get("checksum"):
+            continue
+        try:
+            width = int(entry.get("width") or 0)
+        except (TypeError, ValueError):
+            continue
+        if width <= 0:
+            continue
+        usable.append({**entry, "width": width})
+
+    if not usable:
+        return None
+
+    small_enough = [entry for entry in usable if entry["width"] <= THUMB_WIDTH]
+    if small_enough:
+        return max(small_enough, key=lambda entry: entry["width"])
+    return min(usable, key=lambda entry: entry["width"])
 
 
 async def read(token: str) -> dict[str, Any]:
