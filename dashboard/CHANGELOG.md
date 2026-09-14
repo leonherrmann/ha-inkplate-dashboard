@@ -1,5 +1,35 @@
 # Changelog
 
+## 2026.9.42
+
+Photo album fixes, all found on a real panel the day albums shipped.
+
+- **An album's photos could be deleted while you were editing.** Saving a layout
+  rewrote the file in place, truncating it for an instant; the album refresh
+  runs in the background, and if it read the layout in that instant it saw no
+  widgets at all and concluded nothing wanted the pictures it had just
+  rendered — so it deleted every one, and the widget drew ALBUM IS EMPTY until
+  something made it render again. The layout is now written whole and renamed
+  into place, which was a risk to every part of the add-on that reads it, not
+  just to albums.
+- **A refresh will no longer delete pictures it cannot account for.** An album
+  that iCloud refuses, or that answers with nothing — which is exactly what a
+  shared album looks like when its download links fail to arrive — keeps the
+  pictures the panel already has.
+- **An edit made while an album is rendering is no longer lost.** It used to be
+  skipped, and since rendering takes minutes the change thrown away was always
+  the most recent one: resize a widget mid-render and the new shape never
+  appeared.
+- **A widget with no pictures is retried every ten minutes** rather than waiting
+  up to six hours for the next scheduled read.
+- **"25 of 35" now reads "newest 25 of 35".** That was the photo limit doing what
+  it was set to, but nothing said so, so it looked like a job that had stalled.
+  The album's own pane now says how many photos are being left out and how to
+  change it, and an album still working through its photos says it is rendering.
+- **The rendered count counts photographs, not files.** An album shown at two
+  different widget sizes is rendered twice over, and adding the files up
+  reported more pictures than the album contains.
+
 ## 2026.9.41
 
 **Photo albums.** A new photo widget rotates through an iCloud shared album.
