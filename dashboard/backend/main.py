@@ -539,23 +539,33 @@ async def get_image_preview(name: str) -> FileResponse:
 
 @app.get("/api/albums")
 async def get_albums() -> dict[str, Any]:
-    """The configured albums, and how many pictures each has rendered.
+    """The configured albums, and how far each has been rendered.
 
-    The counts are per album rather than per variant: someone looking at this
-    list wants to know the album is working, and a variant is an implementation
-    detail of which widget shows it.
+    `rendered` is how many of the album's *photographs* are ready, not how many
+    files exist. Each widget shape is its own complete set of renderings, so
+    summing the files said "50 of 35" for one 35-photo album shown at two sizes
+    -- a number that cannot be read as anything sensible. The deepest set is the
+    honest answer to "how much of my album can the panel show".
+
+    `sets` carries the other half of that, so the editor can say a shape is
+    still being rendered rather than silently showing the finished one.
     """
-    rendered: dict[str, int] = {}
+    depth: dict[str, dict[str, int]] = {}
     for entry in images.listing():
         owner = entry.get("album")
-        if owner:
-            rendered[owner] = rendered.get(owner, 0) + 1
+        if not owner:
+            continue
+        # "album_1220x558_fb_007" -> "album_1220x558_fb"
+        prefix = entry["name"].rsplit("_", 1)[0]
+        counts = depth.setdefault(owner, {})
+        counts[prefix] = counts.get(prefix, 0) + 1
+
+    def progress(album_id: str) -> dict[str, int]:
+        counts = depth.get(album_id, {})
+        return {"rendered": max(counts.values(), default=0), "sets": len(counts)}
 
     return {
-        "albums": [
-            {**album, "rendered": rendered.get(album["id"], 0)}
-            for album in albums.listing()
-        ],
+        "albums": [{**album, **progress(album["id"])} for album in albums.listing()],
         "refresh": albums.status(),
     }
 

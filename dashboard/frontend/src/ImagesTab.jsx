@@ -55,6 +55,24 @@ const PendingIcon = () => (
   </svg>
 );
 
+// How many of an album's photographs the panel can show, in a line.
+//
+// "25 of 35 rendered" was reported as a fault, and fairly: it is the limit
+// doing exactly what it was set to, and nothing in that sentence says so. It
+// reads as a job that stalled ten short. So when the limit is what is holding
+// photos back, the line says the limit is what is holding photos back.
+function albumProgress(album) {
+  if (album.last_error) return "could not be read";
+  if (!album.available) return "not read yet";
+
+  const kept = Math.min(album.limit, album.available);
+  if (album.rendered < kept) return `rendering · ${album.rendered} of ${kept}`;
+  if (album.available > album.limit) {
+    return `newest ${album.limit} of ${album.available}`;
+  }
+  return album.available === 1 ? "1 photo" : `all ${album.available} photos`;
+}
+
 // Three states, not two: the device might not be reporting at all, which is
 // different from it reporting that it has nothing.
 function DeviceBadge({ name, have, reports }) {
@@ -408,11 +426,7 @@ export default function ImagesTab({ grid, panel, onMessage }) {
               </span>
               <span className="image-row-text">
                 <b>{one.name}</b>
-                <small>
-                  {one.last_error
-                    ? "could not be read"
-                    : `${one.rendered} of ${one.available} rendered`}
-                </small>
+                <small>{albumProgress(one)}</small>
               </span>
             </button>
           ))}
@@ -501,16 +515,47 @@ export default function ImagesTab({ grid, panel, onMessage }) {
               </div>
             )}
 
-            <div className="facts" style={{ gridTemplateColumns: "1fr 1fr", marginTop: 16 }}>
+            <div
+              className="facts"
+              style={{ gridTemplateColumns: "1fr 1fr 1fr", marginTop: 16 }}
+            >
               <div className="fact">
                 <small>In the album</small>
                 <b>{album.available}</b>
               </div>
               <div className="fact">
-                <small>Rendered</small>
+                <small>Keeping</small>
+                <b>{Math.min(album.limit, album.available || album.limit)}</b>
+              </div>
+              <div className="fact">
+                {/* Photographs ready, not files: each widget shape is its own
+                    set of renderings, and adding them up says more pictures
+                    exist than the album holds. */}
+                <small>Ready</small>
                 <b className={album.rendered ? "ok" : undefined}>{album.rendered}</b>
               </div>
             </div>
+
+            {album.sets > 1 && (
+              <p className="hint">
+                Rendered {album.sets} times over — once for each size, crop and border
+                the widgets showing this album use.
+              </p>
+            )}
+
+            {album.available > album.limit && (
+              <div className="note info" style={{ marginTop: 16 }}>
+                <div className="note-head">
+                  {album.available - album.limit} photo
+                  {album.available - album.limit === 1 ? " is" : "s are"} not being shown
+                </div>
+                <p>
+                  This album has {album.available} photos and is set to keep the newest{" "}
+                  {album.limit}. Raise the limit below to show more — every extra photo is
+                  a few more seconds of rendering and more space on the panel's card.
+                </p>
+              </div>
+            )}
 
             <label className="field-block" style={{ marginTop: 16 }}>
               <span className="slider-head">
