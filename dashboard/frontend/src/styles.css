@@ -567,6 +567,15 @@ button.danger,
   box-shadow: none;
 }
 
+/* The padlock while it is actually holding the panel -- same weight as
+   .danger, so a lock that is on reads as a state and not just another button. */
+.icon-button.warn {
+  background: var(--tint-yellow);
+  border-color: rgba(242, 179, 51, 0.35);
+  color: var(--on-yellow);
+  box-shadow: none;
+}
+
 .icon-button.plain {
   background: var(--ink-06);
   border: 0;

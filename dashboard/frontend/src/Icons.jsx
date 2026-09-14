@@ -214,6 +214,13 @@ export const LockIcon = (props) => (
   </Svg>
 );
 
+export const EyeIcon = (props) => (
+  <Svg width={2} {...props}>
+    <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z" />
+    <circle cx="12" cy="12" r="3" />
+  </Svg>
+);
+
 /* ---------- device ---------- */
 
 export const MonitorIcon = (props) => (

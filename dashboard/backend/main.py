@@ -402,6 +402,19 @@ async def show_page(page_id: str) -> dict[str, Any]:
     return {"ok": True}
 
 
+@app.post("/api/page-lock/{state}")
+async def set_page_lock(state: str) -> dict[str, Any]:
+    """Pin rotation to whatever page is on the panel now, or let it go again.
+
+    The same gesture as a hold on the panel's right button, reachable without
+    a walk over to it. Like that hold, this is not written to the layout: a
+    lock that survived a reboot would be a panel stuck on one page with
+    nothing on screen to say why.
+    """
+    link.publish_command("lock", locked=state == "on")
+    return {"ok": True}
+
+
 # --- what the device sends back about itself --------------------------------
 #
 # Uploads land in the *other* process, on the plain device port, and the two

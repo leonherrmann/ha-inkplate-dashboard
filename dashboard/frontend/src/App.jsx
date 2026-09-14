@@ -761,6 +761,12 @@ export default function App() {
               .then(() => setMessage(`Showing “${page?.name || id}” on the device`))
               .catch((problem) => setMessage(problem.message));
           }}
+          onSetPageLock={(locked) => {
+            api
+              .setPageLock(locked)
+              .then(() => setMessage(locked ? "Holding the panel here" : "Letting the panel rotate again"))
+              .catch((problem) => setMessage(problem.message));
+          }}
         />
       )}
 

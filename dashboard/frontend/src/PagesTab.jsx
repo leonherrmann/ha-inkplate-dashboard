@@ -17,7 +17,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 
 import PageThumb from "./PageThumb.jsx";
-import { CheckIcon, GripIcon, LockIcon, PencilIcon, TrashIcon } from "./Icons.jsx";
+import { EyeIcon, GripIcon, LockIcon, PencilIcon, TrashIcon } from "./Icons.jsx";
 import { DEFAULT_CHIP_ROW } from "./layout.js";
 import { effectiveDwell, formatClock, formatDuration } from "./format.js";
 
@@ -68,6 +68,7 @@ function Row({
   panel,
   onSet,
   onShow,
+  onToggleLock,
   onRemove,
   onEdit,
 }) {
@@ -120,7 +121,7 @@ function Row({
           />
           {live && (
             <span className={pageLocked ? "badge yellow" : "badge blue"}>
-              <span className={pageLocked ? "dot yellow" : "dot blue"} />
+              {pageLocked ? <LockIcon size={11} /> : <EyeIcon size={11} />}
               {pageLocked ? "Held here" : "Showing now"}
             </span>
           )}
@@ -188,8 +189,20 @@ function Row({
           title="Show this page on the device now"
           aria-label={`Show ${name} on the device`}
         >
-          <CheckIcon size={15} />
+          <EyeIcon size={15} />
         </button>
+        {live && (
+          // Only on the live row: the device can only pin whichever page is
+          // already on the panel, the same as a hold on its own right button.
+          <button
+            className={`icon-button${pageLocked ? " warn" : " dim"}`}
+            onClick={onToggleLock}
+            title={pageLocked ? "Let the panel rotate again" : "Hold the panel on this page"}
+            aria-label={pageLocked ? `Release ${name}` : `Hold the panel on ${name}`}
+          >
+            <LockIcon size={15} />
+          </button>
+        )}
         <button
           className="icon-button danger"
           onClick={onRemove}
@@ -264,6 +277,7 @@ export default function PagesTab({
   panel,
   onChange,
   onShowPage,
+  onSetPageLock,
   onEditPage,
   onAddPage,
 }) {
@@ -364,6 +378,7 @@ export default function PagesTab({
                   panel={panel}
                   onSet={(changes) => setPage(page.id, changes)}
                   onShow={() => onShowPage(page.id)}
+                  onToggleLock={() => onSetPageLock(!pageLocked)}
                   onEdit={() => onEditPage(page.id)}
                   onRemove={() => remove(page.id)}
                 />
@@ -389,13 +404,13 @@ export default function PagesTab({
           <div className="note warn">
             <div className="note-head">
               <LockIcon size={16} />
-              Page locked on the panel
+              Page held
             </div>
             <p>
-              Somebody held the button on the device, so rotation is pinned to{" "}
-              <b>{lockedPage?.name || lockedPage?.id || "one page"}</b>. The cycle below is
-              not running. Release it with the same gesture on the panel — it is not
-              something the editor can undo, and the panel forgets it on a reboot.
+              Rotation is pinned to <b>{lockedPage?.name || lockedPage?.id || "one page"}</b>,
+              from a hold on the panel's own button or the padlock on that row above. The
+              cycle below is not running. Release it either way — the panel forgets it on
+              a reboot regardless.
             </p>
           </div>
         )}
