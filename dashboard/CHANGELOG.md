@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026.9.46
+
+Add-on only. Firmware stays on `v2026.9.43`.
+
+- **You can see an album's photos, and choose which ones the panel shows.**
+  Opening an album in the Images tab now shows every photograph in it as a
+  grid — tap to include or exclude. The only control before was “keep the
+  newest N”, which is a poor way to say which pictures you want and gave no
+  way to see what it had picked short of walking over to the panel.
+- **The photo limit is still there for albums you have not chosen for**, which
+  is every album that exists today — nothing changes until you open the
+  picker. “Use the limit instead” hands an album back to it.
+- Changing which photos are shown renumbers the album, so the panel re-fetches
+  the ones that moved. The picker says so.
+
 ## 2026.9.45
 
 Firmware-unrelated: this is an add-on-only fix for 2026.9.44 not actually
