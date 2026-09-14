@@ -1,5 +1,30 @@
 # Changelog
 
+## 2026.9.41
+
+**Photo albums.** A new photo widget rotates through an iCloud shared album.
+Needs firmware v2026.9.41.
+
+- **Add an album on the Images screen.** In Photos, share an album, turn on
+  *Public Website*, and paste the link. Nothing is signed in to — the link is
+  all iCloud needs, and the add-on only ever reads. Albums sit beside your
+  uploaded pictures in the side column, because an album is another thing a
+  widget can show; the widget itself just names one, so several widgets can
+  share an album without pasting the link again.
+- **The widget comes in four sizes** — landscape, portrait, large and full
+  screen — and takes how often to change picture, whether to crop to fill or fit
+  the whole photo in, and whether to draw a border.
+- **Pictures are rendered only for the widgets that show them**, at each size,
+  crop and border in use. Each one is cropped and dithered here, at a few
+  seconds apiece, so albums keep the newest 25 photos by default. Adding a photo
+  to the album on your phone only costs the panel that one photo.
+- Albums are re-read every six hours, or on demand with **Refresh**. An album
+  iCloud will not serve keeps the pictures the panel already has and says what
+  went wrong.
+- Apple publishes no API for shared albums, so this speaks the same
+  undocumented endpoint their own web viewer uses. It could break if they change
+  it; nothing else in the add-on depends on it.
+
 ## 2026.9.40
 
 - **The tab bar reaches the bottom of the screen on a phone.** It was ending
