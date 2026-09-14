@@ -57,6 +57,19 @@ GRID_GAP = 30
 GRID_UNIT_W = 220
 GRID_UNIT_H = 166      # a page with a chip row
 GRID_UNIT_H_OFF = 200  # a page without one
+GRID_COLS = 5
+GRID_ROWS = 3
+PANEL_WIDTH = 1280
+PANEL_HEIGHT = 720
+
+# The full-screen photo box, chip row off -- the one grid box PhotoCard's
+# fullBleed lets run to the physical edges instead of insetting into it. See
+# the comment on photo_size below, and PhotoCard's own for why the filename
+# still names this box while the picture itself renders larger.
+FULL_SCREEN_BOX = (
+    GRID_COLS * GRID_UNIT_W + (GRID_COLS - 1) * GRID_GAP,
+    GRID_ROWS * GRID_UNIT_H_OFF + (GRID_ROWS - 1) * GRID_GAP,
+)
 
 # How many pictures of an album to keep, unless the album says otherwise.
 #
@@ -108,11 +121,21 @@ class Variant:
 
     @property
     def photo_size(self) -> tuple[int, int]:
-        """The picture's own pixels, which is the widget's box less the frame.
+        """The picture's own pixels, which is normally the widget's box less
+        the frame.
 
         With a border the firmware draws a normal card and insets the picture
         into the body, so the picture is CARD_BORDER smaller on every edge.
+
+        The one exception is full screen with no border: PhotoCard runs that
+        one case to the physical edges of the panel instead of the usual
+        30px-inset grid box, so the picture rendered here has to be the whole
+        panel too or the firmware centres an undersized image in a bigger box
+        -- the same white margin this exists to get rid of, just moved from
+        the grid gap into the picture itself.
         """
+        if not self.border and (self.width, self.height) == FULL_SCREEN_BOX:
+            return (PANEL_WIDTH, PANEL_HEIGHT)
         if not self.border:
             return (self.width, self.height)
         return (
