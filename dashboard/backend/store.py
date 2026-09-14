@@ -197,9 +197,28 @@ def _migrate_to_chip_row_grid(layout: dict[str, Any]) -> None:
 
 
 def save(layout: dict[str, Any]) -> None:
+    """Write the draft, whole, so a concurrent reader never sees half of it.
+
+    Opening the real path with "w" truncates it before a byte is written, and
+    anything calling load() in that window gets a JSONDecodeError -- which load()
+    answers with an *empty layout*. On 2026-09-14 that wiped a photo album off a
+    panel: the album refresh runs as a background task, loaded the layout while
+    an edit was being saved, saw no widgets at all, and concluded nothing wanted
+    the 25 pictures it then deleted.
+
+    The same race could have handed any other reader an empty dashboard, so this
+    is fixed here rather than defended against at each call site.
+    """
     os.makedirs(DATA_DIR, exist_ok=True)
-    with open(LAYOUT_PATH, "w", encoding="utf-8") as handle:
+    temporary = f"{LAYOUT_PATH}.writing"
+    with open(temporary, "w", encoding="utf-8") as handle:
         json.dump(layout, handle, indent=2)
+        # Flushed and synced before the rename: os.replace is atomic for the
+        # *name*, which is no help if the bytes are still in a buffer when the
+        # add-on is stopped.
+        handle.flush()
+        os.fsync(handle.fileno())
+    os.replace(temporary, LAYOUT_PATH)
 
 
 def fingerprint(layout: dict[str, Any]) -> str:

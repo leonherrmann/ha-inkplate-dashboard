@@ -107,14 +107,21 @@ ALBUM_POLL_SECONDS = 6 * 3600
 ALBUM_FIRST_POLL_SECONDS = 120
 
 
-async def refresh_albums() -> dict[str, Any]:
+async def refresh_albums(layout: dict[str, Any] | None = None) -> dict[str, Any]:
     """Bring the albums' pictures into line with the layout, then tell the device.
 
     The layout is the draft rather than what was pushed, deliberately: someone
     who has just dropped a photo widget on a page wants its pictures rendered
     before they push, not after.
+
+    `layout` is passed in by the one caller that already has it -- saving an
+    edit -- rather than re-read from disk. Re-reading raced the save that had
+    just happened and could come back empty, which is how an album's pictures
+    were once deleted for a layout that did have a photo widget in it.
     """
-    return await albums.refresh(store.load(), on_change=publish_images)
+    return await albums.refresh(
+        store.load() if layout is None else layout, on_change=publish_images
+    )
 
 
 # How soon to come back when a photo widget has no pictures at all. Six hours is
@@ -322,7 +329,7 @@ async def put_layout(layout: dict[str, Any]) -> dict[str, Any]:
     link.announce()
 
     if albums.variants_in(layout) != was:
-        asyncio.create_task(refresh_albums())
+        asyncio.create_task(refresh_albums(layout))
 
     return {"ok": True}
 

@@ -298,6 +298,15 @@ def remove(album_id: str) -> bool:
 # race each other writing the image index.
 _lock = asyncio.Lock()
 
+# The layout of a refresh that was asked for while one was already running.
+#
+# This used to be dropped -- "a refresh is already running; skipping this one"
+# -- which loses the edit that asked for it. A refresh takes minutes, an editing
+# session makes several changes a minute, and the change that goes missing is
+# the *last* one: resize a widget while its album is rendering and the new shape
+# is never rendered at all. It is remembered and run once the current pass ends.
+_pending: dict[str, Any] | None = None
+
 # What the Images tab shows while a refresh is running, and afterwards. Held in
 # memory only: a refresh that was interrupted by a restart did not finish, and
 # reporting it as though it had would be a lie.
@@ -364,23 +373,37 @@ async def refresh(
     loop it would stall the editor, the MQTT bridge and Home Assistant's own
     polling for minutes at a time.
     """
+    global _pending
+
     if _lock.locked():
-        log.info("A refresh is already running; skipping this one")
+        # Kept, not dropped: this layout is newer than the one being worked on.
+        _pending = layout
+        log.info("A refresh is already running; this one will follow it")
         return status()
 
     async with _lock:
-        _state.update(
-            running=True, started_at=time.time(), finished_at=0.0,
-            rendered=0, total=0, album="", error="",
-        )
-        try:
-            return await _refresh(layout, on_change)
-        except Exception as error:  # noqa: BLE001 - a refresh must never take the add-on down
-            log.exception("Album refresh failed")
-            _state.update(error=str(error))
-            return status()
-        finally:
-            _state.update(running=False, finished_at=time.time())
+        current: dict[str, Any] | None = layout
+        while current is not None:
+            _pending = None
+            _state.update(
+                running=True, started_at=time.time(), finished_at=0.0,
+                rendered=0, total=0, album="", error="",
+            )
+            try:
+                await _refresh(current, on_change)
+            except Exception as error:  # noqa: BLE001 - a refresh must never take the add-on down
+                log.exception("Album refresh failed")
+                _state.update(error=str(error))
+            finally:
+                _state.update(running=False, finished_at=time.time())
+
+            # Whatever arrived while that was running, which is a later truth
+            # than the layout it just worked from.
+            current = _pending
+            if current is not None:
+                log.info("The layout changed while that ran; refreshing again")
+
+        return status()
 
 
 async def _refresh(
