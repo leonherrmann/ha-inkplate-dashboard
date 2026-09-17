@@ -1,5 +1,34 @@
 # Changelog
 
+## 2026.9.48
+
+Add-on only. Firmware stays on `v2026.9.44`.
+
+- **Editing a widget on a phone is a sheet that rises over the canvas.** It was
+  another block on the edit page: you tapped a widget, then scrolled past the
+  canvas and the page list to find its options — by which point the thing you
+  were editing was off screen. The sheet comes up from the bottom edge at three
+  heights. Pull it up a little for a summary of what is selected; up again for
+  the form, with the panel still visible above it; all the way up for a long
+  option list, with the panel dimmed to a strip you can tap to come back down.
+- **Raising it brings the panel to the top of the screen**, so the widget and
+  its options are in view at the same time.
+- **Drag the handle**, tap it, or tap the summary row — whichever is nearer
+  your thumb. The sheet follows your finger and settles at the nearest height.
+- **It gets out of the way while you drag a widget** across the panel, and
+  comes back where it was when you let go.
+- **Duplicate and Delete are in the sheet**, pinned below the options rather
+  than in the toolbar above the canvas, which is off screen whenever the sheet
+  is open.
+- **Three fixes found while building it.** A field named with a plain label —
+  Name, and the dropdowns — was drawn as an oversized heading instead of a
+  field label. Dismissing an entity or room picker also collapsed the sheet
+  that opened it. And the page could not scroll far enough to lift the panel
+  clear of the sheet, so it stayed half covered.
+
+On a tablet or a desktop nothing has changed: the options stay in their column
+beside the canvas.
+
 ## 2026.9.47
 
 - **The photo picker's thumbnails now actually appear.** Every tile in
