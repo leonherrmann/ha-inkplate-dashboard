@@ -1,11 +1,14 @@
+import { useEffect, useState } from "react";
+
 import EntityPicker from "./EntityPicker.jsx";
 import DevicePicker, { MAX_DEVICE_ENTITIES } from "./DevicePicker.jsx";
 import AreaPicker, { MAX_ROOM_ENTITIES } from "./AreaPicker.jsx";
 import DeviceEntities from "./DeviceEntities.jsx";
+import Sheet, { SheetBody, SheetFoot, useNarrow, HALF, PEEK } from "./Sheet.jsx";
 import { imagePreviewUrl } from "./api.js";
 import { LAYER_MOVES, widgetSize, widgetType } from "./layout.js";
 import { categoryLabel, categoryTone } from "./format.js";
-import { HomeIcon } from "./Icons.jsx";
+import { ChevronUp, DuplicateIcon, HomeIcon, TrashIcon } from "./Icons.jsx";
 
 // The room card's band readings, and how to find each one in an area.
 //
@@ -278,13 +281,33 @@ export default function Inspector({
   albums,
   layer,
   layerCount,
+  dragging,
   onSetOption,
   onSetOptions,
   onSetSize,
   onSetLayer,
+  onDuplicate,
+  onRemove,
   onClose,
 }) {
+  // Below the tab bar's breakpoint the options are a sheet over the canvas
+  // rather than a column beside it, and the sheet owns how tall it stands.
+  // Held here rather than in App because nothing else has any use for it.
+  const narrow = useNarrow();
+  const [detent, setDetent] = useState(PEEK);
+
+  // Selecting a different widget starts the sheet low again. The form is about
+  // the widget, so carrying its height across a change of subject would open a
+  // full-height sheet over a canvas the user was still choosing from.
+  useEffect(() => {
+    setDetent(PEEK);
+  }, [widget?.id]);
+
   if (!widget) {
+    // Nothing selected is not worth a sheet on a phone -- it would be a
+    // permanent strip across the bottom saying only that it is empty. The
+    // canvas says the same thing by having nothing outlined on it.
+    if (narrow) return null;
     return (
       <aside className="inspector">
         <div className="eyebrow">Options</div>
@@ -325,29 +348,42 @@ export default function Inspector({
   // What kind of thing this is, in the category's own words
   const group = categoryLabel(manifest, type?.category);
 
-  return (
-    <aside className="inspector open">
-      <div className="inspector-head">
-        {/* The accent is the widget's category, which the manifest names and
-            orders, so a category added in a later firmware arrives with a tone
-            rather than with none. */}
-        <span className={`token lg ${categoryTone(type?.category)}`}>
-          <HomeIcon size={19} />
-        </span>
-        <div style={{ minWidth: 0 }}>
-          <div className="inspector-meta">
-            {group ? `${group} · ` : ""}
-            {type?.label || widget.type}
-          </div>
-          {/* The name the user gave it leads: on a page of six room cards
-              "Room" is the one thing that does not tell them apart. */}
-          <h2>{widget.options?.name || type?.label || widget.type}</h2>
-        </div>
-        <button className="icon-button plain" onClick={onClose} aria-label="Close">
-          ×
-        </button>
-      </div>
+  const title = widget.options?.name || type?.label || widget.type;
+  const tone = categoryTone(type?.category);
 
+  // The summary line. Cells where the chosen size has them, because that is
+  // what the user picked and what the panel's grid is counted in; pixels only
+  // for the self-sizing widgets, which have no cell count to give.
+  const footprint =
+    chosenSize?.cols > 0 && chosenSize?.rows > 0
+      ? `${chosenSize.cols}×${chosenSize.rows}`
+      : `${size.width}×${size.height}`;
+
+  const head = (
+    <div className="inspector-head">
+      {/* The accent is the widget's category, which the manifest names and
+          orders, so a category added in a later firmware arrives with a tone
+          rather than with none. */}
+      <span className={`token lg ${tone}`}>
+        <HomeIcon size={19} />
+      </span>
+      <div style={{ minWidth: 0 }}>
+        <div className="inspector-meta">
+          {group ? `${group} · ` : ""}
+          {type?.label || widget.type}
+        </div>
+        {/* The name the user gave it leads: on a page of six room cards
+            "Room" is the one thing that does not tell them apart. */}
+        <h2>{title}</h2>
+      </div>
+      <button className="icon-button plain" onClick={onClose} aria-label="Close">
+        ×
+      </button>
+    </div>
+  );
+
+  const fields = (
+    <>
       <div className="hint">
         {widget.x}, {widget.y} · {size.width}×{size.height}
       </div>
@@ -475,6 +511,61 @@ export default function Inspector({
           reader has to answer ("do these differ?") before they can use either.
           The toolbar keeps them, because that is where 1a draws them and it is
           the side the selection is on. */}
+    </>
+  );
+
+  // On a phone, design 1b: the same head and the same fields, in a sheet that
+  // rises over the canvas instead of a column that only exists below it.
+  if (narrow) {
+    return (
+      <Sheet detent={detent} onDetent={setDetent} label={`${title} options`} retracted={dragging}>
+        {detent === PEEK ? (
+          // What is selected, and the way in. The whole row opens the sheet
+          // rather than only the chevron -- at this height the row *is* the
+          // control, and a 32px target for the one thing there is to do here
+          // would be the smallest tap target on the screen.
+          <button type="button" className="sheet-summary" onClick={() => setDetent(HALF)}>
+            <span className={`token lg ${tone}`}>
+              <HomeIcon size={19} />
+            </span>
+            <span className="sheet-summary-text">
+              <b>{title}</b>
+              <small>
+                {type?.label || widget.type} · {footprint} · {widget.x}, {widget.y}
+              </small>
+            </span>
+            <span className="sheet-summary-more" aria-hidden="true">
+              <ChevronUp size={15} />
+            </span>
+          </button>
+        ) : (
+          <>
+            {head}
+            <SheetBody>{fields}</SheetBody>
+            {/* The design puts these in the sheet's foot on a phone, not in the
+                toolbar: the toolbar is above the canvas and therefore off
+                screen whenever the sheet is open, which is exactly when you
+                want them. */}
+            <SheetFoot>
+              <button className="sheet-action" onClick={() => onDuplicate?.(widget.id)}>
+                <DuplicateIcon size={15} />
+                Duplicate
+              </button>
+              <button className="sheet-action danger" onClick={() => onRemove?.(widget.id)}>
+                <TrashIcon size={15} />
+                Delete
+              </button>
+            </SheetFoot>
+          </>
+        )}
+      </Sheet>
+    );
+  }
+
+  return (
+    <aside className="inspector open">
+      {head}
+      {fields}
     </aside>
   );
 }

@@ -59,6 +59,22 @@ Playwright's webkit against the built `dist` with `**/api/**` stubbed. Assert
 that **nothing is wider than its window** — this stylesheet has shipped four
 specificity bugs of that shape, all invisible in a static desktop render.
 
+```sh
+cd dashboard/frontend && npx serve dist -l 8127     # in one shell
+cd ../../../test-harnesses && node sheetcheck.mjs   # 40 checks, mobile sheet
+cd ../../../test-harnesses && node pickercheck.mjs
+```
+
+`/entities`, `/devices` and `/areas` answer with a **bare array**, not an
+object — a stub that wraps them crashes the inspector rather than emptying it.
+`sheetcheck.mjs` stubs `/status` with `manifest.json` next to it, which is
+`./sim/preview --manifest` from the firmware repo.
+
+**Headless WebKit reports `backdrop-filter` as supported and then does not
+blur.** A screenshot showing the page legible through a glass surface is that,
+not a bug — but it is also why the sheet is 0.9 white rather than `--glass`:
+a surface that covers a whole page cannot rely on a blur to hide it.
+
 ## Layout of the code
 
 - `dashboard/backend/main.py` — the API. `store.py` holds the draft layout,
@@ -67,6 +83,13 @@ specificity bugs of that shape, all invisible in a static desktop render.
 - `dashboard/frontend/src/` — `App.jsx` owns the layout state,
   `Inspector.jsx` renders a widget's options from the manifest,
   `WidgetPreview.jsx` draws each widget on the canvas.
+- **Below 820px the inspector is a bottom sheet** (`Sheet.jsx`, design 1b) at
+  three heights, portalled to `document.body`. It marks `<html>` with
+  `.sheet-open` and `data-sheet`, and the stylesheet answers with `--sheet-h`:
+  the sheet's height and the room the page reserves under it are the same
+  number, because that reserve is also what gives the page the scroll range to
+  lift the canvas clear of the sheet. `Inspector.jsx` renders the same head and
+  fields into either shell.
 - The UI is built to a Claude Design project ("glass"): floating panels,
   Bauhaus colour, light only. **The canvas is exempt** — `.panel` resets its own
   tokens to black-on-white so the e-ink preview never follows the interface.

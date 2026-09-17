@@ -175,6 +175,10 @@ export default function App() {
   const [snapMode, setSnapMode] = useState(DEFAULT_SNAP);
   const [zoom, setZoom] = useState("fit");
   const [adding, setAdding] = useState(false);
+  // Whether a widget is being dragged on the canvas. Only the options sheet
+  // cares -- it gets out of the way for the duration -- but it has to be held
+  // here because the canvas and the sheet are siblings.
+  const [dragging, setDragging] = useState(false);
   const [message, setMessage] = useToast();
 
   const manifest = status?.manifest;
@@ -704,6 +708,7 @@ export default function App() {
               chipRow={chipRow}
               zoom={zoom}
               mod={MOD}
+              onDragState={setDragging}
             />
           </main>
 
@@ -718,10 +723,13 @@ export default function App() {
             albums={albums}
             layer={widgets.findIndex((one) => one.id === selected?.id)}
             layerCount={widgets.length}
+            dragging={dragging}
             onSetOption={setOption}
             onSetOptions={setOptions}
             onSetSize={setSize}
             onSetLayer={setLayer}
+            onDuplicate={duplicateWidget}
+            onRemove={removeWidget}
             onClose={() => setSelectedId(null)}
           />
 
