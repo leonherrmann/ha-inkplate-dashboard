@@ -64,3 +64,28 @@ export function categoryTone(category) {
 export function categoryLabel(manifest, category) {
   return (manifest?.categories || []).find((one) => one.id === category)?.label || category || "";
 }
+
+// What an option's dropdown may offer.
+//
+// Two ways for the manifest to say it, and this is the only place that knows
+// the difference. An option may carry its list inline as `values`, or name a
+// shared one with `values_ref` that the manifest publishes once under a
+// top-level `values` map.
+//
+// Sharing exists because the manifest goes out in a single MQTT publish and had
+// grown to 17,067 bytes, of which about 2,400 were lists sent more than once:
+// the same 71-name icon list on both entity widgets, the room icons on two
+// more, and the update-interval choices on every one of the nineteen types. A
+// publish that large is not merely wasteful -- on the panel it was failing
+// outright and taking the broker session down with it.
+//
+// Inline still works and always will. An older firmware sends no `values` map
+// at all, and a newer one is free to inline a list only one option uses; both
+// arrive here and are answered the same way. That is what lets the add-on ship
+// before the firmware that starts referencing.
+export function optionValues(manifest, option) {
+  if (!option) return [];
+  if (Array.isArray(option.values)) return option.values;
+  if (option.values_ref) return manifest?.values?.[option.values_ref] || [];
+  return [];
+}

@@ -1,6 +1,8 @@
 // Layout helpers. Positions are pixels on the 1280x720 panel; snapping is
 // purely an editor concern, which is what makes a precise mode possible.
 
+import { optionValues } from "./format.js";
+
 // Grid mode snaps to cell origins, so a widget lands exactly where the firmware
 // would put it. The firmware publishes the grid in its manifest, so this is only
 // the fallback for before it has been heard from.
@@ -386,7 +388,7 @@ export function widgetSize(manifest, widget, uploads, chipRow = DEFAULT_CHIP_ROW
     if (uploaded?.width) {
       return { width: uploaded.width, height: uploaded.height };
     }
-    const value = option?.values?.find((candidate) => candidate.name === chosen);
+    const value = optionValues(manifest, option).find((candidate) => candidate.name === chosen);
     if (value?.width) {
       return { width: value.width, height: value.height };
     }
