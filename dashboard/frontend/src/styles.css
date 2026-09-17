@@ -39,6 +39,26 @@
      ground composites to. */
   --tabbar: #fdfdfc;
 
+  /* How tall that bar is, so the options sheet can stand on it rather than
+     over it. Kept in step with the .tabbar rule by hand -- 8 top + 30 glyph +
+     4 gap + 13 label + 6 bottom -- because there is no way to ask CSS for an
+     element's height, and a sheet that guesses this wrong either floats above
+     the bar or hides its labels. Asserted in the WebKit pass. */
+  --tabbar-h: calc(61px + env(safe-area-inset-bottom, 0px));
+
+  /* How much of the screen the options sheet is covering. One number, read by
+     the sheet's own height and by the room the page reserves under it, so the
+     two cannot disagree -- and they have to agree, because the reserve is what
+     gives the page the scroll range to lift the canvas clear. Sheet.jsx marks
+     the document with the detent; the default is peek's, which is the only one
+     the sheet itself measures rather than takes from here.
+
+     peek's figure is that measurement written down: grabber 22 + a 40px token
+     row + 14 of padding. It cannot drift with the widget's name, because both
+     lines of the summary are a single ellipsised line by rule. Asserted against
+     the rendered height in the WebKit pass. */
+  --sheet-h: 78px;
+
   /* Which of the two the band outside the frame should take. The stylesheet
      owns the decision so the breakpoint lives in one place; hostChrome.js only
      reads it. Below 820 the band sits under the tab bar, above it there is no
@@ -2085,15 +2105,26 @@ textarea:focus {
 
 /* .field-block is a label in everything but the element: a group of buttons
    inside a real <label> takes its accessible name from the label, which means
-   each button announces its neighbours' text instead of its own. */
+   each button announces its neighbours' text instead of its own.
+
+   .sheet-body is the same fields in the mobile sheet. It has to be named here
+   rather than left to .field-block's own global rule, because that rule does
+   not cover a plain <label> -- and the option types that use one are the text
+   and select fields. Scoped only to .inspector, "Name" came out as an unstyled
+   17px heading in the sheet while every field around it was right, which reads
+   as a section break where there is none. */
 .inspector label,
-.inspector .field-block {
+.inspector .field-block,
+.sheet-body label,
+.sheet-body .field-block {
   display: block;
   min-width: 0;
 }
 
 .inspector label > span,
-.inspector .field-block > span {
+.inspector .field-block > span,
+.sheet-body label > span,
+.sheet-body .field-block > span {
   display: block;
   font-size: 11px;
   color: var(--ink-60);
@@ -2376,6 +2407,278 @@ input.picker-search {
   background: rgba(255, 255, 255, 0.9);
   font-size: 11.5px;
   color: var(--ink-60);
+}
+
+/* ---------- the options sheet (design 1b) ---------- */
+
+/* Outside the media query on purpose: --sheet-h is only ever read by rules that
+   are inside it, and the attribute is only ever set while a sheet is mounted,
+   which only happens below the breakpoint. */
+:root[data-sheet="half"] {
+  --sheet-h: 58dvh;
+}
+
+:root[data-sheet="full"] {
+  --sheet-h: calc(100dvh - 118px);
+}
+
+/* Only ever mounted below 820px -- Sheet.jsx returns nothing above it -- but
+   every rule here is guarded by the media query anyway, so a stale sheet left
+   over from a resize cannot paint a fixed panel across a desktop layout.
+
+   The height is the whole mechanism: three detents, one transition, and an
+   inline height while a finger is on the grabber. Everything else follows from
+   it, which is why the body is the only scroller and the row above it and the
+   foot below it are flex:none. */
+@media (max-width: 820px) {
+  .sheet {
+    position: fixed;
+    left: 0;
+    right: 0;
+    /* Above the canvas and the tab bar, below the pickers (50), which can be
+       opened from inside this sheet and have to land on top of it. */
+    z-index: 45;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    /* Not --glass. Every other glass surface in the app floats over the ground
+       or over a card; this one covers a whole page of dense content -- the page
+       list, its thumbnails, the add-page tile -- and at 0.74 they read straight
+       through it. 0.9 over the ground composites to exactly --tabbar, which is
+       the bar this sheet stands on, so the two read as one surface running to
+       the bottom edge rather than as two panes. The blur stays: it is what
+       makes the canvas behind the top edge look like depth rather than dirt. */
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(22px);
+    -webkit-backdrop-filter: blur(22px);
+    border-top: 1px solid var(--ink-12);
+    border-radius: 26px 26px 0 0;
+    box-shadow: 0 -18px 40px -24px rgba(27, 26, 31, 0.5);
+    padding: 0 16px;
+    transition: height 0.22s ease, bottom 0.22s ease, transform 0.22s ease;
+  }
+
+  /* At peek and half the tab bar is still the bottom of the screen and the
+     sheet stands on it, so both are reachable. --tabbar-h is measured from the
+     .tabbar rule below: 8 + 30 + 4 + 13 + 6, plus whatever the phone reserves
+     for its home indicator when we own the viewport. */
+  .sheet-peek,
+  .sheet-half {
+    bottom: var(--tabbar-h);
+  }
+
+  /* At full height the sheet takes the screen, tab bar included -- there is
+     nowhere else to go from here, and the scrim above it is the way back. */
+  .sheet-full {
+    bottom: 0;
+  }
+
+  /* peek is the one height the content decides: it is a single row, and a fixed
+     number here would either clip a wrapped name or leave a gap under a short
+     one. --sheet-h still carries a figure for it, because the page below has to
+     reserve the room whether or not CSS is the thing measuring it. */
+  .sheet-peek {
+    height: auto;
+  }
+
+  .sheet-half,
+  .sheet-full {
+    height: var(--sheet-h);
+  }
+
+  /* Following a finger. No transition, or the sheet lags behind the gesture by
+     a fifth of a second and reads as broken rather than as smooth. */
+  .sheet.dragging {
+    transition: none;
+  }
+
+  /* Out of the way while a widget is being dragged across the canvas. Kept
+     mounted rather than unmounted so that letting go brings the same sheet
+     back, at the same height, rather than rebuilding it at peek. */
+  .sheet.retracted {
+    transform: translateY(110%);
+    pointer-events: none;
+  }
+
+  /* The grabber. A button, not a decoration: it is the largest target on the
+     sheet and the only one that does anything at peek, so it has to be
+     reachable by keyboard and announce what it will do. touch-action is what
+     stops the browser scrolling the page instead of resizing the sheet. */
+  .sheet-grab {
+    flex: none;
+    align-self: stretch;
+    display: grid;
+    place-items: center;
+    padding: 10px 0 8px;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    border-radius: 0;
+    touch-action: none;
+    cursor: grab;
+  }
+
+  .sheet-grab:active {
+    cursor: grabbing;
+  }
+
+  .sheet-grab > span {
+    display: block;
+    width: 42px;
+    height: 4px;
+    border-radius: 999px;
+    background: rgba(27, 26, 31, 0.2);
+  }
+
+  .sheet-full .sheet-grab > span {
+    background: rgba(27, 26, 31, 0.28);
+  }
+
+  /* Peek: one row saying what is selected, and a chevron in. A button rather
+     than a div with a handler, so it tabs and announces. */
+  .sheet-summary {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    /* Everything the base button rule gives it is wrong here: it is a row, not
+       a control with a chrome of its own. */
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    border-radius: 14px;
+    padding: 0 0 14px;
+    text-align: left;
+  }
+
+  .sheet-summary-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .sheet-summary-text b {
+    font-size: 14px;
+    letter-spacing: -0.01em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .sheet-summary-text small {
+    font-size: 10.5px;
+    color: var(--ink-60);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .sheet-summary-more {
+    margin-left: auto;
+    flex: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--ink-06);
+    color: var(--ink-60);
+    display: grid;
+    place-items: center;
+  }
+
+  /* Half and full: the head stays put and only this scrolls, so the name of
+     the thing being edited is never the first thing off the top. */
+  .sheet .inspector-head {
+    flex: none;
+    padding-bottom: 12px;
+  }
+
+  .sheet-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    /* Room for the foot's shadow, and for a last field not to sit against it */
+    padding-bottom: 4px;
+  }
+
+  .sheet-foot {
+    flex: none;
+    display: flex;
+    gap: 9px;
+    padding: 12px 0 calc(14px + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid var(--ink-12);
+  }
+
+  .sheet-action {
+    flex: 1;
+    justify-content: center;
+    gap: 7px;
+    border-radius: 999px;
+    padding: 13px;
+    font-weight: 600;
+  }
+
+  /* The canvas behind a full-height sheet, dimmed and tappable. A button so
+     that "tap here to dismiss" is something a keyboard and a screen reader can
+     also do; the hint is the design's own label for it. */
+  .sheet-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 44;
+    display: block;
+    width: 100%;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    padding: 0;
+    background: linear-gradient(180deg, rgba(27, 26, 31, 0.05), rgba(27, 26, 31, 0.34));
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .sheet-scrim-hint {
+    position: absolute;
+    left: 16px;
+    top: 14px;
+    background: rgba(255, 255, 255, 0.92);
+    border-radius: 999px;
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--ink);
+    padding: 5px 11px;
+  }
+
+  /* The sheet stands on the page rather than beside it, so the page has to
+     reserve the height it covers. Two separate things need this and the second
+     is the one that is easy to miss:
+
+     Without it the page's last rows and the toast sit behind the sheet, and the
+     page simply appears to end early. But it is also what gives the document
+     enough scroll range for the canvas to reach the top of the screen when the
+     sheet is raised -- the scroll that puts the widget being edited in the strip
+     above it. Reserving only the peek height, the document ran out of scroll
+     142px in and the canvas stopped half-covered, which is precisely the
+     complaint this sheet exists to answer. */
+  :root.sheet-open .app {
+    padding-bottom: calc(var(--sheet-h) + var(--tabbar-h) + 12px);
+  }
+
+  :root.sheet-open .toast {
+    bottom: calc(var(--sheet-h) + var(--tabbar-h) + 12px);
+  }
+}
+
+/* The sheet animates its height, and a phone that asks for less movement gets
+   none: the detent still changes, it just arrives there. */
+@media (prefers-reduced-motion: reduce) {
+  .sheet {
+    transition: none;
+  }
 }
 
 /* The widget picker's group headings */

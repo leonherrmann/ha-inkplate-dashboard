@@ -239,6 +239,7 @@ export default function Panel({
   chipRow,
   zoom,
   mod,
+  onDragState,
 }) {
   const [rulerRef, available] = useAvailableWidth();
 
@@ -272,7 +273,15 @@ export default function Panel({
     }
   };
 
+  // Design 1b retracts the options sheet while a widget is being moved: on a
+  // phone the sheet covers the bottom third of the canvas, which is a third of
+  // the places a drag could be going. Reported from here rather than inferred,
+  // because dnd-kit is the only thing that knows a press has become a drag --
+  // below the sensors' threshold the same gesture is still a tap.
+  const handleDragStart = () => onDragState?.(true);
+
   const handleDragEnd = (event) => {
+    onDragState?.(false);
     const active = String(event.active.id);
     const resizing = active.startsWith(RESIZE);
     const widget = widgets.find(
@@ -318,7 +327,12 @@ export default function Panel({
               visibility: available > 0 ? "visible" : "hidden",
             }}
           >
-            <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+            <DndContext
+              sensors={sensors}
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
+              onDragCancel={() => onDragState?.(false)}
+            >
               <div
                 className={showCells ? "panel gridded" : "panel"}
                 style={{

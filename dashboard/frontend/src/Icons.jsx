@@ -157,6 +157,12 @@ export const ChevronDown = (props) => (
   </Svg>
 );
 
+export const ChevronUp = (props) => (
+  <Svg width={2.2} {...props}>
+    <path d="m6 15 6-6 6 6" />
+  </Svg>
+);
+
 export const ChevronLeft = (props) => (
   <Svg width={2} {...props}>
     <path d="m15 6-6 6 6 6" />
