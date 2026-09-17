@@ -1,5 +1,31 @@
 # Changelog
 
+## 2026.9.49
+
+Ships with firmware `v2026.9.49`. **Install this add-on before updating the
+panel** — this version understands what the new firmware sends, and the old one
+does not.
+
+- **The panel was often unreachable for the first minute and a half after
+  switching on, and sometimes for the whole session.** It described everything
+  it can draw in one 15KB message, and its WiFi could not reliably push a
+  message that large — the send would stall for ten seconds, go out half
+  finished, and take the connection to Home Assistant down with it. Everything
+  the panel tried to say afterwards failed the same way, ten seconds at a time,
+  and while that was happening the panel was frozen: no button worked and
+  nothing redrew.
+- **It sends that description over the ordinary web connection now**, the same
+  one it already uses for pictures, firmware and its startup log. On the panel
+  here it went from failing on six starts out of six to arriving in a tenth of
+  a second on every one.
+- **The description is also a fifth smaller**, because lists that used to be
+  repeated on every widget — the icon lists, the update-interval choices — are
+  now sent once.
+- **A panel running older firmware works exactly as before.** Both ways of
+  sending are still accepted.
+- Fixed: the panel could spend a minute and a half checking its stored pictures
+  in one go, which dropped it off Home Assistant while it did.
+
 ## 2026.9.48
 
 Add-on only. Firmware stays on `v2026.9.44`.
