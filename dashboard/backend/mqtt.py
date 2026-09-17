@@ -15,6 +15,7 @@ import paho.mqtt.client as mqtt
 
 import adopt
 import firmware
+import manifest_store
 import store
 from discovery import discovery
 from history import history
@@ -31,12 +32,19 @@ log = logging.getLogger(__name__)
 
 
 class DeviceLink:
+    # What the panel says it can draw. A property rather than a field because it
+    # no longer arrives only here: the firmware POSTs it to the device HTTP port,
+    # which is a different process, so the file in DATA_DIR is the only place
+    # both can meet. Reading it is cheap -- manifest_store caches on mtime.
+    @property
+    def manifest(self) -> dict[str, Any] | None:
+        return manifest_store.load()
+
     def __init__(self) -> None:
         self._client: mqtt.Client | None = None
         self._lock = threading.Lock()
 
         # Latest retained values seen from the device
-        self.manifest: dict[str, Any] | None = None
         self.applied: dict[str, Any] | None = None
         self.stats: dict[str, Any] | None = None
         self.online: bool = False
@@ -126,10 +134,16 @@ class DeviceLink:
             self.online = payload.strip() == "online"
             log.info("Device is %s", "online" if self.online else "offline")
         elif message.topic == topics.manifest:
-            self.manifest = self._parse(payload, "manifest")
-            if self.manifest:
-                count = len(self.manifest.get("widgets", []))
-                log.info("Received a manifest describing %d widget types", count)
+            # Written through to the same place the HTTP route writes, so the
+            # editor has one answer to what the panel can draw rather than two
+            # that can disagree about which arrived last.
+            try:
+                stored = manifest_store.save(payload)
+            except manifest_store.ManifestError as problem:
+                log.warning("Ignoring the manifest on MQTT: %s", problem)
+            else:
+                count = len(stored.get("widgets", []))
+                log.info("Received a manifest on MQTT describing %d widget types", count)
         elif message.topic == topics.config_current:
             self.applied = self._parse(payload, "applied config")
             log.info("Device reports applied layout: %s", self.applied)

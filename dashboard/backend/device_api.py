@@ -24,6 +24,7 @@ from fastapi.responses import FileResponse
 
 import firmware
 import images
+import manifest_store
 import reports
 
 log = logging.getLogger("inkplate.device")
@@ -103,6 +104,32 @@ async def post_log(request: Request, reason: str = "asked") -> dict[str, object]
     if len(text) > reports.LOG_LIMIT_BYTES:
         text = text[-reports.LOG_LIMIT_BYTES :]
     return {"ok": True, **reports.save_log(text, reason[:40])}
+
+
+@app.post("/device/manifest")
+async def post_manifest(request: Request) -> dict[str, object]:
+    """Everything the panel's firmware can draw.
+
+    Here rather than over MQTT because it is 15KB in one piece, and one MQTT
+    publish of that size is more than this panel's WiFi can reliably push: the
+    write stalls for ten seconds, leaves half a packet in the stream and takes
+    the broker session with it. Over HTTP the body is written and read
+    incrementally by both ends and none of that arises. See manifest_store.
+
+    The MQTT topic is still read, for firmware that knows no other way.
+    """
+    raw = await request.body()
+    try:
+        stored = manifest_store.save(raw)
+    except manifest_store.ManifestError as problem:
+        # Refused rather than stored: a manifest the editor cannot build a
+        # palette from looks to the user like a broken add-on.
+        log.warning("Refused a manifest: %s", problem)
+        raise HTTPException(status_code=400, detail=str(problem))
+
+    count = len(stored.get("widgets", []))
+    log.info("Device posted a manifest describing %d widget types (%d bytes)", count, len(raw))
+    return {"ok": True, "widgets": count}
 
 
 @app.get("/device/screenshot.png")
