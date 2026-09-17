@@ -15,9 +15,17 @@ The firmware is at
 directory** — start sessions there and reach this repo by path, or the memory is
 not available.
 
-**The firmware owns the widget list.** It publishes a manifest of every type,
-size and option; this repo renders an editor for it. Never hardcode a widget,
-size, option or category list here.
+**The firmware owns the widget list.** It sends a manifest of every type, size
+and option; this repo renders an editor for it. Never hardcode a widget, size,
+option or category list here.
+
+It arrives two ways and both write through `manifest_store`: `POST
+/device/manifest` on the device port, which is how current firmware sends it,
+and the retained MQTT topic, for firmware that knows no other way. HTTP because
+15KB in one MQTT packet is more than the panel's WiFi can reliably push. An
+option's value list may be inline as `values` or name a shared one with
+`values_ref`; `optionValues()` in `format.js` is the only thing that knows the
+difference.
 
 ## Running the checks
 
@@ -30,6 +38,7 @@ None`). That error means the wrong interpreter, not a broken edit.
 
 cd dashboard/backend
 /tmp/ink-venv/bin/python importcheck.py            # every module imports
+PYTHONPATH=. /tmp/ink-venv/bin/python ../../../test-harnesses/manifestpostcheck.py
 PYTHONPATH=. /tmp/ink-venv/bin/python ../../../test-harnesses/albumcheck.py
 PYTHONPATH=. SUPERVISOR_TOKEN=test /tmp/ink-venv/bin/python ../../../test-harnesses/adoptcheck.py
 PYTHONPATH=. SUPERVISOR_TOKEN=test /tmp/ink-venv/bin/python ../../../test-harnesses/timercheck.py

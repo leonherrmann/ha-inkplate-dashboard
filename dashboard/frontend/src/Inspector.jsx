@@ -7,7 +7,7 @@ import DeviceEntities from "./DeviceEntities.jsx";
 import Sheet, { SheetBody, SheetFoot, useNarrow, HALF, PEEK } from "./Sheet.jsx";
 import { imagePreviewUrl } from "./api.js";
 import { LAYER_MOVES, widgetSize, widgetType } from "./layout.js";
-import { categoryLabel, categoryTone } from "./format.js";
+import { categoryLabel, categoryTone, optionValues } from "./format.js";
 import { ChevronUp, DuplicateIcon, HomeIcon, TrashIcon } from "./Icons.jsx";
 
 // The room card's band readings, and how to find each one in an area.
@@ -64,7 +64,9 @@ function roomRoles(available) {
   };
 }
 
-function Option({ option, widget, value, entities, devices, areas, uploads, albums, capacity, onChange, onChangeMany }) {
+// manifest, because an option's list may live in the manifest rather than on
+// the option -- see optionValues. Nothing else here reads it.
+function Option({ option, manifest, widget, value, entities, devices, areas, uploads, albums, capacity, onChange, onChangeMany }) {
   // Picking a device sets three things at once, which is why this one option
   // reaches for onChangeMany: the id, so it can be re-resolved later; the
   // resolved entity list, which is what the panel actually renders; and the
@@ -161,7 +163,7 @@ function Option({ option, widget, value, entities, devices, areas, uploads, albu
     return (
       <select value={value || ""} onChange={(event) => onChange(event.target.value)}>
         <option value="">— default —</option>
-        {(option.values || []).map((choice) => (
+        {optionValues(manifest, option).map((choice) => (
           <option key={choice} value={choice}>
             {choice.replace(/_/g, " ")}
           </option>
@@ -213,7 +215,7 @@ function Option({ option, widget, value, entities, devices, areas, uploads, albu
     return (
       <select value={value || ""} onChange={(event) => onChange(event.target.value)}>
         <option value="">— default —</option>
-        {(option.values || []).map((name) => (
+        {optionValues(manifest, option).map((name) => (
           <option key={name} value={name}>
             {option.filter && name.startsWith(option.filter)
               ? name.slice(option.filter.length)
@@ -228,7 +230,7 @@ function Option({ option, widget, value, entities, devices, areas, uploads, albu
   // Two sources: images uploaded to the add-on, and the ones compiled into the
   // firmware, which the manifest lists.
   if (option.type === "image") {
-    const builtIn = option.values || [];
+    const builtIn = optionValues(manifest, option);
     return (
       <>
         <select value={value || ""} onChange={(event) => onChange(event.target.value)}>
@@ -440,6 +442,7 @@ export default function Inspector({
             <span>{option.label}</span>
             <Option
               option={option}
+              manifest={manifest}
               widget={widget}
               value={widget.options?.[option.key]}
               entities={entities}
