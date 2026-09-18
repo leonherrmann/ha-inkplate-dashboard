@@ -6,7 +6,7 @@ import OrientationSettings from "./OrientationSettings.jsx";
 import TimerSettings from "./TimerSettings.jsx";
 import DeviceReports from "./DeviceReports.jsx";
 import SyncCard from "./SyncCard.jsx";
-import PanelPicker from "./PanelPicker.jsx";
+import PanelPicker, { MODEL_LABELS } from "./PanelPicker.jsx";
 import Sparkline from "./Sparkline.jsx";
 import * as api from "./api.js";
 import { Battery, formatAge, formatUptime, signalLabel } from "./DeviceStats.jsx";
@@ -196,8 +196,15 @@ export default function DeviceTab({
   const cachedAll = images?.known > 0 && images.cached === images.known;
   // The device reports what it is running; anything else on offer is newer by
   // definition, because the add-on only ever holds the latest release.
+  // ...unless it was built for the other panel. One firmware manifest is read
+  // by every panel, and a V2 image on a V1 is an ESP32 driving a framebuffer of
+  // the wrong size. The firmware refuses it for itself; the editor says so
+  // rather than offering a button whose only effect is a line in a log.
+  const wrongModel = firmware?.model_matches === false;
   const canUpdate =
-    Boolean(firmware?.held?.version) && firmware.held.version !== firmware?.device?.running;
+    Boolean(firmware?.held?.version) &&
+    firmware.held.version !== firmware?.device?.running &&
+    !wrongModel;
 
   const pageLocked = Boolean(status?.page_locked);
 
@@ -349,9 +356,11 @@ export default function DeviceTab({
                     </p>
                   )}
                   <p className="hint" style={{ marginTop: 10 }}>
-                    {canUpdate
-                      ? "The panel downloads it, checks the hash and restarts. If the new build cannot boot, the bootloader puts the old one back."
-                      : "The panel is running the newest release held here."}
+                    {wrongModel
+                      ? `This build is for the ${MODEL_LABELS[firmware.built_for] || firmware.built_for}, and this panel is a ${MODEL_LABELS[firmware.panel_model] || firmware.panel_model}. The panel ignores it; point firmware_repo at a repo that builds for this one, or update it over USB.`
+                      : canUpdate
+                        ? "The panel downloads it, checks the hash and restarts. If the new build cannot boot, the bootloader puts the old one back."
+                        : "The panel is running the newest release held here."}
                   </p>
                 </>
               )}

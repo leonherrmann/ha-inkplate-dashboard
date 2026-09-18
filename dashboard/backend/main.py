@@ -29,13 +29,13 @@ from registry import registry
 from weather import weather
 from settings import (
     DEVICE_PORT,
+    FIRMWARE_MODEL,
     FIRMWARE_REPO,
     HA_REST_URL,
     IMAGE_BASE_URL,
     LOG_LEVEL,
     STATIC_DIR,
     SUPERVISOR_TOKEN,
-    DEVICE_ID,
 )
 
 logging.basicConfig(level=LOG_LEVEL, format="%(levelname)s %(name)s: %(message)s")
@@ -813,12 +813,24 @@ async def get_album_thumb(album_id: str, guid: str) -> FileResponse:
 @app.get("/api/firmware")
 async def get_firmware(panel: str | None = None) -> dict[str, Any]:
     """What is held here, and what that panel says it is running."""
-    reported = (link.panel(_panel(panel)).stats or {}).get("firmware") or {}
+    panel_id = _panel(panel)
+    reported = (link.panel(panel_id).stats or {}).get("firmware") or {}
+    # Which panel the held build is for, and which this one is. A binary is not
+    # interchangeable between the two shapes of panel, and the firmware ignores
+    # an offer that is not its own -- so the editor has to be able to say that
+    # rather than showing an Update button that does nothing.
+    model = (panels.get(panel_id) or {}).get("model")
     return {
         "repo": FIRMWARE_REPO,
         "held": firmware.store.state,
         "device": reported,
         "servable": bool(firmware.store.have_binary() and await image_base_url()),
+        "built_for": FIRMWARE_MODEL,
+        "panel_model": model,
+        # Unknown model is not a mismatch: a panel that has never sent a
+        # manifest has not said what it is, and refusing to offer it an update
+        # would be worse than offering one its firmware can refuse for itself.
+        "model_matches": not model or model == FIRMWARE_MODEL,
     }
 
 

@@ -15,7 +15,7 @@ import { MonitorIcon } from "./Icons.jsx";
 // reasons given there: they were four hand-rolled modals that had drifted apart
 // in ways that read as meaning.
 
-const MODEL_LABELS = {
+export const MODEL_LABELS = {
   inkplate5v1: "Inkplate 5",
   inkplate5v2: "Inkplate 5 V2",
 };
