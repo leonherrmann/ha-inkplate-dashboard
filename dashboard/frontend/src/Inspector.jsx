@@ -139,6 +139,86 @@ function valueSummary(option, value, { albums, uploads }) {
   return raw.replace(/_/g, " ");
 }
 
+
+// The control a big option gets once it has a screen to itself.
+//
+// A list of rows rather than the select it is in the field list. A select of
+// three hundred icon names is a wheel on a phone and a column taller than the
+// window on a desktop, and neither can be searched -- which is the only way to
+// find "rooms_shower" among them without reading the lot.
+//
+// The search field appears only past a dozen values: below that it is a box
+// asking you to type in order to see what you could already see.
+function ScreenList({ option, values, value, onChange, uploads }) {
+  const [query, setQuery] = useState("");
+
+  const label = (one) => {
+    if (option.type === "icon" && option.filter && one.startsWith(option.filter)) {
+      return one.slice(option.filter.length).replace(/_/g, " ");
+    }
+    return String(one).replace(/_/g, " ");
+  };
+
+  const terms = query.trim().toLowerCase();
+  const shown = terms
+    ? values.filter((one) => `${one} ${label(one)}`.toLowerCase().includes(terms))
+    : values;
+
+  // What the firmware will draw, for the one option type where the add-on has
+  // the picture: an uploaded image is dithered here, so the row can show
+  // exactly what goes on the panel.
+  const preview = (one) =>
+    option.type === "image" && (uploads || []).some((image) => image.name === one)
+      ? imagePreviewUrl(one)
+      : null;
+
+  return (
+    <>
+      {values.length > 12 && (
+        <label className="option-search">
+          <span className="sr-only">Search {option.label}</span>
+          <input
+            type="search"
+            value={query}
+            placeholder={`Search ${values.length} options`}
+            onChange={(event) => setQuery(event.target.value)}
+          />
+        </label>
+      )}
+
+      <div className="option-list" role="listbox" aria-label={option.label}>
+        {/* Clearing is a choice like any other, and the first one: it is what
+            the widget was set to before anybody opened this. */}
+        <button
+          type="button"
+          role="option"
+          aria-selected={!value}
+          className={!value ? "option-item selected" : "option-item"}
+          onClick={() => onChange("")}
+        >
+          {option.type === "album" || option.type === "image" ? "None" : "Default"}
+        </button>
+
+        {shown.map((one) => (
+          <button
+            key={one}
+            type="button"
+            role="option"
+            aria-selected={one === value}
+            className={one === value ? "option-item selected" : "option-item"}
+            onClick={() => onChange(one)}
+          >
+            {preview(one) && <img src={preview(one)} alt="" className="option-item-shot" />}
+            <span>{label(one)}</span>
+          </button>
+        ))}
+
+        {shown.length === 0 && <p className="hint">Nothing matches “{query}”.</p>}
+      </div>
+    </>
+  );
+}
+
 function Option({ option, manifest, widget, value, entities, devices, areas, uploads, albums, capacity, onChange, onChangeMany }) {
   // Picking a device sets three things at once, which is why this one option
   // reaches for onChangeMany: the id, so it can be re-resolved later; the
@@ -442,6 +522,22 @@ export default function Inspector({
   // is no longer offered.
   const screenOption = screen ? options.find((one) => one.key === screen) : null;
 
+  // The values that option offers, or null for one that is not a list. Albums
+  // are the add-on's own -- the panel only ever sees their pictures -- and
+  // images come from two places, so neither is simply the manifest's.
+  const screenValues = !screenOption
+    ? null
+    : screenOption.type === "album"
+      ? (albums || []).map((one) => one.id)
+      : screenOption.type === "image"
+        ? [
+            ...(uploads || []).map((one) => one.name),
+            ...optionValues(manifest, screenOption).map((one) => one.name || one),
+          ]
+        : ["icon", "choice"].includes(screenOption.type)
+          ? optionValues(manifest, screenOption)
+          : null;
+
   const title = widget.options?.name || type?.label || widget.type;
   const tone = categoryTone(type?.category);
 
@@ -678,6 +774,18 @@ export default function Inspector({
             <SheetBody>
               {screenOption && (
                 <div className="option-screen">
+                  {/* A list of values gets the list control; anything else --
+                      the text widget's paragraph -- gets the same control it
+                      has in the field list, with the room to be read. */}
+                  {screenValues ? (
+                    <ScreenList
+                      option={screenOption}
+                      values={screenValues}
+                      value={widget.options?.[screenOption.key] || ""}
+                      uploads={uploads}
+                      onChange={(next) => onSetOption(widget.id, screenOption.key, next)}
+                    />
+                  ) : (
                   <Option
                     option={screenOption}
                     manifest={manifest}
@@ -692,6 +800,7 @@ export default function Inspector({
                     onChange={(next) => onSetOption(widget.id, screenOption.key, next)}
                     onChangeMany={(patch) => onSetOptions(widget.id, patch)}
                   />
+                  )}
                 </div>
               )}
             </SheetBody>
