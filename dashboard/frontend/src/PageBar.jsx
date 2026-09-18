@@ -132,8 +132,10 @@ export default function PageBar({
           <select value={zoom} onChange={(event) => onZoom(event.target.value)}>
             {ZOOM_LEVELS.map(({ label, value }) => (
               <option key={label} value={value}>
-                {/* "Fit" on its own reads as a verb in a list of numbers */}
-                {value === "fit" ? "Fit to width" : `Zoom ${label}`}
+                {/* Short, because the collapsed select shows the *chosen* one
+                    and its width is the bar's: "Fit to width" pushed Add widget
+                    onto a row of its own. The sr-only label says "Zoom". */}
+                {label}
               </option>
             ))}
           </select>

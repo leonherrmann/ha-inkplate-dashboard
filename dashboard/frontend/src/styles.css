@@ -4641,8 +4641,9 @@ button.ghost {
   z-index: 1;
   padding-bottom: 8px;
   /* The list scrolls under it, so it needs a ground of its own rather than the
-     translucent sheet's. */
-  background: rgba(247, 245, 241, 0.96);
+     translucent sheet's -- and the same white the sheet composites to, or the
+     field reads as a band of a different colour laid over it. */
+  background: rgba(255, 255, 255, 0.96);
 }
 
 .option-search input {
