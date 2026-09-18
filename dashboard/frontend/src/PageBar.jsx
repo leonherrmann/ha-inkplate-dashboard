@@ -6,6 +6,7 @@ import {
   TrashIcon,
   UndoIcon,
 } from "./Icons.jsx";
+import { useNarrow } from "./Sheet.jsx";
 import { CHIP_ROW_POSITIONS, SNAP_MODES, ZOOM_LEVELS } from "./layout.js";
 
 // The canvas toolbar -- design 1a.
@@ -30,6 +31,23 @@ import { CHIP_ROW_POSITIONS, SNAP_MODES, ZOOM_LEVELS } from "./layout.js";
 // Not in the design, kept because the app needs it: the page select, which
 // earns its place only on a narrow screen where the pages column has stacked
 // out of reach, and Add widget, which the design never draws a home for.
+//
+// **On a phone the bar is shorter**, because fifteen controls above a 390px
+// canvas is three rows of chrome before anything can be edited. Two things go:
+//
+//   - the four selection actions, which are *already* on the widget's own
+//     settings sheet -- duplicate and delete in its foot, front and back among
+//     its fields. On this width the sheet is over the canvas with the selection
+//     in it, which is nearer than the bar above it; on a desktop the inspector
+//     is a column on the far side and the bar is the near one, so there they
+//     stay. They also spend most of their life dimmed here, since a bar with no
+//     selection is the normal state.
+//   - the zoom pills, which become the same compact menu the chip row uses.
+//     Three pills for a view setting nobody changes twice in a session is the
+//     worst ratio on the bar.
+//
+// Snap keeps its pills: it is the one setting reached *while* dragging, and a
+// menu cannot be opened with a widget under the thumb.
 
 export default function PageBar({
   pages,
@@ -57,6 +75,9 @@ export default function PageBar({
   mod,
 }) {
   const active = pages.find((page) => page.id === activeId) || pages[0];
+  // Rendered rather than hidden with CSS: two copies of a control are two tab
+  // stops and two things for a screen reader to read out, one of them invisible.
+  const narrow = useNarrow();
 
   return (
     <div className="pagebar">
@@ -105,18 +126,32 @@ export default function PageBar({
         ))}
       </div>
 
-      <div className="seg" role="group" aria-label="Zoom">
-        {ZOOM_LEVELS.map(({ label, value }) => (
-          <button
-            key={label}
-            className={value === zoom ? "active" : undefined}
-            onClick={() => onZoom(value)}
-            aria-pressed={value === zoom}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      {narrow ? (
+        <label className="bar-menu">
+          <span className="sr-only">Zoom</span>
+          <select value={zoom} onChange={(event) => onZoom(event.target.value)}>
+            {ZOOM_LEVELS.map(({ label, value }) => (
+              <option key={label} value={value}>
+                {/* "Fit" on its own reads as a verb in a list of numbers */}
+                {value === "fit" ? "Fit to width" : `Zoom ${label}`}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : (
+        <div className="seg" role="group" aria-label="Zoom">
+          {ZOOM_LEVELS.map(({ label, value }) => (
+            <button
+              key={label}
+              className={value === zoom ? "active" : undefined}
+              onClick={() => onZoom(value)}
+              aria-pressed={value === zoom}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* A menu rather than a third segment: the bar already carries two, and a
           third set of pills makes three rows of near-identical chips that have
@@ -134,50 +169,55 @@ export default function PageBar({
         </select>
       </label>
 
-      <span className="bar-divider" aria-hidden="true" />
+      {!narrow && (
+        <>
+          <span className="bar-divider" aria-hidden="true" />
 
-      {/* All four are disabled together rather than hidden: a bar whose buttons
-          come and go as you click about the canvas moves everything beside them
-          each time, and the gap left by a hidden group is a worse answer to
-          "why can I not do this" than a dimmed button with a reason on it. */}
-      <div className="pagebar-actions" role="group" aria-label="Selected widget">
-        <button
-          className="icon-button"
-          onClick={onFront}
-          disabled={!hasSelection}
-          title={hasSelection ? "Bring to front" : "Select a widget first"}
-          aria-label="Bring to front"
-        >
-          <FrontIcon size={15} />
-        </button>
-        <button
-          className="icon-button"
-          onClick={onBack}
-          disabled={!hasSelection}
-          title={hasSelection ? "Send to back" : "Select a widget first"}
-          aria-label="Send to back"
-        >
-          <BackIcon size={15} />
-        </button>
-        <button
-          className="icon-button"
-          onClick={onDuplicate}
-          disabled={!hasSelection}
-          title={hasSelection ? `Duplicate (${mod}D)` : "Select a widget first"}
-          aria-label="Duplicate"
-        >
-          <DuplicateIcon size={15} />
-        </button>
-        <button
-          className="icon-button danger"
-          onClick={onDelete}
-          disabled={!hasSelection}
-          title={hasSelection ? "Delete this widget" : "Select a widget first"}
-          aria-label="Delete widget"
-        >
-          <TrashIcon size={15} />
-        </button>
-      </div>
+          {/* All four are disabled together rather than hidden: a bar whose
+              buttons come and go as you click about the canvas moves everything
+              beside them each time, and the gap left by a hidden group is a
+              worse answer to "why can I not do this" than a dimmed button with
+              a reason on it. */}
+          <div className="pagebar-actions" role="group" aria-label="Selected widget">
+            <button
+              className="icon-button"
+              onClick={onFront}
+              disabled={!hasSelection}
+              title={hasSelection ? "Bring to front" : "Select a widget first"}
+              aria-label="Bring to front"
+            >
+              <FrontIcon size={15} />
+            </button>
+            <button
+              className="icon-button"
+              onClick={onBack}
+              disabled={!hasSelection}
+              title={hasSelection ? "Send to back" : "Select a widget first"}
+              aria-label="Send to back"
+            >
+              <BackIcon size={15} />
+            </button>
+            <button
+              className="icon-button"
+              onClick={onDuplicate}
+              disabled={!hasSelection}
+              title={hasSelection ? `Duplicate (${mod}D)` : "Select a widget first"}
+              aria-label="Duplicate"
+            >
+              <DuplicateIcon size={15} />
+            </button>
+            <button
+              className="icon-button danger"
+              onClick={onDelete}
+              disabled={!hasSelection}
+              title={hasSelection ? "Delete this widget" : "Select a widget first"}
+              aria-label="Delete widget"
+            >
+              <TrashIcon size={15} />
+            </button>
+          </div>
+        </>
+      )}
 
       <div className="pagebar-history" role="group" aria-label="History">
         <button

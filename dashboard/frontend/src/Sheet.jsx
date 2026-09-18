@@ -70,6 +70,17 @@ export function useNarrow(query = "(max-width: 820px)") {
 export default function Sheet({ detent, onDetent, label, retracted, children }) {
   const sheet = useRef(null);
   const drag = useRef(null);
+  // How tall the peek row actually is.
+  //
+  // Measured because `height: auto` is not a length, and **a transition with
+  // `auto` at one end does not run at all** -- so tapping the collapsed sheet
+  // snapped it open rather than raising it, which is what this exists to fix.
+  // Both ends have to be lengths, and peek is the one height the content
+  // decides, so the content is measured and the number put back as a real one.
+  //
+  // Kept even while the sheet is open: it is what the *return* to peek
+  // animates to, and by then the row it describes is no longer rendered.
+  const [peekHeight, setPeekHeight] = useState(null);
   // The height under the finger, while there is a finger on the grabber. null
   // the rest of the time, which is what lets CSS own the resting heights. Kept
   // in a ref as well because the release has to read it, and a state updater is
@@ -86,6 +97,30 @@ export default function Sheet({ detent, onDetent, label, retracted, children }) 
     () => onDetent(detent === PEEK ? HALF : PEEK),
     [detent, onDetent]
   );
+
+  // Measured off the row rather than off the sheet: the sheet's own height is
+  // about to be set *from* this, and reading it back would be a loop that
+  // settles wherever rounding leaves it. Re-measured whenever the row changes
+  // shape -- a long widget name wraps to two lines, and a phone rotating
+  // changes what fits on one.
+  useEffect(() => {
+    if (detent !== PEEK) return undefined;
+    const row = sheet.current?.querySelector(".sheet-summary");
+    const grab = sheet.current?.querySelector(".sheet-grab");
+    if (!row) return undefined;
+
+    const measure = () => {
+      const height = row.offsetHeight + (grab?.offsetHeight || 0);
+      // A hair of slack: offsetHeight rounds to whole pixels and the sheet has
+      // a border, and coming up half a pixel short clips the row's descenders.
+      setPeekHeight(height + 2);
+    };
+    measure();
+
+    const observer = new ResizeObserver(measure);
+    observer.observe(row);
+    return () => observer.disconnect();
+  }, [detent, children]);
 
   // The page underneath has to know a sheet is standing on it, or its last rows
   // and the toast sit behind one. A class on the document rather than a prop
@@ -216,7 +251,16 @@ export default function Sheet({ detent, onDetent, label, retracted, children }) 
       <aside
         ref={sheet}
         className={className}
-        style={live !== null ? { height: live } : undefined}
+        // A finger on the grabber wins; otherwise peek carries its measured
+        // height and the other two are the stylesheet's, which are lengths
+        // already.
+        style={
+          live !== null
+            ? { height: live }
+            : detent === PEEK && peekHeight
+              ? { height: peekHeight }
+              : undefined
+        }
         role="dialog"
         aria-label={label}
         aria-hidden={retracted || undefined}

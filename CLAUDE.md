@@ -128,6 +128,19 @@ a surface that covers a whole page cannot rely on a blur to hide it.
 - `dashboard/frontend/src/` — `App.jsx` owns the layout state,
   `Inspector.jsx` renders a widget's options from the manifest,
   `WidgetPreview.jsx` draws each widget on the canvas.
+- **On a phone the toolbar is shorter than on a desktop.** The four selection
+  actions are not on it: they are already on the widget's own sheet, which at
+  that width is over the canvas and nearer than the bar. Zoom is a menu rather
+  than three pills. `PageBar` chooses with `useNarrow` rather than hiding a
+  second copy with CSS -- two copies are two tab stops.
+- **A big option in the sheet is a row that opens a screen**, not a control
+  expanded in the list: a room card has twelve options and nobody is looking at
+  eleven of them. `wantsScreen()` in `Inspector.jsx` decides, and the firmware
+  says which `text` options are multi-line -- a name and a paragraph are both
+  "text" and want different controls.
+- **The sheet's peek height is measured, not `auto`.** A transition with `auto`
+  at one end does not run, so the sheet snapped open instead of rising; Sheet.jsx
+  measures the row and puts the number back as a length.
 - **Below 820px the inspector is a bottom sheet** (`Sheet.jsx`, design 1b) at
   three heights, portalled to `document.body`. It marks `<html>` with
   `.sheet-open` and `data-sheet`, and the stylesheet answers with `--sheet-h`:

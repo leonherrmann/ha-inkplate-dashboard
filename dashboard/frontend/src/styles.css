@@ -2476,7 +2476,12 @@ input.picker-search {
   /* peek is the one height the content decides: it is a single row, and a fixed
      number here would either clip a wrapped name or leave a gap under a short
      one. --sheet-h still carries a figure for it, because the page below has to
-     reserve the room whether or not CSS is the thing measuring it. */
+     reserve the room whether or not CSS is the thing measuring it.
+     
+     `auto` only until the row has been measured. Sheet.jsx writes the measured
+     height back as an inline length, because a transition with `auto` at one
+     end does not run -- which is why raising the sheet from peek used to snap
+     rather than rise. */
   .sheet-peek {
     height: auto;
   }
@@ -4566,4 +4571,61 @@ button.ghost {
 .panel-eyebrow:hover {
   border: 0;
   opacity: 0.75;
+}
+
+
+/* --- an option that has a screen of its own ---------------------------------
+   The sheet's field list turns its big options into these rows -- label, what
+   it is set to, a chevron -- so a list of twelve is a list of twelve *rows*
+   rather than twelve expanded controls. See wantsScreen in Inspector.jsx. */
+.option-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 11px 12px;
+  border: 0;
+  border-radius: var(--r-sm, 12px);
+  background: rgba(255, 255, 255, 0.65);
+  box-shadow: inset 0 0 0 1px var(--ink-12);
+  text-align: left;
+  font: inherit;
+}
+
+.option-row:hover {
+  border: 0;
+}
+
+.option-row-label {
+  font-size: 13px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The value is the secondary half of the row: it says what the option is set
+   to, and the label says what the option is. Ellipsised rather than wrapped --
+   a row that grows to two lines for a long icon name breaks the rhythm of the
+   list it is in. */
+.option-row-value {
+  font-size: 12.5px;
+  color: var(--ink-60);
+  max-width: 52%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* On its own screen the control is the only thing there, so it gets the width
+   and, for the text widget, rather more rows than the list could spare. */
+.option-screen > select,
+.option-screen > textarea,
+.option-screen > input {
+  width: 100%;
+}
+
+.option-screen > textarea {
+  min-height: 40vh;
 }
