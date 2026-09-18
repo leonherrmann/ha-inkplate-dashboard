@@ -4546,3 +4546,24 @@ button.ghost {
   background: transparent;
   box-shadow: inset 0 0 0 1px rgba(27, 26, 31, 0.14);
 }
+
+
+/* The panel name in a screen heading, where the eyebrow was. A button that
+   reads as the label it replaced: same size, same colour, same letter-spacing,
+   with the chevron the only thing saying it can be pressed. */
+.panel-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
+.panel-eyebrow:hover {
+  border: 0;
+  opacity: 0.75;
+}

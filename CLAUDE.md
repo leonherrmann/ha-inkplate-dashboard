@@ -57,6 +57,12 @@ first panel to ask inherits them (`panels.claim_legacy`). Forgetting a panel
 never deletes its layout -- unplugged for a fortnight and gone for good look
 identical from here.
 
+**The firmware offer is shared and the binaries are not interchangeable.** One
+manifest, one URL, every panel reading it -- and a V2 image on a V1 is an ESP32
+driving a framebuffer of the wrong size, recoverable only over USB. So the offer
+carries `model` (`FIRMWARE_MODEL`, default `inkplate5v2`, since that is what the
+firmware repo's CI builds) and a panel ignores an offer that is not its own.
+
 ## Running the checks
 
 `python3` on PATH is miniconda 3.8 and **cannot parse this backend** (`str |

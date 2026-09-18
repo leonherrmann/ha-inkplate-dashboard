@@ -864,6 +864,11 @@ export default function App() {
       {tab === "pages" && (
         <PagesTab
           layout={layout}
+          panels={panels}
+          panelId={panelId}
+          onSelectPanel={selectPanel}
+          onRenamePanel={renamePanel}
+          onForgetPanel={forgetPanel}
           currentPageId={status?.current_page}
           pageLocked={Boolean(status?.page_locked)}
           manifest={manifest}
@@ -915,6 +920,11 @@ export default function App() {
       {tab === "device" && (
         <DeviceTab
           status={status}
+          panels={panels}
+          panelId={panelId}
+          onSelectPanel={selectPanel}
+          onRenamePanel={renamePanel}
+          onForgetPanel={forgetPanel}
           sync={sync}
           lastSeenAge={lastSeenAge}
           sleep={layout.sleep}

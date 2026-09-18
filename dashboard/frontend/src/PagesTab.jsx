@@ -20,6 +20,7 @@ import PageThumb from "./PageThumb.jsx";
 import { EyeIcon, GripIcon, LockIcon, PencilIcon, TrashIcon } from "./Icons.jsx";
 import { DEFAULT_CHIP_ROW } from "./layout.js";
 import { effectiveDwell, formatClock, formatDuration } from "./format.js";
+import PanelPicker from "./PanelPicker.jsx";
 
 // The pages of the dashboard: what they are called, what order they come in,
 // which of them the panel cycles through, and for how long.
@@ -270,6 +271,11 @@ function CycleCard({ rotation, queued, totalCycle }) {
 
 export default function PagesTab({
   layout,
+  panels,
+  panelId,
+  onSelectPanel,
+  onRenamePanel,
+  onForgetPanel,
   currentPageId,
   pageLocked,
   manifest,
@@ -330,7 +336,16 @@ export default function PagesTab({
       <div className="pages-main">
         <header className="screen-head">
           <div>
-            <span className="eyebrow">Rotation</span>
+            {/* Pages are per panel: this list is this panel's dashboard, and
+                the rotation settings beside it are its own too. */}
+            <PanelPicker
+              compact
+              panels={panels}
+              selected={panelId}
+              onSelect={onSelectPanel}
+              onRename={onRenamePanel}
+              onForget={onForgetPanel}
+            />
             <h2>Pages</h2>
           </div>
 

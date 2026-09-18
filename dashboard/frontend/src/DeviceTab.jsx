@@ -6,6 +6,7 @@ import OrientationSettings from "./OrientationSettings.jsx";
 import TimerSettings from "./TimerSettings.jsx";
 import DeviceReports from "./DeviceReports.jsx";
 import SyncCard from "./SyncCard.jsx";
+import PanelPicker from "./PanelPicker.jsx";
 import Sparkline from "./Sparkline.jsx";
 import * as api from "./api.js";
 import { Battery, formatAge, formatUptime, signalLabel } from "./DeviceStats.jsx";
@@ -119,6 +120,11 @@ function Fact({ value, label, tone }) {
 
 export default function DeviceTab({
   status,
+  panels,
+  panelId,
+  onSelectPanel,
+  onRenamePanel,
+  onForgetPanel,
   sync,
   lastSeenAge,
   sleep,
@@ -203,7 +209,17 @@ export default function DeviceTab({
             <ChevronLeft size={15} />
           </button>
           <div>
-            <div className="eyebrow">Device</div>
+            {/* Whose diagnostics. Every reading on this screen is one panel's,
+                and with more than one the name is the difference between a
+                battery graph that means something and one that does not. */}
+            <PanelPicker
+              compact
+              panels={panels}
+              selected={panelId}
+              onSelect={onSelectPanel}
+              onRename={onRenamePanel}
+              onForget={onForgetPanel}
+            />
             <h2>Diagnostics</h2>
           </div>
         </div>
@@ -350,7 +366,16 @@ export default function DeviceTab({
     <div className="screen-layout wide">
       <div className="screen-head">
         <div>
-          <div className="eyebrow">Takes effect on push</div>
+          {/* Every setting below is stored in this panel's own layout and
+              pushed to this panel alone. */}
+          <PanelPicker
+            compact
+            panels={panels}
+            selected={panelId}
+            onSelect={onSelectPanel}
+            onRename={onRenamePanel}
+            onForget={onForgetPanel}
+          />
           <h2>Device</h2>
         </div>
       </div>

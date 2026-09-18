@@ -44,6 +44,16 @@ FIRMWARE_POLL_MINUTES = float(os.environ.get("FIRMWARE_POLL_MINUTES", "5"))
 if os.environ.get("FIRMWARE_POLL_HOURS"):
     FIRMWARE_POLL_MINUTES = float(os.environ["FIRMWARE_POLL_HOURS"]) * 60
 
+# Which panel the release binaries are built for.
+#
+# The firmware manifest is shared by every panel -- one binary at one URL -- and
+# the binaries are not interchangeable: a V2 image on a V1 is an ESP32 driving a
+# framebuffer of the wrong size, and the way back is a USB cable. The offer
+# therefore says what it is for and a panel of another model ignores it. The
+# firmware repo's CI builds for the V2, which is why that is the default; change
+# it if you point FIRMWARE_REPO at a repo that builds for the other one.
+FIRMWARE_MODEL = os.environ.get("FIRMWARE_MODEL", "inkplate5v2").strip()
+
 # Only needed for a private repo, where the releases API answers 404 without
 # one. A fine-grained token with read access to that repo's contents is enough.
 FIRMWARE_TOKEN = os.environ.get("FIRMWARE_TOKEN", "").strip()

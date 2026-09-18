@@ -20,7 +20,13 @@ from typing import Any
 
 import aiohttp
 
-from settings import DATA_DIR, FIRMWARE_REPO, FIRMWARE_POLL_MINUTES, FIRMWARE_TOKEN
+from settings import (
+    DATA_DIR,
+    FIRMWARE_MODEL,
+    FIRMWARE_POLL_MINUTES,
+    FIRMWARE_REPO,
+    FIRMWARE_TOKEN,
+)
 
 log = logging.getLogger(__name__)
 
@@ -185,6 +191,10 @@ class FirmwareStore:
             "url": f"{base_url.rstrip('/')}/{BINARY_NAME}",
             "bytes": self.state["bytes"],
             "sha256": self.state["sha256"],
+            # Which panel it is for. Every panel reads this one manifest, and a
+            # panel of another model ignores an offer that is not its own --
+            # see FIRMWARE_MODEL in settings.py for why that matters.
+            "model": FIRMWARE_MODEL,
         }
 
 

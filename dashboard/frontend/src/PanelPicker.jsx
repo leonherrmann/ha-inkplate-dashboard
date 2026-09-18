@@ -32,7 +32,18 @@ export function panelSpec(panel) {
   return [model, size, "1-bit"].filter(Boolean).join(" · ");
 }
 
-export default function PanelPicker({ panels, selected, onSelect, onRename, onForget }) {
+// `compact` is the form the tab headings use: the name where the eyebrow was,
+// with no avatar and no second line. Which panel a screen of settings belongs
+// to is the first thing to say on it -- the Device and Pages screens are both
+// reachable straight from the rail, without passing the editor's card.
+export default function PanelPicker({
+  panels,
+  selected,
+  onSelect,
+  onRename,
+  onForget,
+  compact = false,
+}) {
   const [open, setOpen] = useState(false);
   const [renaming, setRenaming] = useState(null);
   const [draft, setDraft] = useState("");
@@ -54,25 +65,39 @@ export default function PanelPicker({ panels, selected, onSelect, onRename, onFo
     await onRename(id, draft);
   };
 
+  const trigger = compact ? (
+    <button
+      className="eyebrow panel-eyebrow"
+      onClick={() => setOpen(true)}
+      title={several ? "Choose which panel this is about" : "This panel"}
+      aria-haspopup="dialog"
+    >
+      {panelLabel(current)}
+      {several && <span className="device-chevron" aria-hidden="true" />}
+    </button>
+  ) : (
+    <button
+      className="device-ident"
+      onClick={() => setOpen(true)}
+      title={several ? "Choose which panel to edit" : "This panel"}
+      aria-haspopup="dialog"
+    >
+      <span className="device-mark">
+        <MonitorIcon size={17} />
+      </span>
+      <span className="device-text">
+        <span className="device-name">
+          {panelLabel(current)}
+          {several && <span className="device-chevron" aria-hidden="true" />}
+        </span>
+        <span className="device-spec">{panelSpec(current)}</span>
+      </span>
+    </button>
+  );
+
   return (
     <>
-      <button
-        className="device-ident"
-        onClick={() => setOpen(true)}
-        title={several ? "Choose which panel to edit" : "This panel"}
-        aria-haspopup="dialog"
-      >
-        <span className="device-mark">
-          <MonitorIcon size={17} />
-        </span>
-        <span className="device-text">
-          <span className="device-name">
-            {panelLabel(current)}
-            {several && <span className="device-chevron" aria-hidden="true" />}
-          </span>
-          <span className="device-spec">{panelSpec(current)}</span>
-        </span>
-      </button>
+      {trigger}
 
       {open && (
         <Picker title="Panels" onClose={() => setOpen(false)}>
