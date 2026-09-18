@@ -2,6 +2,29 @@
 // path prefix, so anything rooted at / would escape it.
 const base = "api";
 
+// Which panel the editor is showing.
+//
+// Module state rather than an argument on forty call sites, because it is
+// genuinely one value: the editor shows one panel at a time, and every request
+// about a dashboard, a setting or a command is about that one. App sets it
+// before it loads anything and again whenever the dropdown changes.
+//
+// Only the panel-scoped calls carry it. The entity list, the areas, the images
+// and the albums are the installation's, not a panel's, and appending it there
+// would imply a per-panel answer that does not exist.
+let panel = null;
+
+export const setPanel = (id) => {
+  panel = id || null;
+};
+
+export const currentPanel = () => panel;
+
+const scoped = (path) => {
+  if (!panel) return path;
+  return `${path}${path.includes("?") ? "&" : "?"}panel=${encodeURIComponent(panel)}`;
+};
+
 async function request(path, options) {
   const response = await fetch(`${base}/${path}`, options);
   if (!response.ok) {
@@ -11,47 +34,69 @@ async function request(path, options) {
   return response.json();
 }
 
-export const getStatus = () => request("status");
-export const getHistory = () => request("history");
-export const getLayout = () => request("layout");
+// The panels themselves, for the dropdown. Not scoped -- it is the list the
+// scoping is chosen from.
+export const getPanels = () => request("panels");
+
+export const renamePanel = (id, name) =>
+  request(`panels/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name }),
+  });
+
+export const forgetPanel = (id) =>
+  request(`panels/${encodeURIComponent(id)}`, { method: "DELETE" });
+
+export const getStatus = () => request(scoped("status"));
+export const getHistory = () => request(scoped("history"));
+export const getLayout = () => request(scoped("layout"));
 export const getEntities = () => request("entities");
 export const getDevices = () => request("devices");
 export const getAreas = () => request("areas");
 
 export const saveLayout = (layout) =>
-  request("layout", {
+  request(scoped("layout"), {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(layout),
   });
 
-export const pushLayout = () => request("push", { method: "POST" });
-export const refreshDevice = () => request("refresh", { method: "POST" });
-export const sendToSetup = () => request("onboard", { method: "POST" });
-export const showDeviceInfo = () => request("device-info", { method: "POST" });
-export const showPage = (id) => request(`page/${encodeURIComponent(id)}`, { method: "POST" });
-export const setPageLock = (locked) => request(`page-lock/${locked ? "on" : "off"}`, { method: "POST" });
+export const pushLayout = () => request(scoped("push"), { method: "POST" });
+export const refreshDevice = () => request(scoped("refresh"), { method: "POST" });
+export const sendToSetup = () => request(scoped("onboard"), { method: "POST" });
+export const showDeviceInfo = () => request(scoped("device-info"), { method: "POST" });
+export const showPage = (id) =>
+  request(scoped(`page/${encodeURIComponent(id)}`), { method: "POST" });
+export const setPageLock = (locked) =>
+  request(scoped(`page-lock/${locked ? "on" : "off"}`), { method: "POST" });
 
-export const getImages = () => request("images");
+// Scoped for the "what the panel has of them" half of the answer: the images
+// are shared, but which of them a given panel is holding is that panel's.
+export const getImages = () => request(scoped("images"));
 
 // What the panel sends back about itself. Asking is a command over MQTT, so it
 // returns as soon as the broker has it -- the upload lands seconds later, on
 // the device's own next loop, and is noticed by polling for it.
-export const askForScreenshot = () => request("screenshot", { method: "POST" });
-export const getScreenshot = () => request("screenshot");
-export const askForLogs = () => request("logs", { method: "POST" });
-export const getLogs = () => request("logs");
-export const clearLogs = () => request("logs", { method: "DELETE" });
+export const askForScreenshot = () => request(scoped("screenshot"), { method: "POST" });
+export const getScreenshot = () => request(scoped("screenshot"));
+export const askForLogs = () => request(scoped("logs"), { method: "POST" });
+export const getLogs = () => request(scoped("logs"));
+export const clearLogs = () => request(scoped("logs"), { method: "DELETE" });
 
 // The picture itself. The URL never changes, so the capture time is appended to
 // get past the browser cache -- a stale screenshot of a dashboard is impossible
 // to tell from a current one.
-export const screenshotUrl = (takenAt) =>
-  `${base}/screenshot.png${takenAt ? `?t=${Math.round(takenAt)}` : ""}`;
+export const screenshotUrl = (takenAt) => {
+  const parts = [];
+  if (panel) parts.push(`panel=${encodeURIComponent(panel)}`);
+  if (takenAt) parts.push(`t=${Math.round(takenAt)}`);
+  return `${base}/screenshot.png${parts.length ? `?${parts.join("&")}` : ""}`;
+};
 
-export const getFirmware = () => request("firmware");
+export const getFirmware = () => request(scoped("firmware"));
 export const checkFirmware = () => request("firmware/check", { method: "POST" });
-export const updateFirmware = () => request("firmware/update", { method: "POST" });
+export const updateFirmware = () => request(scoped("firmware/update"), { method: "POST" });
 
 // The boundary is left to the browser, so no Content-Type header here
 export const uploadImage = ({

@@ -99,8 +99,9 @@ def merge(layout: dict[str, Any], overrides: dict[str, Any]) -> list[str]:
     return changed
 
 
-def adopt(overrides: dict[str, Any]) -> dict[str, Any] | None:
-    """Merge and save. Returns the layout to push, or None if nothing changed.
+def adopt(panel_id: str, overrides: dict[str, Any]) -> dict[str, Any] | None:
+    """Merge and save one panel's overrides. Returns the layout to push, or None
+    if nothing changed.
 
     Deliberately does not push: the caller owns the connection, and the version
     bump belongs with the push rather than with the save, exactly as it does for
@@ -109,11 +110,11 @@ def adopt(overrides: dict[str, Any]) -> dict[str, Any] | None:
     if not overrides:
         return None
 
-    layout = store.load()
+    layout = store.load(panel_id)
     changed = merge(layout, overrides)
     if not changed:
         return None
 
-    log.info("Adopting settings changed on the panel: %s", ", ".join(changed))
-    store.save(layout)
+    log.info("Adopting settings changed on %s: %s", panel_id, ", ".join(changed))
+    store.save(panel_id, layout)
     return layout

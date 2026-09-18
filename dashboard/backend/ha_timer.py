@@ -36,14 +36,29 @@ from typing import Any
 
 import aiohttp
 
-from settings import DEVICE_ID, HA_REST_URL, HA_WS_URL, SUPERVISOR_TOKEN, topics
+import panels
+from settings import HA_REST_URL, HA_WS_URL, SUPERVISOR_TOKEN
 
 log = logging.getLogger(__name__)
 
-# The helper the add-on creates and keeps in step. Named after the device, so
-# two panels on one Home Assistant do not fight over one timer.
-HELPER_NAME = f"{DEVICE_ID} timer"
-HELPER_ENTITY = f"timer.{DEVICE_ID}_timer"
+
+def _slug(panel_id: str) -> str:
+    """An entity id is [a-z0-9_]; a panel id has a hyphen in it."""
+    return "".join(letter if letter.isalnum() else "_" for letter in panel_id.lower())
+
+
+def helper_entity(panel_id: str) -> str:
+    """The helper this panel's timer is mirrored to.
+
+    One per panel, because each panel has its own timer and its own buttons --
+    two panels sharing a helper would each cancel the other's countdown.
+    """
+    return f"timer.{_slug(panel_id)}_timer"
+
+
+def helper_name(panel_id: str) -> str:
+    panel = panels.get(panel_id) or {}
+    return f"{panel.get('name') or panel_id} timer"
 
 # How many of our own context ids to remember. A handful covers any burst; they
 # are only needed for the moment between the call and the state change it
@@ -74,7 +89,11 @@ class TimerMirror:
         # with run_coroutine_threadsafe instead.
         self._loop: asyncio.AbstractEventLoop | None = None
         self._ours: list[str] = []
-        self._last_panel: dict[str, Any] = {}
+        # Per panel: what it last published, and what we last mirrored for it.
+        # The context guard below is deliberately *not* per panel -- it answers
+        # "did this add-on just make a call", and being briefly conservative
+        # about another panel costs one ignored event and prevents none.
+        self._last_panel: dict[str, dict[str, Any]] = {}
         self._publish_command = None
         self._ws_id = 10
         # How many of our own service calls are in the air. The context guard
@@ -86,12 +105,12 @@ class TimerMirror:
         # Monotonic time until which helper changes are still treated as ours,
         # for the event that arrives just after the call has been answered.
         self._settled_until = 0.0
-        # What the panel last had us mirror, as (state, ends_at). A republish
+        # What each panel last had us mirror, as (state, ends_at). A republish
         # saying the same thing needs no service call -- see _mirror_to_helper.
-        self._mirrored: tuple[Any, Any] | None = None
+        self._mirrored: dict[str, tuple[Any, Any] | None] = {}
 
     def start(self, publish_command) -> None:
-        """`publish_command` sends a JSON command to the device."""
+        """`publish_command(panel_id, command)` sends a JSON command to a panel."""
         if not SUPERVISOR_TOKEN:
             log.info("No SUPERVISOR_TOKEN, so the timer helper is not mirrored")
             return
@@ -110,23 +129,23 @@ class TimerMirror:
 
     # -- the panel's side --------------------------------------------------
 
-    def on_panel_timer(self, payload: str) -> None:
-        """Called with whatever the device published on its timer topic."""
+    def on_panel_timer(self, panel_id: str, payload: str) -> None:
+        """Called with whatever a panel published on its timer topic."""
         try:
             state = json.loads(payload)
         except ValueError:
             return
-        if state == self._last_panel:
+        if state == self._last_panel.get(panel_id):
             return
-        self._last_panel = state
+        self._last_panel[panel_id] = state
         if self._loop:
             # From paho's thread onto the add-on's loop. create_task here threw
             # every time, so the helper never followed the panel at all.
             asyncio.run_coroutine_threadsafe(
-                self._mirror_to_helper(state), self._loop
+                self._mirror_to_helper(panel_id, state), self._loop
             )
 
-    async def _mirror_to_helper(self, state: dict[str, Any]) -> None:
+    async def _mirror_to_helper(self, panel_id: str, state: dict[str, Any]) -> None:
         what = state.get("state")
 
         # Only when the panel has actually *changed* something. It republishes
@@ -138,9 +157,9 @@ class TimerMirror:
         # what it is doing and when it ends; if neither moved there is nothing
         # to say.
         key = (what, state.get("ends_at"))
-        if key == self._mirrored:
+        if key == self._mirrored.get(panel_id):
             return
-        self._mirrored = key
+        self._mirrored[panel_id] = key
 
         try:
             if what == "running":
@@ -150,29 +169,26 @@ class TimerMirror:
                 # helper has to agree with the panel rather than restart it.
                 remaining = int(state.get("remaining") or 0)
                 if remaining > 0:
-                    await self._call("timer.start", {"duration": remaining})
+                    await self._call(panel_id, "timer.start", {"duration": remaining})
             elif what == "paused":
-                await self._call("timer.pause", {})
+                await self._call(panel_id, "timer.pause", {})
             else:
                 # idle, finished, or a pomodoro running -- nothing for the
                 # plain timer to be doing.
-                await self._call("timer.cancel", {})
+                await self._call(panel_id, "timer.cancel", {})
         except Exception as error:  # a mirror failing must not stop the add-on
             # Forgotten, not remembered: a call that did not happen has left
             # the helper out of step, and the skip above would otherwise hold
             # it there until the panel next changes something of its own.
-            self._mirrored = None
-            log.warning("Could not mirror the timer to Home Assistant: %s", error)
-
-    def _log_panel(self, state: dict[str, Any]) -> None:
-        log.info("Panel timer is %s", state.get("state"))
+            self._mirrored[panel_id] = None
+            log.warning("Could not mirror %s's timer to Home Assistant: %s", panel_id, error)
 
     # -- Home Assistant's side ---------------------------------------------
 
     async def _run(self) -> None:
         while True:
             try:
-                await self._ensure_helper()
+                await self._ensure_helpers()
                 await self._listen()
             except asyncio.CancelledError:
                 raise
@@ -180,12 +196,17 @@ class TimerMirror:
                 log.warning("Timer mirror lost Home Assistant: %s", error)
             await asyncio.sleep(10)
 
-    async def _ensure_helper(self) -> None:
-        """Creates the helper if it is not there. Idempotent."""
+    async def _ensure_helpers(self) -> None:
+        """Creates a helper per panel if it is not there. Idempotent."""
+        for panel_id in panels.ids():
+            await self._ensure_helper(panel_id)
+
+    async def _ensure_helper(self, panel_id: str) -> None:
+        entity = helper_entity(panel_id)
         headers = {"Authorization": f"Bearer {SUPERVISOR_TOKEN}"}
         async with aiohttp.ClientSession(headers=headers) as session:
             async with session.get(
-                f"{HA_REST_URL}/states/{HELPER_ENTITY}", timeout=20
+                f"{HA_REST_URL}/states/{entity}", timeout=20
             ) as response:
                 if response.status == 200:
                     return
@@ -201,13 +222,13 @@ class TimerMirror:
                     {
                         "id": self._next_id(),
                         "type": "timer/create",
-                        "name": HELPER_NAME,
+                        "name": helper_name(panel_id),
                         "duration": 0,
                     }
                 )
                 reply = await socket.receive_json()
                 if reply.get("success"):
-                    log.info("Created %s to mirror the panel's timer", HELPER_ENTITY)
+                    log.info("Created %s to mirror %s's timer", entity, panel_id)
                 else:
                     log.warning("Could not create the timer helper: %s", reply)
 
@@ -223,12 +244,12 @@ class TimerMirror:
                         "event_type": "state_changed",
                     }
                 )
-                log.info("Mirroring %s", HELPER_ENTITY)
-                # A fresh subscription may have missed changes, and the helper
+                log.info("Mirroring the timer of %d panel(s)", len(panels.ids()))
+                # A fresh subscription may have missed changes, and the helpers
                 # can have been restarted with Home Assistant. Forget what was
-                # mirrored so the panel's next publish is acted on rather than
-                # skipped for matching a state the helper may no longer be in.
-                self._mirrored = None
+                # mirrored so each panel's next publish is acted on rather than
+                # skipped for matching a state its helper may no longer be in.
+                self._mirrored.clear()
 
                 while True:
                     message = await socket.receive()
@@ -238,13 +259,29 @@ class TimerMirror:
                     if event.get("type") != "event":
                         continue
                     data = event["event"]["data"]
-                    if data.get("entity_id") != HELPER_ENTITY:
+                    panel_id = self._panel_of(data.get("entity_id"))
+                    if not panel_id:
                         continue
 
-                    self._on_helper_event(event)
+                    self._on_helper_event(panel_id, event)
 
-    def _on_helper_event(self, event: dict[str, Any]) -> bool:
-        """One state_changed for the helper. True if it went on to the panel.
+    @staticmethod
+    def _panel_of(entity_id: str | None) -> str | None:
+        """Which panel's helper this entity is, if it is one at all.
+
+        Matched by walking the known panels rather than by parsing the entity
+        id: the slug is lossy -- a hyphen and an underscore both become an
+        underscore -- so it cannot be turned back into an id reliably.
+        """
+        if not entity_id:
+            return None
+        for panel_id in panels.ids():
+            if helper_entity(panel_id) == entity_id:
+                return panel_id
+        return None
+
+    def _on_helper_event(self, panel_id: str, event: dict[str, Any]) -> bool:
+        """One state_changed for a panel's helper. True if it went on to the panel.
 
         Three things have to be true before a helper change is forwarded, and
         the first two are here because the third is not enough on its own.
@@ -259,7 +296,7 @@ class TimerMirror:
         tell the panel to start. Round it goes, a little shorter each time.
         """
         data = event["event"]["data"]
-        if data.get("entity_id") != HELPER_ENTITY:
+        if data.get("entity_id") != helper_entity(panel_id):
             return False
 
         # 1. Not while one of our own calls is in the air, or in the moment
@@ -277,7 +314,7 @@ class TimerMirror:
         #    The panel owns the timer, so a helper that agrees with it has
         #    nothing to tell it. This is what makes the loop impossible rather
         #    than unlikely: every message in it agreed with the panel.
-        if self._agrees_with_panel(what, new_state):
+        if self._agrees_with_panel(panel_id, what, new_state):
             return False
 
         # 3. And not if we recognise the context as one of ours after all.
@@ -285,12 +322,14 @@ class TimerMirror:
         if context.get("id") in self._ours:
             return False
 
-        self._forward(what, new_state)
+        self._forward(panel_id, what, new_state)
         return True
 
-    def _agrees_with_panel(self, what: str | None, state: dict[str, Any]) -> bool:
+    def _agrees_with_panel(
+        self, panel_id: str, what: str | None, state: dict[str, Any]
+    ) -> bool:
         """Whether the helper is saying what the panel has already said."""
-        panel = self._last_panel or {}
+        panel = self._last_panel.get(panel_id) or {}
         panel_state = panel.get("state")
 
         if what == "active":
@@ -308,8 +347,8 @@ class TimerMirror:
             return panel_state in (None, "", "idle", "finished")
         return False
 
-    def _forward(self, what: str | None, state: dict[str, Any]) -> None:
-        """A change somebody else made to the helper, sent on to the panel."""
+    def _forward(self, panel_id: str, what: str | None, state: dict[str, Any]) -> None:
+        """A change somebody else made to the helper, sent on to its panel."""
         if not self._publish_command:
             return
 
@@ -318,20 +357,20 @@ class TimerMirror:
             command = {"action": "timer_start"}
             if remaining:
                 command["seconds"] = remaining
-            log.info("Home Assistant started the timer; telling the panel")
-            self._publish_command(command)
+            log.info("Home Assistant started %s's timer; telling the panel", panel_id)
+            self._publish_command(panel_id, command)
         elif what == "paused":
-            log.info("Home Assistant paused the timer; telling the panel")
-            self._publish_command({"action": "timer_pause"})
+            log.info("Home Assistant paused %s's timer; telling the panel", panel_id)
+            self._publish_command(panel_id, {"action": "timer_pause"})
         elif what == "idle":
-            log.info("Home Assistant cancelled the timer; telling the panel")
-            self._publish_command({"action": "timer_cancel"})
+            log.info("Home Assistant cancelled %s's timer; telling the panel", panel_id)
+            self._publish_command(panel_id, {"action": "timer_cancel"})
 
-    async def _call(self, service: str, data: dict[str, Any]) -> None:
+    async def _call(self, panel_id: str, service: str, data: dict[str, Any]) -> None:
         domain, name = service.split(".", 1)
         headers = {"Authorization": f"Bearer {SUPERVISOR_TOKEN}"}
         body = dict(data)
-        body["entity_id"] = HELPER_ENTITY
+        body["entity_id"] = helper_entity(panel_id)
         # Raised before the request goes out and lowered only after the settle
         # window is armed, so there is no instant in which a change we caused
         # could be read as somebody else's. See _on_helper_event.

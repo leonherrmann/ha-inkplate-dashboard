@@ -1,8 +1,19 @@
-"""Persistence for the layout being edited.
+"""Persistence for the layout being edited, one per panel.
 
 The layout on disk is the *draft*: it changes on every edit in the browser. Only
 a push sends it to the device, and the version is bumped at that point so the
 firmware's echo on config/current can be matched against it.
+
+**Every function here takes the panel it is about.** Each panel has its own
+dashboard -- its own pages, its own widgets, its own sleep and rotation settings
+-- filed under its id, which is derived from its MAC and survives a reflash. A
+panel's grid is its own too, so a layout is not meaningfully portable between
+two panels of different shapes; copying pages from one to another is a thing the
+editor can offer, not something the files should blur.
+
+An install from before this had a single `layout.json`. The first panel to ask
+for its layout inherits it (see panels.claim_legacy), so an existing dashboard
+opens as it always has rather than as an empty page.
 """
 
 import hashlib
@@ -12,18 +23,56 @@ import os
 import uuid
 from typing import Any
 
+import panels
 from settings import DATA_DIR
 
 log = logging.getLogger(__name__)
 
-LAYOUT_PATH = os.path.join(DATA_DIR, "layout.json")
+# What a single-panel install left behind, and what the first panel adopts.
+LEGACY_LAYOUT_PATH = os.path.join(DATA_DIR, "layout.json")
+LEGACY_PUSHED_PATH = os.path.join(DATA_DIR, "pushed.json")
 
-# What was last handed to the device. The draft's own version cannot answer
-# this: editing saves over layout.json without touching the version, which only
+
+def layout_path(panel_id: str) -> str:
+    return os.path.join(DATA_DIR, f"layout-{panel_id}.json")
+
+
+def pushed_path(panel_id: str) -> str:
+    return os.path.join(DATA_DIR, f"pushed-{panel_id}.json")
+
+
+def _adopt_legacy(panel_id: str) -> None:
+    """Move the pre-multi-device files under this panel's name, once.
+
+    Copied rather than renamed: an add-on rolled back to a version that knows
+    nothing of panels would find nothing to show, and the file it wants is
+    small. It is left where it is and simply stops being read.
+    """
+    if os.path.exists(layout_path(panel_id)):
+        return
+    if not os.path.exists(LEGACY_LAYOUT_PATH):
+        return
+    if not panels.claim_legacy(panel_id):
+        return
+
+    for source, destination in (
+        (LEGACY_LAYOUT_PATH, layout_path(panel_id)),
+        (LEGACY_PUSHED_PATH, pushed_path(panel_id)),
+    ):
+        try:
+            with open(source, encoding="utf-8") as handle:
+                body = handle.read()
+        except OSError:
+            continue
+        with open(destination, "w", encoding="utf-8") as handle:
+            handle.write(body)
+    log.info("Panel %s adopted the layout from before this add-on knew about several", panel_id)
+
+# What was last handed to each device. The draft's own version cannot answer
+# this: editing saves over the layout without touching the version, which only
 # a push bumps, so a draft full of unsent edits carries the version that was
 # sent. Keeping the fingerprint of what went out is what makes "changes not
-# pushed" a fact rather than a guess.
-PUSHED_PATH = os.path.join(DATA_DIR, "pushed.json")
+# pushed" a fact rather than a guess. See pushed_path().
 
 # Cell size of the grid positions used before they became pixels
 LEGACY_CELL = 80
@@ -101,14 +150,16 @@ EMPTY_LAYOUT: dict[str, Any] = {
 }
 
 
-def load() -> dict[str, Any]:
+def load(panel_id: str) -> dict[str, Any]:
+    """This panel's draft, or an empty dashboard if it has never been edited."""
+    _adopt_legacy(panel_id)
     try:
-        with open(LAYOUT_PATH, "r", encoding="utf-8") as handle:
+        with open(layout_path(panel_id), "r", encoding="utf-8") as handle:
             return _migrate(json.load(handle))
     except FileNotFoundError:
         return json.loads(json.dumps(EMPTY_LAYOUT))
     except (json.JSONDecodeError, OSError) as error:
-        log.warning("Could not read the stored layout (%s), starting empty", error)
+        log.warning("Could not read the layout for %s (%s), starting empty", panel_id, error)
         return json.loads(json.dumps(EMPTY_LAYOUT))
 
 
@@ -196,7 +247,7 @@ def _migrate_to_chip_row_grid(layout: dict[str, Any]) -> None:
     layout["grid_generation"] = 2
 
 
-def save(layout: dict[str, Any]) -> None:
+def save(panel_id: str, layout: dict[str, Any]) -> None:
     """Write the draft, whole, so a concurrent reader never sees half of it.
 
     Opening the real path with "w" truncates it before a byte is written, and
@@ -210,7 +261,8 @@ def save(layout: dict[str, Any]) -> None:
     is fixed here rather than defended against at each call site.
     """
     os.makedirs(DATA_DIR, exist_ok=True)
-    temporary = f"{LAYOUT_PATH}.writing"
+    path = layout_path(panel_id)
+    temporary = f"{path}.writing"
     with open(temporary, "w", encoding="utf-8") as handle:
         json.dump(layout, handle, indent=2)
         # Flushed and synced before the rename: os.replace is atomic for the
@@ -218,7 +270,7 @@ def save(layout: dict[str, Any]) -> None:
         # add-on is stopped.
         handle.flush()
         os.fsync(handle.fileno())
-    os.replace(temporary, LAYOUT_PATH)
+    os.replace(temporary, path)
 
 
 def fingerprint(layout: dict[str, Any]) -> str:
@@ -235,22 +287,22 @@ def fingerprint(layout: dict[str, Any]) -> str:
     ).hexdigest()
 
 
-def record_pushed(layout: dict[str, Any]) -> None:
+def record_pushed(panel_id: str, layout: dict[str, Any]) -> None:
     os.makedirs(DATA_DIR, exist_ok=True)
     record = {"version": layout.get("version", 0), "digest": fingerprint(layout)}
-    with open(PUSHED_PATH, "w", encoding="utf-8") as handle:
+    with open(pushed_path(panel_id), "w", encoding="utf-8") as handle:
         json.dump(record, handle)
 
 
-def pushed() -> dict[str, Any] | None:
-    """The last push, or None if nothing has been sent from this install."""
+def pushed(panel_id: str) -> dict[str, Any] | None:
+    """The last push to this panel, or None if nothing has been sent to it."""
     try:
-        with open(PUSHED_PATH, "r", encoding="utf-8") as handle:
+        with open(pushed_path(panel_id), "r", encoding="utf-8") as handle:
             return json.load(handle)
     except FileNotFoundError:
         return None
     except (json.JSONDecodeError, OSError) as error:
-        log.warning("Could not read the pushed-layout record (%s)", error)
+        log.warning("Could not read the pushed-layout record for %s (%s)", panel_id, error)
         return None
 
 
@@ -280,4 +332,18 @@ def entity_ids(layout: dict[str, Any]) -> set[str]:
                     found.update(one for one in value if _looks_like_entity(one))
                 elif _looks_like_entity(value):
                     found.add(value)
+    return found
+
+
+def every_entity_id() -> set[str]:
+    """Every entity any panel's layout names.
+
+    What the Home Assistant bridge follows, and what the add-on republishes on
+    the shared state topics. The union rather than one panel's, because the
+    states are shared: following only the panel being edited would stop the
+    readings on every other panel the moment you opened this one.
+    """
+    found: set[str] = set()
+    for panel in panels.all():
+        found |= entity_ids(load(panel["id"]))
     return found

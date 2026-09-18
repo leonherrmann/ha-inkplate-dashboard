@@ -21,6 +21,8 @@ os.environ.setdefault("DATA_DIR", "/tmp/inkplate-importcheck")
 # names the module that is actually broken rather than the one that imported it.
 MODULES = [
     "settings",
+    "panels",
+    "grids",
     "history",
     "ha_timer",
     "discovery",

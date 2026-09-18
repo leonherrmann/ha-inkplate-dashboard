@@ -110,11 +110,15 @@ function syncState(status) {
   };
 }
 
-function useStatus() {
+function useStatus(panelId) {
   const [status, setStatus] = useState(null);
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    // Cleared rather than left showing the previous panel's health while the
+    // first poll of the new one is in the air. They are different devices; a
+    // stale "Online, 84%" against the wrong name is worse than a blank.
+    setStatus(null);
     let cancelled = false;
     const reload = async () => {
       try {
@@ -133,7 +137,7 @@ function useStatus() {
       cancelled = true;
       clearInterval(timer);
     };
-  }, []);
+  }, [panelId]);
 
   return { status, error };
 }
@@ -155,11 +159,41 @@ function useToast() {
   // Re-shown rather than ignored when the same text arrives twice: pressing
   // Push twice should acknowledge twice, and an object identity is what makes
   // the second one restart the timer.
-  return [message, (text) => setMessage(text ? { text, at: Date.now() } : null)];
+  //
+  // useCallback, so the setter keeps one identity across renders. It was a bare
+  // arrow -- a new function every render -- and the moment anything listed it
+  // as an effect dependency, that effect re-ran on every render. The loader
+  // below did, and the editor sat in an endless loop of fetches.
+  const show = useCallback(
+    (text) => setMessage(text ? { text, at: Date.now() } : null),
+    []
+  );
+
+  return [message, show];
 }
 
+// Which panel was last being edited, so a reload comes back to it. Per browser
+// rather than per install: two people can have two panels open at once, and the
+// add-on has no business remembering one of them as "the" choice.
+const PANEL_KEY = "inkplate.panel";
+
 export default function App() {
-  const { status, error: statusError } = useStatus();
+  // Chosen before anything is fetched: api.setPanel decides which panel every
+  // scoped request below is about, and a status poll that started first would
+  // be about the wrong one.
+  const [panels, setPanels] = useState([]);
+  const [panelId, setPanelId] = useState(() => {
+    try {
+      return window.localStorage.getItem(PANEL_KEY) || null;
+    } catch {
+      // Safari in a private window throws on localStorage rather than
+      // returning null, and losing the last choice is not worth a blank editor.
+      return null;
+    }
+  });
+  api.setPanel(panelId);
+
+  const { status, error: statusError } = useStatus(panelId);
   const history = useHistory();
   const [layout, setLayout] = useState(null);
   const [entities, setEntities] = useState([]);
@@ -219,7 +253,84 @@ export default function App() {
 
   const sync = syncState(status);
 
+  // The panel list, and the first choice.
+  //
+  // Polled slowly as well as read at startup: a panel switched on while the
+  // editor is open should turn up in the dropdown without a reload, and that is
+  // the whole of how a panel is ever added.
+  const loadPanels = useCallback(async () => {
+    try {
+      const data = await api.getPanels();
+      const found = data.panels || [];
+      setPanels(found);
+      // Nothing chosen, or a choice that is no longer a panel -- which happens
+      // when one is forgotten, or when a browser remembers an id from another
+      // install. Falling back to the default rather than to nothing keeps the
+      // editor showing a dashboard.
+      const known = found.some((panel) => panel.id === panelId);
+      if (!known) {
+        const next = data.default || found[0]?.id || null;
+        if (next !== panelId) {
+          api.setPanel(next);
+          setPanelId(next);
+        }
+      }
+    } catch {
+      setPanels([]);
+    }
+  }, [panelId]);
+
   useEffect(() => {
+    loadPanels();
+    const timer = setInterval(loadPanels, 15000);
+    return () => clearInterval(timer);
+  }, [loadPanels]);
+
+  const selectPanel = useCallback((id) => {
+    try {
+      window.localStorage.setItem(PANEL_KEY, id);
+    } catch {
+      // See the read in useState: a private window throws here, and the choice
+      // simply does not survive a reload.
+    }
+    api.setPanel(id);
+    setPanelId(id);
+    // The layout belongs to the panel, so the one on screen is now the wrong
+    // one. Cleared rather than left up while the new one loads: a page of the
+    // old panel's widgets, editable, against the new panel's grid, is an edit
+    // saved to the wrong dashboard.
+    setLayout(null);
+    setActivePageId(null);
+    setSelectedId(null);
+    history.reset();
+  }, [history]);
+
+  const forgetPanel = useCallback(
+    async (id) => {
+      try {
+        await api.forgetPanel(id);
+        await loadPanels();
+      } catch (problem) {
+        setMessage(problem.message);
+      }
+    },
+    [loadPanels, setMessage]
+  );
+
+  const renamePanel = useCallback(
+    async (id, name) => {
+      try {
+        await api.renamePanel(id, name);
+        await loadPanels();
+      } catch (problem) {
+        setMessage(problem.message);
+      }
+    },
+    [loadPanels, setMessage]
+  );
+
+  useEffect(() => {
+    if (!panelId) return;
     api.getLayout().then(setLayout).catch((problem) => setMessage(problem.message));
     api.getEntities().then(setEntities).catch(() => setEntities([]));
     // For the device widget's picker. Its own call rather than derived from the
@@ -230,7 +341,9 @@ export default function App() {
     api.getAreas().then(setAreas).catch(() => setAreas([]));
     // Named in the image widget's picker alongside the built-in icons
     api.getImages().then((data) => setUploads(data.images || [])).catch(() => setUploads([]));
-  }, []);
+    // The panel, and nothing else: this is "load everything about the panel
+    // being edited", and it runs when that changes.
+  }, [panelId, setMessage]);
 
   // The photo widget's album picker, which the firmware cannot supply: albums
   // are the add-on's own.
@@ -644,7 +757,11 @@ export default function App() {
               canvas, while the pages stay below it. */}
           <DeviceCard
             status={status}
-            panel={panel}
+            panels={panels}
+            panelId={panelId}
+            onSelectPanel={selectPanel}
+            onRenamePanel={renamePanel}
+            onForgetPanel={forgetPanel}
             lastSeenAge={lastSeenAge}
             sync={sync}
             onPush={push}

@@ -54,10 +54,17 @@ export function useHistory() {
     [stacks]
   );
 
+  // Emptied when the editor changes to a different panel. An undo stack of one
+  // panel's layouts, applied to another panel's dashboard, would replace it
+  // with a dashboard that was never its own -- and undo is exactly where nobody
+  // reads what they are about to get.
+  const reset = useCallback(() => setStacks({ past: [], future: [] }), []);
+
   return {
     record,
     undo,
     redo,
+    reset,
     canUndo: stacks.past.length > 0,
     canRedo: stacks.future.length > 0,
   };

@@ -61,11 +61,18 @@ HA_WS_URL = os.environ.get("HA_WS_URL", "ws://supervisor/core/websocket")
 HA_REST_URL = os.environ.get("HA_REST_URL", "http://supervisor/core/api")
 
 
-class Topics:
-    """The MQTT contract shared with the firmware."""
+class DeviceTopics:
+    """The topics one panel owns, under `<root>/devices/<id>/`.
 
-    def __init__(self, device_id: str):
-        self.root = device_id
+    Every panel has a set of these. What they carry is unchanged from when
+    there was one panel and they hung directly off the root -- the id is simply
+    now part of the path, so two panels cannot overwrite each other's status,
+    manifest or layout.
+    """
+
+    def __init__(self, root: str, panel_id: str):
+        self.id = panel_id
+        self.root = f"{root}/devices/{panel_id}"
         self.manifest = f"{self.root}/manifest"
         self.config_set = f"{self.root}/config/set"
         self.config_current = f"{self.root}/config/current"
@@ -91,11 +98,6 @@ class Topics:
         # layout told it. See backend/adopt.py for why they need adopting and
         # why that ends rather than looping.
         self.settings = f"{self.root}/settings"
-        # Retained list of uploaded images and where to fetch them, so a
-        # rebooting device knows what to pull without asking
-        self.images_manifest = f"{self.root}/images/manifest"
-        # What build is on offer and where to fetch it
-        self.firmware_manifest = f"{self.root}/firmware/manifest"
         # Installed and offered version in one payload, which is the shape Home
         # Assistant's update entity wants. Written by the add-on for Home
         # Assistant; the device neither publishes nor reads it.
@@ -105,6 +107,59 @@ class Topics:
         # the bytes -- 20KB of PNG through the broker on every capture, retained,
         # is a great deal of traffic for a picture that changes when asked.
         self.screenshot = f"{self.root}/screenshot"
+
+
+class Topics:
+    """The MQTT contract shared with the firmware.
+
+    Two kinds of topic hang off the installation's root. **Shared** ones are
+    written once and read by every panel: the entity states, the image manifest
+    and the firmware manifest. Three hundred entity readings republished per
+    panel would multiply the broker's traffic by the number of panels to say the
+    same thing to each of them, and all three are the same for all of them.
+
+    **Per panel** ones live under `devices/<id>/` -- see DeviceTopics. The
+    `devices/` segment is there so that no panel id can collide with a shared
+    topic; ids are derived from a MAC and will not be called `state`, but the
+    contract should not rest on that.
+    """
+
+    def __init__(self, device_id: str):
+        self.root = device_id
+        self.devices = f"{self.root}/devices"
+        # Retained list of uploaded images and where to fetch them, so a
+        # rebooting device knows what to pull without asking
+        self.images_manifest = f"{self.root}/images/manifest"
+        # What build is on offer and where to fetch it
+        self.firmware_manifest = f"{self.root}/firmware/manifest"
+
+    def device(self, panel_id: str) -> DeviceTopics:
+        return DeviceTopics(self.root, panel_id)
+
+    def every_device(self, leaf: str) -> str:
+        """A subscription covering that leaf on every panel, present or future.
+
+        How panels are discovered: nothing has to be configured or asked for,
+        because a panel announcing itself on its own status topic matches this.
+        """
+        return f"{self.devices}/+/{leaf}"
+
+    def panel_of(self, topic: str) -> str | None:
+        """Which panel a message arrived from, or None if it is not a panel's."""
+        prefix = f"{self.devices}/"
+        if not topic.startswith(prefix):
+            return None
+        rest = topic[len(prefix):]
+        panel_id, _, leaf = rest.partition("/")
+        return panel_id if panel_id and leaf else None
+
+    def leaf_of(self, topic: str) -> str | None:
+        """The part after the panel id: "status", "config/current"."""
+        prefix = f"{self.devices}/"
+        if not topic.startswith(prefix):
+            return None
+        _, _, leaf = topic[len(prefix):].partition("/")
+        return leaf or None
 
     def state(self, entity_id: str, attribute: str | None = None) -> str:
         if attribute:

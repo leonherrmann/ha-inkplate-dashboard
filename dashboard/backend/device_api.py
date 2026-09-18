@@ -25,11 +25,32 @@ from fastapi.responses import FileResponse
 import firmware
 import images
 import manifest_store
+import panels
 import reports
 
 log = logging.getLogger("inkplate.device")
 
 app = FastAPI(title="Inkplate Dashboard (device)", docs_url=None, redoc_url=None)
+
+
+def _panel(device: str) -> str:
+    """Which panel an upload is from, or the one this install has.
+
+    The firmware names itself on every upload. The fallback covers a panel
+    running a build from before it did -- its screenshot and its log still have
+    to land somewhere, and the default panel is where this add-on would have put
+    them before any of this existed. Home Assistant will not be in that state
+    for long: a panel old enough to omit it is a panel due an update.
+    """
+    if device:
+        return device
+    known = panels.default_id()
+    if known:
+        return known
+    raise HTTPException(
+        status_code=400,
+        detail="No device given and no panel known yet; update the firmware on this panel.",
+    )
 
 
 @app.get("/images/{name}.bin")
@@ -62,7 +83,7 @@ async def get_firmware() -> FileResponse:
 
 @app.post("/device/screenshot")
 async def post_screenshot(
-    request: Request, rotation: int = reports.DEFAULT_ROTATION
+    request: Request, device: str = "", rotation: int = reports.DEFAULT_ROTATION
 ) -> dict[str, object]:
     """The panel's framebuffer, verbatim, stored here as a PNG.
 
@@ -75,9 +96,10 @@ async def post_screenshot(
     turned back here. Doing it on the device would need a second 115KB buffer it
     has no room for.
     """
+    panel_id = _panel(device)
     raw = await request.body()
     try:
-        meta = reports.save_screenshot(raw, rotation)
+        meta = reports.save_screenshot(panel_id, raw, rotation)
     except ValueError as problem:
         # A wrong length means a truncated upload or a different panel, not a
         # smaller picture -- so it is refused rather than padded or cropped.
@@ -87,7 +109,9 @@ async def post_screenshot(
 
 
 @app.post("/device/log")
-async def post_log(request: Request, reason: str = "asked") -> dict[str, object]:
+async def post_log(
+    request: Request, device: str = "", reason: str = "asked"
+) -> dict[str, object]:
     """A page of the device's log ring.
 
     The reason rides in the query string so the body stays exactly what the
@@ -103,11 +127,11 @@ async def post_log(request: Request, reason: str = "asked") -> dict[str, object]
     # open: what arrives is not necessarily what the panel sent.
     if len(text) > reports.LOG_LIMIT_BYTES:
         text = text[-reports.LOG_LIMIT_BYTES :]
-    return {"ok": True, **reports.save_log(text, reason[:40])}
+    return {"ok": True, **reports.save_log(_panel(device), text, reason[:40])}
 
 
 @app.post("/device/manifest")
-async def post_manifest(request: Request) -> dict[str, object]:
+async def post_manifest(request: Request, device: str = "") -> dict[str, object]:
     """Everything the panel's firmware can draw.
 
     Here rather than over MQTT because it is 15KB in one piece, and one MQTT
@@ -120,30 +144,41 @@ async def post_manifest(request: Request) -> dict[str, object]:
     """
     raw = await request.body()
     try:
-        stored = manifest_store.save(raw)
+        owner, stored = manifest_store.save(raw, device or None)
     except manifest_store.ManifestError as problem:
         # Refused rather than stored: a manifest the editor cannot build a
         # palette from looks to the user like a broken add-on.
         log.warning("Refused a manifest: %s", problem)
         raise HTTPException(status_code=400, detail=str(problem))
 
+    # A manifest is how a panel says what shape it is, so this is where the
+    # device list learns of a panel it has never seen -- and the model it
+    # carries is what the editor draws the right sized canvas from.
+    panels.seen(owner, (stored.get("device") or {}).get("model"))
+
     count = len(stored.get("widgets", []))
-    log.info("Device posted a manifest describing %d widget types (%d bytes)", count, len(raw))
-    return {"ok": True, "widgets": count}
+    log.info(
+        "Panel %s posted a manifest describing %d widget types (%d bytes)",
+        owner,
+        count,
+        len(raw),
+    )
+    return {"ok": True, "widgets": count, "device": owner}
 
 
 @app.get("/device/screenshot.png")
-async def get_screenshot() -> FileResponse:
+async def get_screenshot(device: str = "") -> FileResponse:
     """The newest screenshot, for Home Assistant's image entity to fetch.
 
     Here rather than only on the editor's app because Home Assistant fetches it
     over plain HTTP with no add-on session: the editor is behind authenticated
     ingress, so a URL there would answer with a login page.
     """
-    if not os.path.isfile(reports.SCREENSHOT_PATH):
+    path = reports.screenshot_path(_panel(device))
+    if not os.path.isfile(path):
         raise HTTPException(status_code=404, detail="No screenshot held")
     return FileResponse(
-        reports.SCREENSHOT_PATH,
+        path,
         media_type="image/png",
         headers={"Cache-Control": "no-store"},
     )

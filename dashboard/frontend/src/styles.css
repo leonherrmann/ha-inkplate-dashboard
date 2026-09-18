@@ -4415,3 +4415,134 @@ input[type="range"]::-moz-range-thumb {
     flex-direction: column;
   }
 }
+
+
+/* --- choosing which panel to edit ------------------------------------------
+   The identity in the device card is a picker when there is more than one
+   panel. The chevron is drawn rather than a glyph so it inherits the text
+   colour and needs no font that might not have loaded. */
+.device-chevron {
+  display: inline-block;
+  width: 0;
+  height: 0;
+  margin-left: 7px;
+  vertical-align: middle;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 5px solid currentColor;
+  opacity: 0.55;
+}
+
+/* A badge that is also a button. Everything the plain badge has, plus the
+   pointer and the hover the rest of the interface uses for a link. */
+.badge.link {
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.badge.link:hover {
+  color: var(--ink);
+}
+
+.panel-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 18px;
+  overflow-y: auto;
+}
+
+.panel-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.6);
+  box-shadow: inset 0 0 0 1px rgba(27, 26, 31, 0.08);
+}
+
+.panel-row.selected {
+  box-shadow: inset 0 0 0 2px var(--accent, #1b1a1f);
+}
+
+/* The whole row is the target, not just the name: a dropdown entry that only
+   answers to a three-word hit area is one people miss on a phone. */
+.panel-choose {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+  text-align: left;
+  justify-content: flex-start;
+}
+
+.panel-choose:hover {
+  border: 0;
+}
+
+.panel-text {
+  display: block;
+  min-width: 0;
+}
+
+.panel-name {
+  display: block;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.panel-spec {
+  display: block;
+  font-size: 12px;
+  opacity: 0.62;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.panel-rename {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.panel-rename input {
+  flex: 1;
+  min-width: 0;
+}
+
+.panel-empty,
+.picker-note {
+  margin: 0;
+  padding: 0 18px 16px;
+  font-size: 12.5px;
+  opacity: 0.62;
+}
+
+/* Small, quiet variants of the button the rest of the editor uses. Only the
+   panel list needs them, and only because a row has two actions on it. */
+.button.small,
+button.small {
+  padding: 5px 10px;
+  font-size: 12.5px;
+}
+
+.button.ghost,
+button.ghost {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px rgba(27, 26, 31, 0.14);
+}

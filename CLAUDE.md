@@ -19,6 +19,12 @@ not available.
 and option; this repo renders an editor for it. Never hardcode a widget, size,
 option or category list here.
 
+**It owns the grid, too, and there is more than one.** An Inkplate 5 V2 is 5x3
+cells of 220x166 on 1280x720; a V1 is 4x2 of 215x202 on 960x540. Ask
+`backend/grids.py` rather than writing either down — a photo rendered for one
+panel is the wrong size for the other, and a canvas drawn to one puts the
+other's widgets in the wrong place.
+
 It arrives two ways and both write through `manifest_store`: `POST
 /device/manifest` on the device port, which is how current firmware sends it,
 and the retained MQTT topic, for firmware that knows no other way. HTTP because
@@ -26,6 +32,30 @@ and the retained MQTT topic, for firmware that knows no other way. HTTP because
 option's value list may be inline as `values` or name a shared one with
 `values_ref`; `optionValues()` in `format.js` is the only thing that knows the
 difference.
+
+## Several panels
+
+Every panel has its own dashboard: its own pages, widgets, sleep, rotation and
+orientation. **Everything in the backend that touches one takes the panel it is
+about** -- `store.load(panel_id)`, `manifest_store.load(panel_id)`,
+`link.panel(panel_id)`, `reports.screenshot(panel_id)`. The editor sends
+`?panel=<id>`; without it the default (the oldest known) answers, so an old link
+still works.
+
+A panel appears by announcing itself -- a retained `status` on a wildcard
+subscription, or a manifest POST -- and nothing is paired or configured. What
+the add-on keeps of its own is the *name*; everything else is asked of the
+manifest, the layout or the live MQTT state at the point it is needed.
+
+In the browser, `api.js` holds the selected panel and appends it to the scoped
+calls, rather than forty components passing it down. Choosing one clears the
+layout, the undo stack and the page selection: an edit made against the wrong
+panel's grid is saved to the wrong dashboard.
+
+An install from before this has one `layout.json` and one `manifest.json`; the
+first panel to ask inherits them (`panels.claim_legacy`). Forgetting a panel
+never deletes its layout -- unplugged for a fortnight and gone for good look
+identical from here.
 
 ## Running the checks
 
