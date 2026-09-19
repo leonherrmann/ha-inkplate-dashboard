@@ -1,0 +1,19 @@
+{
+  "panels": {
+    "inkplate-a864a0": {
+      "id": "inkplate-a864a0",
+      "name": "Inkplate 5 V2 a864a0",
+      "model": "inkplate5v2",
+      "first_seen": 1789845055.279389,
+      "last_seen": 1789845055.279389
+    },
+    "inkplate-000001": {
+      "id": "inkplate-000001",
+      "name": "Inkplate 5 000001",
+      "model": "inkplate5v1",
+      "first_seen": 1789845055.280406,
+      "last_seen": 1789845055.280406
+    }
+  },
+  "legacy_claimed_by": null
+}

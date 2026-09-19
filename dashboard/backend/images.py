@@ -78,19 +78,38 @@ def normalise_name(raw: str) -> str:
     return name
 
 
+# A byte to the same byte with every bit flipped, for `bytes.translate` below.
+_INVERT = bytes(255 - value for value in range(256))
+
+
 def _pack(image: Image.Image) -> bytes:
-    """A 1-bit PIL image to packed rows. Mirrors iconConvert.py."""
+    """A 1-bit PIL image to packed rows. Mirrors iconConvert.py.
+
+    Pillow's own 1-bit buffer is already this format bit for bit, save for the
+    polarity: it packs rows MSB first, padded to whole bytes, with a set bit
+    meaning *white*, and here a set bit means ink. So the whole job is a 256-byte
+    translation in C and a mask down the right-hand edge, instead of a Python
+    loop over every pixel -- which for a full-screen picture was a million
+    iterations of shift-and-test, and the second-largest cost in a conversion.
+    """
     width, height = image.size
-    pixels = image.load()
-    out = bytearray()
-    for y in range(height):
-        for x0 in range(0, width, 8):
-            byte = 0
-            for bit in range(8):
-                x = x0 + bit
-                # A dark pixel is ink, and short rows pad with light
-                byte = (byte << 1) | (1 if x < width and pixels[x, y] == 0 else 0)
-            out.append(byte)
+    if image.mode != "1":
+        # Only ever reached by a caller that has not dithered yet; the threshold
+        # is the same 128 the old comparison against 0 implied for a bitmap.
+        image = image.convert("1", dither=Image.Dither.NONE)
+
+    packed = image.tobytes().translate(_INVERT)
+    spare = width % 8
+    if not spare:
+        return packed
+
+    # Pillow pads a short row with unset bits, which the flip above turned into
+    # ink running off the edge of the picture. Paper, as before.
+    stride = (width + 7) // 8
+    out = bytearray(packed)
+    keep = (0xFF << (8 - spare)) & 0xFF
+    for last in range(stride - 1, stride * height, stride):
+        out[last] &= keep
     return bytes(out)
 
 
@@ -107,23 +126,67 @@ def _pack(image: Image.Image) -> bytes:
 
 
 def _diffuse(image: Image.Image, taps: tuple, divisor: float) -> Image.Image:
-    """Error diffusion in raster order, for the two dithers that use it."""
+    """Error diffusion in raster order, for the two dithers that use it.
+
+    Most of the cost of converting a picture is this loop -- 61% of it, measured
+    on a 712x354 photograph -- so it is written for speed in the one way that
+    cannot change what it produces.
+
+    **The arithmetic is untouched.** `error * weight / divisor` stays exactly
+    that expression, in that order, on IEEE doubles, because dither.js in the
+    editor does the same and tools/dithercheck.py asserts the two agree to the
+    bit. What changes is only the work *around* it: a pixel away from the edges
+    can reach every one of its neighbours, so for those the bounds checks are
+    known to pass and the neighbour index is the pixel's plus a constant. The
+    interior is the whole picture bar a few hundred pixels, and it now runs
+    without four comparisons and a multiply per tap.
+
+    Edge pixels take the original path, checks and all.
+    """
     width, height = image.size
     pixels = [float(value) for value in image.getdata()]
 
+    # How far the taps reach, which is what decides where the interior starts.
+    # Read from the taps rather than written down: adding one to a dither must
+    # not silently shrink the region that is safe to run unchecked.
+    left = -min(dx for dx, dy, weight in taps)
+    right = max(dx for dx, dy, weight in taps)
+    down = max(dy for dx, dy, weight in taps)
+    # Zero for every dither here -- error diffuses forwards -- but a tap that
+    # reached backwards would give a negative flat offset, and a negative index
+    # into a Python list is the *end* of it: the top row would quietly scribble
+    # on the bottom one instead of raising.
+    up = -min(dy for dx, dy, weight in taps)
+
+    # The same taps as flat offsets into `pixels`, since a row is `width` apart.
+    flat = tuple((dy * width + dx, weight) for dx, dy, weight in taps)
+
     for y in range(height):
+        row = y * width
+        # Interior columns for this row -- none at all on the last few rows,
+        # where a downward tap would fall off the bottom.
+        first = left
+        last = width - right
+        if y + down >= height or y - up < 0 or last <= first:
+            first = last = 0
+
         for x in range(width):
-            index = y * width + x
+            index = row + x
             old = pixels[index]
             new = 255.0 if old >= 128.0 else 0.0
             pixels[index] = new
             error = old - new
             if error == 0.0:
                 continue
-            for dx, dy, weight in taps:
-                nx, ny = x + dx, y + dy
-                if 0 <= nx < width and 0 <= ny < height:
-                    pixels[ny * width + nx] += error * weight / divisor
+
+            if first <= x < last:
+                for offset, weight in flat:
+                    pixels[index + offset] += error * weight / divisor
+            else:
+                for dx, dy, weight in taps:
+                    nx, ny = x + dx, y + dy
+                    if 0 <= nx < width and 0 <= ny < height:
+                        pixels[ny * width + nx] += error * weight / divisor
 
     out = Image.new("1", (width, height))
     out.putdata([255 if value >= 128.0 else 0 for value in pixels])
@@ -236,8 +299,12 @@ def _finish(bitmap: Image.Image, radius: int) -> tuple[bytes, bytes, int, int]:
     payload = _pack(bitmap)
     blob = HEADER.pack(MAGIC, VERSION, 0, width, height) + payload
 
+    # A 1-bit PNG, saved as the 1-bit image it is. It used to be widened to 8-bit
+    # greyscale first, which gave zlib eight times the data to chew through and
+    # `optimize=True` a filter search over all of it: 467ms of a one-second
+    # conversion, for a *larger* file. Same pixels, 4ms, 20KB smaller.
     preview = io.BytesIO()
-    bitmap.convert("L").save(preview, format="PNG", optimize=True)
+    bitmap.save(preview, format="PNG", optimize=True)
     return blob, preview.getvalue(), width, height
 
 

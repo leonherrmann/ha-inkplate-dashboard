@@ -101,8 +101,16 @@ PYTHONPATH=. /tmp/ink-venv/bin/python ../../../test-harnesses/manifestpostcheck.
 PYTHONPATH=. /tmp/ink-venv/bin/python ../../../test-harnesses/albumcheck.py
 PYTHONPATH=. SUPERVISOR_TOKEN=test /tmp/ink-venv/bin/python ../../../test-harnesses/adoptcheck.py
 PYTHONPATH=. SUPERVISOR_TOKEN=test /tmp/ink-venv/bin/python ../../../test-harnesses/timercheck.py
+PYTHONPATH=. /tmp/ink-venv/bin/python ../../../test-harnesses/imagecheck.py
 cd .. && /tmp/ink-venv/bin/python tools/dithercheck.py
 ```
+
+`imagecheck.py` holds the picture pipeline to an **independent implementation**
+rather than to a recorded answer: the obvious pixel-by-pixel loop is written out
+inside it, and the fast code has to agree with it on every shape. That is what
+makes it safe to make `images.py` faster, which is worth doing -- three quarters
+of a conversion turned out to be work nobody needed. `dithercheck.py` is the
+other half of the same contract, against the browser.
 
 Pillow is deliberately absent from `requirements.txt` (the Dockerfile installs
 it via apk). The harnesses live in the sibling `test-harnesses/` directory and

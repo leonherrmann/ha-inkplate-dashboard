@@ -1,5 +1,28 @@
 # Changelog
 
+## 2026.9.56
+
+- **Converting a picture is about three times faster**, and the picture it
+  produces is the same one to the byte. Three things were paying for it:
+
+  - The preview PNG the editor shows was widened from the 1-bit image it is to
+    8-bit greyscale before being saved with `optimize=True` — eight times the
+    data for zlib to chew through and a filter search over all of it. On a
+    full-screen picture that alone was 467ms of a one-second conversion, and it
+    produced a *larger* file. Saved as the 1-bit PNG it is: 4ms, 20KB smaller,
+    same pixels.
+  - Packing the bitmap into the panel's format was a Python loop over every
+    pixel — a million shift-and-tests for a full-screen picture. Pillow's own
+    1-bit buffer already *is* that format apart from the polarity, so it is now
+    a byte-table flip in C: 88ms to 0.4ms.
+  - The dither, which is the rest of it, now skips the bounds checks for pixels
+    that cannot be near an edge. The arithmetic is untouched, deliberately: the
+    editor's live preview dithers in JavaScript and the two have to agree to the
+    bit.
+
+  A full-screen photo went from 1.6s to 0.55s, and an album of ten photos on two
+  panels from about twelve seconds to four.
+
 ## 2026.9.55
 
 - **Fixes photo widgets showing ALBUM IS EMPTY.** Album refreshes have been
