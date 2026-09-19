@@ -44,6 +44,7 @@ from typing import Any, Callable, Iterable
 import aiohttp
 
 import icloud
+import grids
 import images
 from settings import DATA_DIR
 
@@ -51,27 +52,12 @@ log = logging.getLogger(__name__)
 
 ALBUMS_PATH = os.path.join(DATA_DIR, "albums.json")
 
-# The grid, mirrored from the firmware's Grid.h. The manifest publishes these
-# too, but a refresh runs on a timer and must work when no device has ever
-# connected -- so they are duplicated here rather than read from a manifest that
-# may not have arrived. Grid.h is the original; keep them in step.
-GRID_GAP = 30
-GRID_UNIT_W = 220
-GRID_UNIT_H = 166      # a page with a chip row
-GRID_UNIT_H_OFF = 200  # a page without one
-GRID_COLS = 5
-GRID_ROWS = 3
-PANEL_WIDTH = 1280
-PANEL_HEIGHT = 720
-
-# The full-screen photo box, chip row off -- the one grid box PhotoCard's
-# fullBleed lets run to the physical edges instead of insetting into it. See
-# the comment on photo_size below, and PhotoCard's own for why the filename
-# still names this box while the picture itself renders larger.
-FULL_SCREEN_BOX = (
-    GRID_COLS * GRID_UNIT_W + (GRID_COLS - 1) * GRID_GAP,
-    GRID_ROWS * GRID_UNIT_H_OFF + (GRID_ROWS - 1) * GRID_GAP,
-)
+# The grid a picture is rendered against comes from the panel that will show it
+# -- see grids.py. It used to be a copy of Grid.h's numbers here, which was fine
+# while every panel was the same shape and is wrong now that a 3x2 photo is
+# 710x362 on one panel and 685x408 on another. The panel's whole geometry rides
+# on the Variant instead, so a picture rendered for one panel cannot be handed
+# to another by mistake: the size is in the filename, and both sides derive it.
 
 # How many pictures of an album to keep when nobody has chosen individually.
 #
@@ -126,6 +112,11 @@ class Variant:
     height: int
     fill: bool   # crop to fill, as against fitting the whole picture in
     border: bool
+    # The panel this shape came from, so full_screen can be judged against its
+    # own grid rather than against whichever panel this add-on met first.
+    panel_width: int = grids.V2.width
+    panel_height: int = grids.V2.height
+    full_screen: bool = False
 
     @property
     def prefix(self) -> str:
@@ -158,8 +149,8 @@ class Variant:
         -- the same white margin this exists to get rid of, just moved from
         the grid gap into the picture itself.
         """
-        if not self.border and (self.width, self.height) == FULL_SCREEN_BOX:
-            return (PANEL_WIDTH, PANEL_HEIGHT)
+        if not self.border and self.full_screen:
+            return (self.panel_width, self.panel_height)
         if not self.border:
             return (self.width, self.height)
         return (
@@ -178,17 +169,8 @@ class Variant:
         return images.INNER_RADIUS if self.border else 0
 
 
-def _widget_box(cols: int, rows: int, chip_row: str) -> tuple[int, int]:
-    """A widget's pixel footprint, the same arithmetic Grid.h does."""
-    unit_h = GRID_UNIT_H_OFF if chip_row == "off" else GRID_UNIT_H
-    return (
-        cols * GRID_UNIT_W + (cols - 1) * GRID_GAP,
-        rows * unit_h + (rows - 1) * GRID_GAP,
-    )
-
-
-def variants_in(layout: dict[str, Any]) -> set[Variant]:
-    """Every album-and-shape the layout actually asks for.
+def variants_in(layout: dict[str, Any], grid: grids.Grid = grids.V2) -> set[Variant]:
+    """Every album-and-shape one panel's layout actually asks for.
 
     Rendering is expensive enough that doing all four sizes of every album
     speculatively would be minutes of work for pictures nothing shows. So the
@@ -216,7 +198,7 @@ def variants_in(layout: dict[str, Any]) -> set[Variant]:
                 log.warning("Photo widget has an unreadable size %r, skipping", size)
                 continue
 
-            width, height = _widget_box(cols, rows, chip_row)
+            width, height = grid.box(cols, rows, chip_row)
             wanted.add(
                 Variant(
                     album=album,
@@ -226,8 +208,26 @@ def variants_in(layout: dict[str, Any]) -> set[Variant]:
                     # so an option left unset renders what the panel will draw.
                     fill=(options.get("crop") or "fill") != "fit",
                     border=(options.get("border") or "on") != "off",
+                    panel_width=grid.width,
+                    panel_height=grid.height,
+                    full_screen=(width, height) == grid.full_screen_box,
                 )
             )
+    return wanted
+
+
+def variants_in_all(layouts: list[tuple[grids.Grid, dict[str, Any]]]) -> set[Variant]:
+    """Every shape every panel asks for.
+
+    The pictures are one shared library, so what has to be rendered is the union
+    across the panels -- and what may be *deleted* is everything outside it.
+    Working from one panel's layout would delete the pictures of the others on
+    every refresh, which is the mirror image of the bug that once emptied an
+    album from a truncated read.
+    """
+    wanted: set[Variant] = set()
+    for grid, layout in layouts:
+        wanted |= variants_in(layout, grid)
     return wanted
 
 
@@ -587,7 +587,7 @@ def status() -> dict[str, Any]:
     return dict(_state)
 
 
-def starved(layout: dict[str, Any]) -> list[str]:
+def starved(layouts: list[tuple[grids.Grid, dict[str, Any]]]) -> list[str]:
     """Variants some widget asks for that have no pictures rendered at all.
 
     A photo widget whose variant is starved draws ALBUM IS EMPTY, and until
@@ -600,7 +600,7 @@ def starved(layout: dict[str, Any]) -> list[str]:
     configured = set(_load())
     return sorted(
         variant.prefix
-        for variant in variants_in(layout)
+        for variant in variants_in_all(layouts)
         if variant.album in configured
         and not any(name.startswith(variant.prefix) for name in held)
     )
@@ -630,9 +630,10 @@ def _stored_renders() -> dict[str, tuple[str, tuple[int, int]]]:
 
 
 async def refresh(
-    layout: dict[str, Any], on_change: Callable[[], Any] | None = None
+    layouts: list[tuple[grids.Grid, dict[str, Any]]],
+    on_change: Callable[[], Any] | None = None,
 ) -> dict[str, Any]:
-    """Bring every configured album's pictures up to date with the layout.
+    """Bring every configured album's pictures up to date with the layouts.
 
     Whole-set rather than incremental on purpose: this is also what removes the
     pictures of a deleted album, or of a widget that changed size or crop, and
@@ -647,13 +648,14 @@ async def refresh(
     global _pending
 
     if _lock.locked():
-        # Kept, not dropped: this layout is newer than the one being worked on.
-        _pending = layout
+        # Kept, not dropped: these layouts are newer than the ones being worked
+        # on.
+        _pending = layouts
         log.info("A refresh is already running; this one will follow it")
         return status()
 
     async with _lock:
-        current: dict[str, Any] | None = layout
+        current: list[tuple[grids.Grid, dict[str, Any]]] | None = layouts
         while current is not None:
             _pending = None
             _state.update(
@@ -672,16 +674,16 @@ async def refresh(
             # than the layout it just worked from.
             current = _pending
             if current is not None:
-                log.info("The layout changed while that ran; refreshing again")
+                log.info("A layout changed while that ran; refreshing again")
 
         return status()
 
 
 async def _refresh(
-    layout: dict[str, Any], on_change: Callable[[], Any] | None
+    layouts: list[tuple[grids.Grid, dict[str, Any]]], on_change: Callable[[], Any] | None
 ) -> dict[str, Any]:
     albums = _load()
-    wanted = variants_in(layout)
+    wanted = variants_in_all(layouts)
 
     by_album: dict[str, list[Variant]] = {}
     for variant in wanted:
@@ -694,7 +696,7 @@ async def _refresh(
             )
 
     log.info(
-        "Album refresh: the layout wants %s",
+        "Album refresh: the layouts want %s",
         ", ".join(sorted(variant.prefix for variant in wanted)) or "nothing",
     )
 

@@ -14,9 +14,11 @@ from fastapi.staticfiles import StaticFiles
 
 import albums
 import firmware
+import grids
 import ha_timer
 import icloud
 import images
+import panels
 import reports
 import store
 from ha_bridge import bridge
@@ -27,13 +29,13 @@ from registry import registry
 from weather import weather
 from settings import (
     DEVICE_PORT,
+    FIRMWARE_MODEL,
     FIRMWARE_REPO,
     HA_REST_URL,
     IMAGE_BASE_URL,
     LOG_LEVEL,
     STATIC_DIR,
     SUPERVISOR_TOKEN,
-    DEVICE_ID,
 )
 
 logging.basicConfig(level=LOG_LEVEL, format="%(levelname)s %(name)s: %(message)s")
@@ -74,8 +76,22 @@ async def image_base_url() -> str:
 
 
 async def publish_firmware() -> None:
-    """Tell the device what build is on offer, and where to fetch it."""
+    """Tell each panel what build is on offer for it, and where to fetch it.
+
+    Per panel, because the binaries are not interchangeable: one release holds
+    an image per board, and a panel offered the other one refuses it. A panel
+    with no build for its model is sent an empty offer, which is the honest
+    answer and what stops the editor showing it an Update button.
+
+    The shared topic is written too, carrying the configured model's build. That
+    is where firmware older than per-device topics looks, and a panel that has
+    not been updated yet is exactly the panel that needs an update.
+    """
     base = await image_base_url()
+    for panel in panels.all():
+        link.publish_firmware_for(
+            panel["id"], firmware.store.manifest(base, panel.get("model"))
+        )
     link.publish_firmware(firmware.store.manifest(base))
     # A newly found release is what the update entity in Home Assistant exists
     # to report, so it hears about it at the same moment the device does.
@@ -107,20 +123,30 @@ ALBUM_POLL_SECONDS = 6 * 3600
 ALBUM_FIRST_POLL_SECONDS = 120
 
 
-async def refresh_albums(layout: dict[str, Any] | None = None) -> dict[str, Any]:
-    """Bring the albums' pictures into line with the layout, then tell the device.
+def _every_layout() -> list[dict[str, Any]]:
+    """Every panel's draft, for the jobs that are about all of them at once.
 
-    The layout is the draft rather than what was pushed, deliberately: someone
-    who has just dropped a photo widget on a page wants its pictures rendered
-    before they push, not after.
+    The albums are shared -- one library of pictures, one set of rendered
+    variants -- so which photos are wanted is a question about the layouts of
+    every panel together, not about whichever one the editor is showing.
+    """
+    return [store.load(panel["id"]) for panel in panels.all()]
 
-    `layout` is passed in by the one caller that already has it -- saving an
+
+async def refresh_albums(layouts: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+    """Bring the albums' pictures into line with the layouts, then tell the devices.
+
+    The layouts are the drafts rather than what was pushed, deliberately:
+    someone who has just dropped a photo widget on a page wants its pictures
+    rendered before they push, not after.
+
+    `layouts` is passed in by the one caller that already has them -- saving an
     edit -- rather than re-read from disk. Re-reading raced the save that had
     just happened and could come back empty, which is how an album's pictures
     were once deleted for a layout that did have a photo widget in it.
     """
     return await albums.refresh(
-        store.load() if layout is None else layout, on_change=publish_images
+        _every_layout() if layouts is None else layouts, on_change=publish_images
     )
 
 
@@ -150,7 +176,7 @@ async def poll_albums() -> None:
 
         wait = ALBUM_POLL_SECONDS
         try:
-            starving = albums.starved(store.load())
+            starving = albums.starved(_every_layout())
             if starving:
                 log.warning(
                     "These photo widgets have no pictures yet: %s. Trying again in %d "
@@ -176,17 +202,23 @@ async def watch_screenshots() -> None:
     URL. Without it Home Assistant is being handed the same string it already
     has, and whether that counts as a change is its business rather than ours.
     """
-    last: float | None = None
+    last: dict[str, float] = {}
     while True:
         try:
-            held = reports.screenshot()
-            taken = held.get("taken_at") if held else None
-            if taken and taken != last:
+            for panel in panels.all():
+                panel_id = panel["id"]
+                held = reports.screenshot(panel_id)
+                taken = held.get("taken_at") if held else None
+                if not taken or taken == last.get(panel_id):
+                    continue
                 base = await image_base_url()
                 if base:
-                    link.publish_screenshot(f"{base}/device/screenshot.png?t={int(taken)}")
-                    log.info("Published a new screenshot to Home Assistant")
-                last = taken
+                    link.publish_screenshot(
+                        panel_id,
+                        f"{base}/device/screenshot.png?device={panel_id}&t={int(taken)}",
+                    )
+                    log.info("Published a new screenshot of %s to Home Assistant", panel_id)
+                last[panel_id] = taken
         except asyncio.CancelledError:
             raise
         except Exception:
@@ -199,12 +231,22 @@ async def watch_screenshots() -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Said out loud when the option had to be corrected: the panel wants
+    # `http://host:port` exactly, an address typed into an add-on option is
+    # usually neither, and silently fixing it would hide a setting that does not
+    # say what the user thinks it says.
+    typed = os.environ.get("IMAGE_BASE_URL", "").strip()
+    if typed and typed.rstrip("/") != IMAGE_BASE_URL:
+        log.info("Reading image_base_url '%s' as '%s'", typed, IMAGE_BASE_URL)
+
     link.start()
     bridge.start()
     weather.start()
     # Follow whatever the stored layout already references, so a restart of the
     # add-on keeps feeding the device without waiting for a push.
-    entities = store.entity_ids(store.load())
+    # Every panel's entities, not one panel's: the state topics are shared, and
+    # following only one panel's would starve the others of their readings.
+    entities = store.every_entity_id()
     bridge.follow(entities)
     weather.follow(entities)
     # The device may have booted while the add-on was down, so re-advertise what
@@ -216,8 +258,8 @@ async def lifespan(app: FastAPI):
     # the device, because a change made in Home Assistant has to reach the
     # panel that actually owns the timer.
     ha_timer.mirror.start(
-        lambda command: link.publish_command(
-            command.pop("action"), **command
+        lambda panel_id, command: link.publish_command(
+            panel_id, command.pop("action"), **command
         )
     )
     await publish_firmware()
@@ -236,13 +278,13 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Inkplate Dashboard", lifespan=lifespan)
 
 
-def _push_state(layout: dict[str, Any]) -> tuple[bool, int | None]:
+def _push_state(panel_id: str, layout: dict[str, Any]) -> tuple[bool, int | None]:
     """Whether the draft still matches what went out, and which version that was.
 
     Answered here rather than in the browser so the digest is never recomputed,
     or reimplemented, on the other side of the wire.
     """
-    last = store.pushed()
+    last = store.pushed(panel_id)
     if last:
         return last.get("digest") == store.fingerprint(layout), last.get("version")
 
@@ -250,27 +292,105 @@ def _push_state(layout: dict[str, Any]) -> tuple[bool, int | None]:
     # it predates the record being kept at all. The device's own echo is the
     # evidence that settles it -- a panel reporting this very version was sent
     # it, whether or not anything wrote that down at the time.
-    applied = link.applied or {}
+    applied = link.panel(panel_id).applied or {}
     version = layout.get("version", 0)
     if applied.get("version") == version and applied.get("ok") is not False:
         return True, version
     return False, None
 
 
+def _panel(panel: str | None) -> str:
+    """Which panel a request is about.
+
+    `?panel=` names one; without it the default is used, which for an install
+    that has only ever had one panel is that panel. A request that arrives
+    before any panel has been heard from has no answer -- the editor shows its
+    "waiting for a panel" state rather than an empty dashboard for a device that
+    may not exist.
+    """
+    resolved = panels.resolve(panel)
+    if not resolved:
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "No panel has been seen yet. Power one on and make sure it reaches "
+                "the same MQTT broker as Home Assistant."
+            ),
+        )
+    return resolved
+
+
+@app.get("/api/panels")
+async def get_panels() -> dict[str, Any]:
+    """Every panel this add-on knows about, for the device dropdown.
+
+    Each carries enough to be chosen between without a second request: what it
+    is called, what shape it is, and whether it is online now.
+    """
+    listed = []
+    for panel in panels.all():
+        state = link.panel(panel["id"])
+        grid = grids.of(panel["id"])
+        listed.append(
+            {
+                **panel,
+                "online": state.online,
+                "last_seen": state.last_seen or panel.get("last_seen"),
+                "width": grid.width,
+                "height": grid.height,
+                "has_manifest": state.manifest is not None,
+            }
+        )
+    return {"panels": listed, "default": panels.default_id()}
+
+
+@app.patch("/api/panels/{panel_id}")
+async def rename_panel(panel_id: str, body: dict[str, Any]) -> dict[str, Any]:
+    """Name a panel. The name is the add-on's, not the device's -- see panels.py."""
+    try:
+        panel = panels.rename(panel_id, str(body.get("name") or ""))
+    except KeyError:
+        raise HTTPException(status_code=404, detail="No such panel")
+
+    # The name is the Home Assistant device's name too, and the layout carries
+    # it so the panel can show it on its own info screen.
+    link.announce(panel_id)
+    layout = store.load(panel_id)
+    if layout.get("name") != panel["name"]:
+        layout["name"] = panel["name"]
+        store.save(panel_id, layout)
+    return panel
+
+
+@app.delete("/api/panels/{panel_id}")
+async def forget_panel(panel_id: str) -> dict[str, Any]:
+    """Drop a panel from the list.
+
+    Its layout stays on disk: a panel unplugged for a fortnight and a panel gone
+    for good look identical from here, and one of those two mistakes cannot be
+    undone. A panel that comes back announces itself and reappears, with its
+    dashboard intact.
+    """
+    return {"ok": panels.forget(panel_id)}
+
+
 @app.get("/api/status")
-async def get_status() -> dict[str, Any]:
-    layout = store.load()
-    draft_pushed, pushed_version = _push_state(layout)
+async def get_status(panel: str | None = None) -> dict[str, Any]:
+    panel_id = _panel(panel)
+    state = link.panel(panel_id)
+    layout = store.load(panel_id)
+    draft_pushed, pushed_version = _push_state(panel_id, layout)
     return {
-        "device_id": DEVICE_ID,
-        "online": link.online,
-        "manifest": link.manifest,
-        "applied": link.applied,
-        "stats": link.stats,
-        "charging": link.charging,
-        "current_page": link.current_page,
-        "page_locked": link.page_locked,
-        "last_seen": link.last_seen,
+        "device_id": panel_id,
+        "panel": panels.get(panel_id),
+        "online": state.online,
+        "manifest": state.manifest,
+        "applied": state.applied,
+        "stats": state.stats,
+        "charging": state.charging,
+        "current_page": state.current_page,
+        "page_locked": state.page_locked,
+        "last_seen": state.last_seen,
         "server_time": time.time(),
         "draft_version": layout.get("version", 0),
         "pushed_version": pushed_version,
@@ -282,19 +402,20 @@ async def get_status() -> dict[str, Any]:
         # pushes -- see backend/adopt.py. It stays filled only when the two
         # genuinely disagree, which is worth saying out loud rather than
         # leaving the editor showing a value the panel is ignoring.
-        "device_overrides": link.overrides,
+        "device_overrides": state.overrides,
     }
 
 
 @app.get("/api/history")
-async def get_history() -> dict[str, Any]:
+async def get_history(panel: str | None = None) -> dict[str, Any]:
     """Voltage and availability samples for the Device panel's sparkline."""
-    return {"samples": history.samples()}
+    return {"samples": history.samples(_panel(panel))}
 
 
 @app.get("/api/manifest")
-async def get_manifest() -> dict[str, Any]:
-    if not link.manifest:
+async def get_manifest(panel: str | None = None) -> dict[str, Any]:
+    manifest = link.panel(_panel(panel)).manifest
+    if not manifest:
         raise HTTPException(
             status_code=503,
             detail=(
@@ -302,16 +423,16 @@ async def get_manifest() -> dict[str, Any]:
                 "so power it on and make sure it reaches the same MQTT broker."
             ),
         )
-    return link.manifest
+    return manifest
 
 
 @app.get("/api/layout")
-async def get_layout() -> dict[str, Any]:
-    return store.load()
+async def get_layout(panel: str | None = None) -> dict[str, Any]:
+    return store.load(_panel(panel))
 
 
 @app.put("/api/layout")
-async def put_layout(layout: dict[str, Any]) -> dict[str, Any]:
+async def put_layout(layout: dict[str, Any], panel: str | None = None) -> dict[str, Any]:
     # Which album pictures the layout wants, before and after. A photo widget
     # added, resized, or switched between fill and fit needs a different set of
     # pictures rendered, and the alternative to noticing here is making the user
@@ -320,39 +441,49 @@ async def put_layout(layout: dict[str, Any]) -> dict[str, Any]:
     # Compared rather than refreshed unconditionally: this endpoint is called on
     # every edit in the browser -- every drag, every option -- and a refresh
     # reads iCloud and can dither for minutes.
-    was = albums.variants_in(store.load())
+    panel_id = _panel(panel)
+    grid = grids.of(panel_id)
+    was = albums.variants_in(store.load(panel_id), grid)
 
-    store.save(layout)
+    store.save(panel_id, layout)
     # Adding, removing or renaming a page changes the options on the Page
     # select in Home Assistant. On save rather than on push, because the list
     # the editor is showing is the saved one.
-    link.announce()
+    link.announce(panel_id)
 
-    if albums.variants_in(layout) != was:
-        asyncio.create_task(refresh_albums(layout))
+    if albums.variants_in(layout, grid) != was:
+        asyncio.create_task(refresh_albums())
 
     return {"ok": True}
 
 
 @app.post("/api/push")
-async def push_layout() -> dict[str, Any]:
-    layout = store.load()
+async def push_layout(panel: str | None = None) -> dict[str, Any]:
+    panel_id = _panel(panel)
+    layout = store.load(panel_id)
     layout["version"] = int(layout.get("version", 0)) + 1
+
+    # The panel shows this on its own info screen, which is the screen you reach
+    # when MQTT is broken and the editor can tell you nothing.
+    named = panels.get(panel_id) or {}
+    if named.get("name"):
+        layout["name"] = named["name"]
 
     # The device has no tzdata, so it is told Home Assistant's zone as a POSIX
     # string. Sent with every push so a DST rule change cannot leave it stale.
     layout["timezone"] = timezone.to_posix(registry.time_zone)
 
-    store.save(layout)
+    store.save(panel_id, layout)
 
-    sent = link.publish_layout(layout)
+    sent = link.publish_layout(panel_id, layout)
     # Only a push that reached the broker counts as sent. Recording one that did
     # not would leave the editor claiming to be waiting on the device, when what
     # it is really waiting on is its own connection.
     if sent:
-        store.record_pushed(layout)
-    # The device only needs the entities this layout actually names
-    entities = store.entity_ids(layout)
+        store.record_pushed(panel_id, layout)
+    # Every panel's entities, not this one's: the state topics are shared, so
+    # narrowing them to the panel just pushed would stop the others' readings.
+    entities = store.every_entity_id()
     bridge.follow(entities)
     weather.follow(entities)
 
@@ -360,13 +491,13 @@ async def push_layout() -> dict[str, Any]:
 
 
 @app.post("/api/refresh")
-async def refresh_device() -> dict[str, Any]:
-    link.publish_command("refresh")
+async def refresh_device(panel: str | None = None) -> dict[str, Any]:
+    link.publish_command(_panel(panel), "refresh")
     return {"ok": True}
 
 
 @app.post("/api/onboard")
-async def send_to_setup() -> dict[str, Any]:
+async def send_to_setup(panel: str | None = None) -> dict[str, Any]:
     """Restart the panel into its own access point so it can be set up again.
 
     The way to move a panel to a different network. Its credentials are not
@@ -378,12 +509,12 @@ async def send_to_setup() -> dict[str, Any]:
     until somebody completes the form, so a command sent by accident costs a
     restart and a walk to the panel rather than a reconfiguration.
     """
-    link.publish_command("onboard")
+    link.publish_command(_panel(panel), "onboard")
     return {"ok": True}
 
 
 @app.post("/api/device-info")
-async def show_device_info() -> dict[str, Any]:
+async def show_device_info(panel: str | None = None) -> dict[str, Any]:
     """Put the device's own diagnostics on the panel for a minute.
 
     Deliberately shown on the panel rather than returned here: everything the
@@ -391,19 +522,19 @@ async def show_device_info() -> dict[str, Any]:
     is broken none of it arrives. The one case where you most need to see the
     broker settings is the one where the device cannot tell us them.
     """
-    link.publish_command("info")
+    link.publish_command(_panel(panel), "info")
     return {"ok": True}
 
 
 @app.post("/api/page/{page_id}")
-async def show_page(page_id: str) -> dict[str, Any]:
+async def show_page(page_id: str, panel: str | None = None) -> dict[str, Any]:
     """Put a specific page up now. The device still rotates on from it."""
-    link.publish_command("page", page=page_id)
+    link.publish_command(_panel(panel), "page", page=page_id)
     return {"ok": True}
 
 
 @app.post("/api/page-lock/{state}")
-async def set_page_lock(state: str) -> dict[str, Any]:
+async def set_page_lock(state: str, panel: str | None = None) -> dict[str, Any]:
     """Pin rotation to whatever page is on the panel now, or let it go again.
 
     The same gesture as a hold on the panel's right button, reachable without
@@ -411,7 +542,7 @@ async def set_page_lock(state: str) -> dict[str, Any]:
     lock that survived a reboot would be a panel stuck on one page with
     nothing on screen to say why.
     """
-    link.publish_command("lock", locked=state == "on")
+    link.publish_command(_panel(panel), "lock", locked=state == "on")
     return {"ok": True}
 
 
@@ -423,62 +554,63 @@ async def set_page_lock(state: str) -> dict[str, Any]:
 
 
 @app.post("/api/screenshot")
-async def ask_for_screenshot() -> dict[str, Any]:
+async def ask_for_screenshot(panel: str | None = None) -> dict[str, Any]:
     """Ask the panel for a picture of what it is showing.
 
     On request only. The framebuffer is already in the device's memory so a
     capture costs it nothing but the upload -- but an e-ink dashboard changes
     slowly, and a picture on a timer would mostly be the same picture again.
     """
-    link.publish_command("screenshot")
+    link.publish_command(_panel(panel), "screenshot")
     return {"ok": True}
 
 
 @app.get("/api/screenshot")
-async def get_screenshot() -> dict[str, Any]:
-    held = reports.screenshot()
+async def get_screenshot(panel: str | None = None) -> dict[str, Any]:
+    held = reports.screenshot(_panel(panel))
     return {"held": bool(held), **(held or {})}
 
 
 @app.get("/api/screenshot.png")
-async def get_screenshot_png() -> FileResponse:
-    if not reports.screenshot():
+async def get_screenshot_png(panel: str | None = None) -> FileResponse:
+    panel_id = _panel(panel)
+    if not reports.screenshot(panel_id):
         raise HTTPException(status_code=404, detail="No screenshot held")
     # Never cached: the URL does not change when a new picture arrives, and a
     # stale screenshot of a dashboard looks exactly like a current one.
     return FileResponse(
-        reports.SCREENSHOT_PATH,
+        reports.screenshot_path(panel_id),
         media_type="image/png",
         headers={"Cache-Control": "no-store"},
     )
 
 
 @app.post("/api/logs")
-async def ask_for_logs() -> dict[str, Any]:
+async def ask_for_logs(panel: str | None = None) -> dict[str, Any]:
     """Ask the panel for its log ring."""
-    link.publish_command("logs")
+    link.publish_command(_panel(panel), "logs")
     return {"ok": True}
 
 
 @app.get("/api/logs")
-async def get_logs() -> dict[str, Any]:
-    return reports.device_log()
+async def get_logs(panel: str | None = None) -> dict[str, Any]:
+    return reports.device_log(_panel(panel))
 
 
 @app.delete("/api/logs")
-async def delete_logs() -> dict[str, Any]:
-    reports.clear_log()
+async def delete_logs(panel: str | None = None) -> dict[str, Any]:
+    reports.clear_log(_panel(panel))
     return {"ok": True}
 
 
 @app.get("/api/images")
-async def get_images() -> dict[str, Any]:
+async def get_images(panel: str | None = None) -> dict[str, Any]:
     """What has been uploaded, plus what the device reports having of it.
 
     The device names the images on its card in its stats, so each one can be
     marked rather than showing only a total.
     """
-    reported = (link.stats or {}).get("images") or {}
+    reported = (link.panel(_panel(panel)).stats or {}).get("images") or {}
     return {
         # Uploads only. An album's pictures are images in every other respect,
         # but nobody picks one by name and a single album would bury the list
@@ -701,14 +833,33 @@ async def get_album_thumb(album_id: str, guid: str) -> FileResponse:
 
 
 @app.get("/api/firmware")
-async def get_firmware() -> dict[str, Any]:
-    """What is held here, and what the device says it is running."""
-    reported = (link.stats or {}).get("firmware") or {}
+async def get_firmware(panel: str | None = None) -> dict[str, Any]:
+    """What is held here, and what that panel says it is running."""
+    panel_id = _panel(panel)
+    reported = (link.panel(panel_id).stats or {}).get("firmware") or {}
+    # Which panel the held build is for, and which this one is. A binary is not
+    # interchangeable between the two shapes of panel, and the firmware ignores
+    # an offer that is not its own -- so the editor has to be able to say that
+    # rather than showing an Update button that does nothing.
+    model = (panels.get(panel_id) or {}).get("model")
+    # A release holds an image per board. What matters to this panel is whether
+    # one of them is for *it* -- not what else the release contains.
+    held_for_panel = bool(model and firmware.store.have_binary(model))
     return {
         "repo": FIRMWARE_REPO,
         "held": firmware.store.state,
         "device": reported,
-        "servable": bool(firmware.store.have_binary() and await image_base_url()),
+        "servable": bool(
+            firmware.store.have_binary(model or None) and await image_base_url()
+        ),
+        # Which boards this release was built for, and whether one of them is
+        # this panel's. Unknown model is not a mismatch: a panel that has never
+        # sent a manifest has not said what it is, and refusing to offer it an
+        # update would be worse than offering one its firmware can refuse for
+        # itself.
+        "built_for": firmware.store.models() or [FIRMWARE_MODEL],
+        "panel_model": model,
+        "model_matches": not model or held_for_panel,
     }
 
 
@@ -727,13 +878,18 @@ async def check_firmware() -> dict[str, Any]:
 
 
 @app.post("/api/firmware/update")
-async def update_firmware() -> dict[str, Any]:
-    """Tell the device to fetch and install what is on offer."""
+async def update_firmware(panel: str | None = None) -> dict[str, Any]:
+    """Tell one panel to fetch and install what is on offer.
+
+    One panel rather than all of them: the binary on offer is built for a
+    particular board, and the two panels this add-on can manage are two boards.
+    Updating them is a thing you do deliberately, one at a time, watching.
+    """
     if not firmware.store.have_binary():
         raise HTTPException(status_code=400, detail="No firmware held to install")
     # Republished first, so the device is certainly holding the current offer
     await publish_firmware()
-    link.publish_command("update")
+    link.publish_command(_panel(panel), "update")
     return {"ok": True, "version": firmware.store.state.get("version")}
 
 

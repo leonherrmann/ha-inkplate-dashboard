@@ -27,30 +27,45 @@ import json
 import logging
 from typing import Any
 
-from settings import DEVICE_ID, DISCOVERY_PREFIX, topics
+from settings import DISCOVERY_PREFIX, DeviceTopics, topics
 
 log = logging.getLogger(__name__)
 
-# The panel says "online"/"offline" on its status topic, as an MQTT will, so
-# every entity can hang its availability on that. The connectivity sensor is the
-# exception: an entity reporting the connection cannot go unavailable when the
-# connection drops, or it would never be able to say so.
-AVAILABILITY = [
-    {
-        "topic": topics.status,
-        "payload_available": "online",
-        "payload_not_available": "offline",
-    }
-]
+# What each model is called in Home Assistant's device registry.
+MODEL_NAMES = {
+    "inkplate5v1": "Inkplate 5",
+    "inkplate5v2": "Inkplate 5 V2",
+}
 
 
-def _device(running: str | None) -> dict[str, Any]:
-    """The block that groups every entity under one device in the UI."""
+def _availability(device: DeviceTopics) -> list[dict[str, Any]]:
+    """The panel says "online"/"offline" on its status topic, as an MQTT will,
+    so every entity can hang its availability on that. The connectivity sensor
+    is the exception: an entity reporting the connection cannot go unavailable
+    when the connection drops, or it would never be able to say so.
+    """
+    return [
+        {
+            "topic": device.status,
+            "payload_available": "online",
+            "payload_not_available": "offline",
+        }
+    ]
+
+
+def _device(panel: dict[str, Any], running: str | None) -> dict[str, Any]:
+    """The block that groups every entity under one device in the UI.
+
+    One Home Assistant device per panel, identified by the panel's own id, so
+    two panels are two devices with two sets of entities rather than one device
+    whose readings jump between them. The name is what the user called it in the
+    editor -- renaming it there renames the device here on the next announce.
+    """
     device: dict[str, Any] = {
-        "identifiers": [DEVICE_ID],
-        "name": "Inkplate Dashboard",
+        "identifiers": [panel["id"]],
+        "name": panel.get("name") or "Inkplate Dashboard",
         "manufacturer": "Soldered",
-        "model": "Inkplate 5 V2",
+        "model": MODEL_NAMES.get(panel.get("model") or "", "Inkplate"),
     }
     if running:
         device["sw_version"] = running
@@ -89,9 +104,12 @@ def _page_names(pages: list[dict[str, Any]]) -> dict[str, str]:
     return names
 
 
-def _entities(pages: list[dict[str, Any]], running: str | None) -> list[tuple[str, str, dict[str, Any]]]:
-    """(component, object_id, config) for everything worth exposing."""
-    stats = topics.stats
+def _entities(
+    panel: dict[str, Any], pages: list[dict[str, Any]], running: str | None
+) -> list[tuple[str, str, dict[str, Any]]]:
+    """(component, object_id, config) for everything worth exposing, for one panel."""
+    device_topics = topics.device(panel["id"])
+    stats = device_topics.stats
 
     entities: list[tuple[str, str, dict[str, Any]]] = [
         # Deliberately without an availability block -- see AVAILABILITY.
@@ -101,7 +119,7 @@ def _entities(pages: list[dict[str, Any]], running: str | None) -> list[tuple[st
             {
                 "name": "Connectivity",
                 "device_class": "connectivity",
-                "state_topic": topics.status,
+                "state_topic": device_topics.status,
                 "payload_on": "online",
                 "payload_off": "offline",
                 "entity_category": "diagnostic",
@@ -141,7 +159,7 @@ def _entities(pages: list[dict[str, Any]], running: str | None) -> list[tuple[st
             {
                 "name": "Charging",
                 "device_class": "battery_charging",
-                "state_topic": topics.charging,
+                "state_topic": device_topics.charging,
                 "payload_on": "on",
                 "payload_off": "off",
             },
@@ -176,7 +194,7 @@ def _entities(pages: list[dict[str, Any]], running: str | None) -> list[tuple[st
             "refresh",
             {
                 "name": "Refresh",
-                "command_topic": topics.command,
+                "command_topic": device_topics.command,
                 "payload_press": json.dumps({"action": "refresh"}),
                 "entity_category": "config",
             },
@@ -186,7 +204,7 @@ def _entities(pages: list[dict[str, Any]], running: str | None) -> list[tuple[st
             "next_page",
             {
                 "name": "Next page",
-                "command_topic": topics.command,
+                "command_topic": device_topics.command,
                 "payload_press": json.dumps({"action": "next_page"}),
                 "entity_category": "config",
             },
@@ -204,7 +222,7 @@ def _entities(pages: list[dict[str, Any]], running: str | None) -> list[tuple[st
             "screen",
             {
                 "name": "Screen",
-                "url_topic": topics.screenshot,
+                "url_topic": device_topics.screenshot,
                 "entity_category": "diagnostic",
             },
         ),
@@ -213,7 +231,7 @@ def _entities(pages: list[dict[str, Any]], running: str | None) -> list[tuple[st
             "screenshot",
             {
                 "name": "Take a screenshot",
-                "command_topic": topics.command,
+                "command_topic": device_topics.command,
                 "payload_press": json.dumps({"action": "screenshot"}),
                 "entity_category": "config",
             },
@@ -233,7 +251,7 @@ def _entities(pages: list[dict[str, Any]], running: str | None) -> list[tuple[st
             "timer_state",
             {
                 "name": "Timer",
-                "state_topic": topics.timer,
+                "state_topic": device_topics.timer,
                 "value_template": "{{ value_json.state }}",
             },
         ),
@@ -242,7 +260,7 @@ def _entities(pages: list[dict[str, Any]], running: str | None) -> list[tuple[st
             "timer_remaining",
             {
                 "name": "Timer remaining",
-                "state_topic": topics.timer,
+                "state_topic": device_topics.timer,
                 "value_template": "{{ value_json.remaining }}",
                 "unit_of_measurement": "s",
                 "device_class": "duration",
@@ -253,11 +271,11 @@ def _entities(pages: list[dict[str, Any]], running: str | None) -> list[tuple[st
             "timer_minutes",
             {
                 "name": "Timer duration",
-                "state_topic": topics.timer,
+                "state_topic": device_topics.timer,
                 # The dialled-in preset, not what is left of a running timer:
                 # this box is what the next start will use.
                 "value_template": "{{ (value_json.preset / 60) | round(0) }}",
-                "command_topic": topics.command,
+                "command_topic": device_topics.command,
                 "command_template": (
                     '{"action": "timer_set", "seconds": {{ (value | float * 60)'
                     " | round(0) }}}"
@@ -275,7 +293,7 @@ def _entities(pages: list[dict[str, Any]], running: str | None) -> list[tuple[st
             "timer_start",
             {
                 "name": "Start the timer",
-                "command_topic": topics.command,
+                "command_topic": device_topics.command,
                 # No seconds, so the panel uses whatever is dialled in -- on the
                 # panel or in the box above, whichever was set last.
                 "payload_press": json.dumps({"action": "timer_start"}),
@@ -286,7 +304,7 @@ def _entities(pages: list[dict[str, Any]], running: str | None) -> list[tuple[st
             "timer_pause",
             {
                 "name": "Pause or resume the timer",
-                "command_topic": topics.command,
+                "command_topic": device_topics.command,
                 "payload_press": json.dumps({"action": "timer_pause"}),
             },
         ),
@@ -295,7 +313,7 @@ def _entities(pages: list[dict[str, Any]], running: str | None) -> list[tuple[st
             "timer_cancel",
             {
                 "name": "Cancel the timer",
-                "command_topic": topics.command,
+                "command_topic": device_topics.command,
                 "payload_press": json.dumps({"action": "timer_cancel"}),
             },
         ),
@@ -304,7 +322,7 @@ def _entities(pages: list[dict[str, Any]], running: str | None) -> list[tuple[st
             "send_logs",
             {
                 "name": "Send the log",
-                "command_topic": topics.command,
+                "command_topic": device_topics.command,
                 "payload_press": json.dumps({"action": "logs"}),
                 "entity_category": "config",
             },
@@ -328,14 +346,14 @@ def _entities(pages: list[dict[str, Any]], running: str | None) -> list[tuple[st
                 {
                     "name": "Page",
                     "options": list(ids_by_name),
-                    "state_topic": topics.page,
+                    "state_topic": device_topics.page,
                     # A page the panel is on but that has since been deleted
                     # leaves value unmapped; passing it through unchanged makes
                     # Home Assistant show it as unknown, which is the truth.
                     "value_template": (
                         "{{ " + json.dumps(names_by_id) + ".get(value, value) }}"
                     ),
-                    "command_topic": topics.command,
+                    "command_topic": device_topics.command,
                     "command_template": (
                         '{"action": "page", "page": "{{ '
                         + json.dumps(ids_by_name)
@@ -354,32 +372,43 @@ def _entities(pages: list[dict[str, Any]], running: str | None) -> list[tuple[st
             {
                 "name": "Firmware",
                 "device_class": "firmware",
-                "state_topic": topics.firmware_state,
-                "command_topic": topics.command,
+                "state_topic": device_topics.firmware_state,
+                "command_topic": device_topics.command,
                 "payload_install": json.dumps({"action": "update"}),
             },
         )
     )
 
-    device = _device(running)
+    device = _device(panel, running)
+    availability = _availability(device_topics)
     for _, object_id, config in entities:
-        config["unique_id"] = f"{DEVICE_ID}_{object_id}"
+        # The panel id, not the installation's: two panels each have a battery
+        # sensor, and a unique_id shared between them is one entity that
+        # flickers between two devices' readings.
+        config["unique_id"] = f"{panel['id']}_{object_id}"
         config["device"] = device
         if object_id != "connectivity":
-            config["availability"] = AVAILABILITY
+            config["availability"] = availability
 
     return entities
 
 
 class Discovery:
     def __init__(self) -> None:
-        self._fingerprint: str | None = None
+        # Per panel: announcing one must not make another's announcement look
+        # redundant, which one shared fingerprint would.
+        self._fingerprints: dict[str, str] = {}
 
-    def config_topic(self, component: str, object_id: str) -> str:
-        return f"{DISCOVERY_PREFIX}/{component}/{DEVICE_ID}/{object_id}/config"
+    def config_topic(self, component: str, panel_id: str, object_id: str) -> str:
+        return f"{DISCOVERY_PREFIX}/{component}/{panel_id}/{object_id}/config"
 
     def publish(
-        self, link, pages: list[dict[str, Any]], running: str | None, force: bool = False
+        self,
+        link,
+        panel: dict[str, Any],
+        pages: list[dict[str, Any]],
+        running: str | None,
+        force: bool = False,
     ) -> None:
         """Announce every entity, if anything about them has changed.
 
@@ -396,32 +425,43 @@ class Discovery:
         if not DISCOVERY_PREFIX:
             return
 
-        entities = _entities(pages, running)
+        entities = _entities(panel, pages, running)
         fingerprint = json.dumps(
             [[component, object_id, config] for component, object_id, config in entities],
             sort_keys=True,
         )
-        if fingerprint == self._fingerprint and not force:
+        if fingerprint == self._fingerprints.get(panel["id"]) and not force:
             return
 
         published = 0
         for component, object_id, config in entities:
             if link.publish_raw(
-                self.config_topic(component, object_id), json.dumps(config), retain=True
+                self.config_topic(component, panel["id"], object_id),
+                json.dumps(config),
+                retain=True,
             ):
                 published += 1
 
         # Only remembered once it is actually out, so a publish attempted while
         # the broker was away is retried on the next call rather than assumed.
         if published == len(entities):
-            self._fingerprint = fingerprint
-            log.info("Announced %d entities to Home Assistant over MQTT discovery", published)
+            self._fingerprints[panel["id"]] = fingerprint
+            log.info(
+                "Announced %d entities for %s to Home Assistant over MQTT discovery",
+                published,
+                panel["id"],
+            )
         else:
             log.warning(
-                "Announced only %d of %d entities; will try again", published, len(entities)
+                "Announced only %d of %d entities for %s; will try again",
+                published,
+                len(entities),
+                panel["id"],
             )
 
-    def publish_firmware_state(self, link, running: str | None, latest: str | None) -> None:
+    def publish_firmware_state(
+        self, link, panel_id: str, running: str | None, latest: str | None
+    ) -> None:
         """The update entity's payload, which has no other home on the bus.
 
         Home Assistant treats matching versions as "up to date", so an unknown
@@ -431,12 +471,12 @@ class Discovery:
         if not DISCOVERY_PREFIX or not running:
             return
         link.publish_raw(
-            topics.firmware_state,
+            device_topics.firmware_state,
             json.dumps({"installed_version": running, "latest_version": latest or running}),
             retain=True,
         )
 
-    def remove(self, link) -> None:
+    def remove(self, link, panel: dict[str, Any]) -> None:
         """Retract every entity, by emptying its retained config.
 
         Not called today. Here because a discovery message outlives the add-on
@@ -447,9 +487,11 @@ class Discovery:
         list, and the one entity that would be left behind is the one this
         exists to clean up.
         """
-        for component, object_id, _ in _entities([{"id": "retract"}], None):
-            link.publish_raw(self.config_topic(component, object_id), "", retain=True)
-        self._fingerprint = None
+        for component, object_id, _ in _entities(panel, [{"id": "retract"}], None):
+            link.publish_raw(
+                self.config_topic(component, panel["id"], object_id), "", retain=True
+            )
+        self._fingerprints.pop(panel["id"], None)
 
 
 discovery = Discovery()

@@ -1,0 +1,104 @@
+"""What shape a panel's grid is.
+
+The firmware is the authority on this and publishes it in every manifest: gap,
+cell size, how many columns and rows, and the panel's own pixels. Nothing here
+decides any of it -- this module is only the place that *asks*, so that the half
+dozen callers that need to know a widget's pixel footprint do not each dig
+through a manifest and each handle its absence differently.
+
+It matters now because the numbers are no longer one set. An Inkplate 5 V2 is
+5x3 cells of 220x166 on 1280x720; a V1 is 4x2 of 215x194 on 960x540. A photo
+rendered for one is the wrong size for the other, and a canvas drawn to one puts
+the other's widgets in the wrong place.
+
+The fallback is the V2's grid, and it is a real fallback rather than a default:
+album refreshes run on a timer and have to work when no panel has ever
+connected, and a panel that has never sent a manifest is far more likely to be
+the V2 this add-on was written for than anything else. A wrong guess costs
+pictures rendered at the wrong size, which the next refresh after the manifest
+arrives puts right.
+"""
+
+from __future__ import annotations
+
+from typing import Any, NamedTuple
+
+import manifest_store
+
+
+class Grid(NamedTuple):
+    gap: int
+    unit_w: int
+    unit_h: int      # a page with a chip row
+    unit_h_off: int  # a page without one
+    cols: int
+    rows: int
+    width: int
+    height: int
+    chip_h: int
+
+    def box(self, cols: int, rows: int, chip_row: str) -> tuple[int, int]:
+        """A widget's pixel footprint, the same arithmetic Grid.h does."""
+        unit_h = self.unit_h_off if chip_row == "off" else self.unit_h
+        return (
+            cols * self.unit_w + (cols - 1) * self.gap,
+            rows * unit_h + (rows - 1) * self.gap,
+        )
+
+    @property
+    def full_screen_box(self) -> tuple[int, int]:
+        """The full-screen box, chip row off.
+
+        The one grid box the firmware's PhotoCard lets run to the physical
+        edges instead of insetting into it.
+        """
+        return self.box(self.cols, self.rows, "off")
+
+
+# The Inkplate 5 V2, which is the panel this add-on was written for.
+V2 = Grid(
+    gap=30,
+    unit_w=220,
+    unit_h=166,
+    unit_h_off=200,
+    cols=5,
+    rows=3,
+    width=1280,
+    height=720,
+    chip_h=72,
+)
+
+
+def from_manifest(manifest: dict[str, Any] | None) -> Grid:
+    """The grid a manifest describes, filling anything missing from the V2's.
+
+    Field by field rather than all-or-nothing: an older firmware publishes a
+    grid without `chip_h`, and losing the four numbers it did send because of
+    the one it did not would be worse than assuming that one.
+    """
+    if not manifest:
+        return V2
+
+    grid = manifest.get("grid") or {}
+    display = manifest.get("display") or {}
+
+    def number(source: dict[str, Any], key: str, fallback: int) -> int:
+        value = source.get(key)
+        return int(value) if isinstance(value, (int, float)) and value > 0 else fallback
+
+    return Grid(
+        gap=number(grid, "gap", V2.gap),
+        unit_w=number(grid, "unit_w", V2.unit_w),
+        unit_h=number(grid, "unit_h", V2.unit_h),
+        unit_h_off=number(grid, "unit_h_off", V2.unit_h_off),
+        cols=number(grid, "cols", V2.cols),
+        rows=number(grid, "rows", V2.rows),
+        width=number(display, "width", V2.width),
+        height=number(display, "height", V2.height),
+        chip_h=number(grid, "chip_h", V2.chip_h),
+    )
+
+
+def of(panel_id: str | None) -> Grid:
+    """The grid of the panel with this id."""
+    return from_manifest(manifest_store.load(panel_id) if panel_id else None)

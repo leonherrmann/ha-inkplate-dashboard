@@ -30,6 +30,7 @@ ports_description:
 panel_icon: mdi:view-dashboard-edit
 options:
   device_id: inkplate5v2
+  firmware_model: inkplate5v2
   log_level: info
   image_base_url: ""
   firmware_repo: ""
@@ -41,6 +42,7 @@ options:
   discovery_prefix: homeassistant
 schema:
   device_id: str
+  firmware_model: str
   log_level: list(debug|info|warning|error)
   image_base_url: str?
   firmware_repo: str?

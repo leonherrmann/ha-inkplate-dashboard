@@ -22,9 +22,19 @@ from settings import DATA_DIR
 
 log = logging.getLogger(__name__)
 
-SCREENSHOT_PATH = os.path.join(DATA_DIR, "screenshot.png")
-SCREENSHOT_META = os.path.join(DATA_DIR, "screenshot.json")
-LOG_PATH = os.path.join(DATA_DIR, "device-log.txt")
+# One set per panel. A screenshot and a boot log belong to the panel that sent
+# them, and a shared file meant two panels overwriting each other's evidence --
+# which is at its worst exactly when two panels are misbehaving together.
+def screenshot_path(panel_id: str) -> str:
+    return os.path.join(DATA_DIR, f"screenshot-{panel_id}.png")
+
+
+def screenshot_meta_path(panel_id: str) -> str:
+    return os.path.join(DATA_DIR, f"screenshot-{panel_id}.json")
+
+
+def log_path(panel_id: str) -> str:
+    return os.path.join(DATA_DIR, f"device-log-{panel_id}.txt")
 
 # The panel, in the only mode this firmware uses it in. A screenshot is the
 # framebuffer verbatim, so its length is fixed and anything else is a mistake
@@ -76,7 +86,7 @@ UNROTATE = {
 DEFAULT_ROTATION = 2
 
 
-def save_screenshot(raw: bytes, rotation: int = DEFAULT_ROTATION) -> dict[str, Any]:
+def save_screenshot(panel_id: str, raw: bytes, rotation: int = DEFAULT_ROTATION) -> dict[str, Any]:
     """Store the framebuffer as a PNG. Raises ValueError if it is not one."""
     if len(raw) != FRAME_BYTES:
         raise ValueError(
@@ -92,9 +102,9 @@ def save_screenshot(raw: bytes, rotation: int = DEFAULT_ROTATION) -> dict[str, A
     os.makedirs(DATA_DIR, exist_ok=True)
     # Written beside and moved into place, so a reader never catches a half
     # written file -- the editor polls this and Home Assistant fetches it.
-    temporary = SCREENSHOT_PATH + ".part"
+    temporary = screenshot_path(panel_id) + ".part"
     image.save(temporary, format="PNG", optimize=True)
-    os.replace(temporary, SCREENSHOT_PATH)
+    os.replace(temporary, screenshot_path(panel_id))
 
     meta = {
         "taken_at": time.time(),
@@ -104,56 +114,57 @@ def save_screenshot(raw: bytes, rotation: int = DEFAULT_ROTATION) -> dict[str, A
         "width": image.width,
         "height": image.height,
         "rotation": rotation,
-        "bytes": os.path.getsize(SCREENSHOT_PATH),
+        "bytes": os.path.getsize(screenshot_path(panel_id)),
     }
-    with open(SCREENSHOT_META, "w", encoding="utf-8") as handle:
+    with open(screenshot_meta_path(panel_id), "w", encoding="utf-8") as handle:
         json.dump(meta, handle)
 
     log.info("Stored a screenshot: %d bytes as PNG", meta["bytes"])
     return meta
 
 
-def screenshot() -> dict[str, Any] | None:
-    """What is held, or None. The picture itself is served from SCREENSHOT_PATH."""
-    if not os.path.isfile(SCREENSHOT_PATH):
+def screenshot(panel_id: str) -> dict[str, Any] | None:
+    """What is held for this panel, or None. The picture itself is served from
+    screenshot_path()."""
+    if not os.path.isfile(screenshot_path(panel_id)):
         return None
     try:
-        with open(SCREENSHOT_META, encoding="utf-8") as handle:
+        with open(screenshot_meta_path(panel_id), encoding="utf-8") as handle:
             meta = json.load(handle)
     except (OSError, ValueError):
         # The picture is what matters; a lost sidecar should not hide it
         meta = {}
-    meta.setdefault("taken_at", os.path.getmtime(SCREENSHOT_PATH))
+    meta.setdefault("taken_at", os.path.getmtime(screenshot_path(panel_id)))
     meta.setdefault("width", PANEL_WIDTH)
     meta.setdefault("height", PANEL_HEIGHT)
     return meta
 
 
-def save_log(text: str, reason: str) -> dict[str, Any]:
+def save_log(panel_id: str, text: str, reason: str) -> dict[str, Any]:
     """Append what the device sent, oldest trimmed away first."""
     stamp = time.strftime("%Y-%m-%d %H:%M:%S")
     header = f"\n===== {stamp} · from the device ({reason}) =====\n"
     body = header + text.rstrip("\n") + "\n"
 
     os.makedirs(DATA_DIR, exist_ok=True)
-    with open(LOG_PATH, "a", encoding="utf-8") as handle:
+    with open(log_path(panel_id), "a", encoding="utf-8") as handle:
         handle.write(body)
 
-    _trim()
+    _trim(panel_id)
     log.info("Stored %d bytes of device log (%s)", len(text), reason)
     return {"bytes": len(text), "reason": reason, "received_at": time.time()}
 
 
-def _trim() -> None:
+def _trim(panel_id: str) -> None:
     """Keep the newest LOG_LIMIT_BYTES, cut at a line boundary."""
     try:
-        size = os.path.getsize(LOG_PATH)
+        size = os.path.getsize(log_path(panel_id))
     except OSError:
         return
     if size <= LOG_LIMIT_BYTES:
         return
 
-    with open(LOG_PATH, "rb") as handle:
+    with open(log_path(panel_id), "rb") as handle:
         handle.seek(size - LOG_LIMIT_BYTES)
         kept = handle.read()
 
@@ -163,26 +174,26 @@ def _trim() -> None:
     if newline >= 0:
         kept = kept[newline + 1 :]
 
-    with open(LOG_PATH, "wb") as handle:
+    with open(log_path(panel_id), "wb") as handle:
         handle.write(b"[...older entries dropped...]\n")
         handle.write(kept)
 
 
-def device_log() -> dict[str, Any]:
+def device_log(panel_id: str) -> dict[str, Any]:
     """The whole log as text, newest last, with what is known about it."""
-    if not os.path.isfile(LOG_PATH):
+    if not os.path.isfile(log_path(panel_id)):
         return {"text": "", "bytes": 0, "received_at": None}
-    with open(LOG_PATH, encoding="utf-8", errors="replace") as handle:
+    with open(log_path(panel_id), encoding="utf-8", errors="replace") as handle:
         text = handle.read()
     return {
         "text": text,
         "bytes": len(text),
-        "received_at": os.path.getmtime(LOG_PATH),
+        "received_at": os.path.getmtime(log_path(panel_id)),
     }
 
 
-def clear_log() -> None:
+def clear_log(panel_id: str) -> None:
     try:
-        os.remove(LOG_PATH)
+        os.remove(log_path(panel_id))
     except OSError:
         pass

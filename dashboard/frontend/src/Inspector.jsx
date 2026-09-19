@@ -8,7 +8,14 @@ import Sheet, { SheetBody, SheetFoot, useNarrow, HALF, PEEK } from "./Sheet.jsx"
 import { imagePreviewUrl } from "./api.js";
 import { LAYER_MOVES, widgetSize, widgetType } from "./layout.js";
 import { categoryLabel, categoryTone, optionValues } from "./format.js";
-import { ChevronUp, DuplicateIcon, HomeIcon, TrashIcon } from "./Icons.jsx";
+import {
+  ChevronLeft,
+  ChevronRight,
+  ChevronUp,
+  DuplicateIcon,
+  HomeIcon,
+  TrashIcon,
+} from "./Icons.jsx";
 
 // The room card's band readings, and how to find each one in an area.
 //
@@ -66,6 +73,158 @@ function roomRoles(available) {
 
 // manifest, because an option's list may live in the manifest rather than on
 // the option -- see optionValues. Nothing else here reads it.
+
+// --- options big enough to be a screen of their own --------------------------
+//
+// The sheet's field list is as long as the widget has options, and the room
+// card has twelve. Scrolling past ten controls to reach the eleventh is the
+// cost of showing every one of them expanded; on a phone that is most of the
+// screen spent on fields nobody is looking at.
+//
+// So the big ones become a row -- label, the value they are set to, a chevron
+// -- and open on a second screen inside the sheet. "Big" means the control is
+// taller than a line or its list is longer than a glance:
+//
+//   icon, image, album   selects of every icon the firmware carries, every
+//                        picture uploaded, every album configured
+//   text                 only the multi-line kind. A name and a paragraph are
+//                        both "text"; which is which is the firmware's to say,
+//                        since it is the widget that decides whether a newline
+//                        means anything, and it says so with `multiline`. A
+//                        name behind a second screen would be the most-edited
+//                        field in the editor put one tap further away.
+//   choice               only past a handful of values; a two-value choice is
+//                        smaller as a select than as a row that opens a screen
+//
+// Not entity, device or area: those are already one row that opens a picker
+// over the whole screen, which is this pattern arrived at earlier by another
+// route. Turning them into a row that opens a screen that holds a row that
+// opens a picker would be one tap deeper for nothing.
+const SCREEN_TYPES = ["icon", "image", "album"];
+const CHOICE_LIMIT = 5;
+
+// The room card's counted list is not one of the manifest's options -- it is
+// worked out here from the area -- but it is the longest thing in the sheet by
+// some way: every light, plug, speaker and door in the room, each a row with a
+// tick and two arrows. It gets a screen under a key of its own.
+const ROOM_LIST = "__room_entities";
+
+function wantsScreen(option, manifest) {
+  if (SCREEN_TYPES.includes(option.type)) return true;
+  if (option.type === "text") return Boolean(option.multiline);
+  if (option.type !== "choice") return false;
+  return optionValues(manifest, option).length > CHOICE_LIMIT;
+}
+
+// What the row says the option is set to, so the list can be read without
+// opening anything.
+function valueSummary(option, value, { albums, uploads }) {
+  const raw = value === undefined || value === null ? "" : String(value);
+  if (!raw) return option.type === "text" ? "Empty" : "Default";
+
+  if (option.type === "album") {
+    return (albums || []).find((one) => one.id === raw)?.name || raw;
+  }
+  if (option.type === "image") {
+    const found = (uploads || []).find((one) => one.name === raw);
+    return found ? `${found.name} (${found.width}×${found.height})` : raw;
+  }
+  if (option.type === "icon") {
+    // The filter is a prefix every name in the list shares -- "rooms_" -- and
+    // repeating it in a summary says nothing.
+    return option.filter && raw.startsWith(option.filter)
+      ? raw.slice(option.filter.length).replace(/_/g, " ")
+      : raw.replace(/_/g, " ");
+  }
+  if (option.type === "text") {
+    // One line: a text widget's value can be a paragraph, and the row is a
+    // summary of it rather than a preview.
+    const firstLine = raw.split("\n")[0];
+    return firstLine.length > 40 ? `${firstLine.slice(0, 40)}…` : firstLine;
+  }
+  return raw.replace(/_/g, " ");
+}
+
+
+// The control a big option gets once it has a screen to itself.
+//
+// A list of rows rather than the select it is in the field list. A select of
+// three hundred icon names is a wheel on a phone and a column taller than the
+// window on a desktop, and neither can be searched -- which is the only way to
+// find "rooms_shower" among them without reading the lot.
+//
+// The search field appears only past a dozen values: below that it is a box
+// asking you to type in order to see what you could already see.
+function ScreenList({ option, values, value, onChange, uploads }) {
+  const [query, setQuery] = useState("");
+
+  const label = (one) => {
+    if (option.type === "icon" && option.filter && one.startsWith(option.filter)) {
+      return one.slice(option.filter.length).replace(/_/g, " ");
+    }
+    return String(one).replace(/_/g, " ");
+  };
+
+  const terms = query.trim().toLowerCase();
+  const shown = terms
+    ? values.filter((one) => `${one} ${label(one)}`.toLowerCase().includes(terms))
+    : values;
+
+  // What the firmware will draw, for the one option type where the add-on has
+  // the picture: an uploaded image is dithered here, so the row can show
+  // exactly what goes on the panel.
+  const preview = (one) =>
+    option.type === "image" && (uploads || []).some((image) => image.name === one)
+      ? imagePreviewUrl(one)
+      : null;
+
+  return (
+    <>
+      {values.length > 12 && (
+        <label className="option-search">
+          <span className="sr-only">Search {option.label}</span>
+          <input
+            type="search"
+            value={query}
+            placeholder={`Search ${values.length} options`}
+            onChange={(event) => setQuery(event.target.value)}
+          />
+        </label>
+      )}
+
+      <div className="option-list" role="listbox" aria-label={option.label}>
+        {/* Clearing is a choice like any other, and the first one: it is what
+            the widget was set to before anybody opened this. */}
+        <button
+          type="button"
+          role="option"
+          aria-selected={!value}
+          className={!value ? "option-item selected" : "option-item"}
+          onClick={() => onChange("")}
+        >
+          {option.type === "album" || option.type === "image" ? "None" : "Default"}
+        </button>
+
+        {shown.map((one) => (
+          <button
+            key={one}
+            type="button"
+            role="option"
+            aria-selected={one === value}
+            className={one === value ? "option-item selected" : "option-item"}
+            onClick={() => onChange(one)}
+          >
+            {preview(one) && <img src={preview(one)} alt="" className="option-item-shot" />}
+            <span>{label(one)}</span>
+          </button>
+        ))}
+
+        {shown.length === 0 && <p className="hint">Nothing matches “{query}”.</p>}
+      </div>
+    </>
+  );
+}
+
 function Option({ option, manifest, widget, value, entities, devices, areas, uploads, albums, capacity, onChange, onChangeMany }) {
   // Picking a device sets three things at once, which is why this one option
   // reaches for onChangeMany: the id, so it can be re-resolved later; the
@@ -298,12 +457,25 @@ export default function Inspector({
   const narrow = useNarrow();
   const [detent, setDetent] = useState(PEEK);
 
+  // Which option has the sheet to itself, by key, or null for the field list.
+  // Only ever set on a phone: the desktop inspector is a column that scrolls
+  // beside the canvas, where a long list costs a scroll rather than a screen.
+  const [screen, setScreen] = useState(null);
+
   // Selecting a different widget starts the sheet low again. The form is about
   // the widget, so carrying its height across a change of subject would open a
   // full-height sheet over a canvas the user was still choosing from.
   useEffect(() => {
     setDetent(PEEK);
+    setScreen(null);
   }, [widget?.id]);
+
+  // Collapsing the sheet leaves it on the field list. Coming back to a sheet
+  // still showing one option, with no memory of having opened it, reads as the
+  // editor having lost the rest of them.
+  useEffect(() => {
+    if (detent === PEEK) setScreen(null);
+  }, [detent]);
 
   if (!widget) {
     // Nothing selected is not worth a sheet on a phone -- it would be a
@@ -349,6 +521,48 @@ export default function Inspector({
 
   // What kind of thing this is, in the category's own words
   const group = categoryLabel(manifest, type?.category);
+
+  // The option the sheet is showing on its own, if it is showing one. Looked up
+  // rather than stored, so that a widget whose options changed under it -- a new
+  // firmware, a different size -- cannot leave a screen open on an option that
+  // is no longer offered.
+  const screenOption = screen ? options.find((one) => one.key === screen) : null;
+
+  // The values that option offers, or null for one that is not a list. Albums
+  // are the add-on's own -- the panel only ever sees their pictures -- and
+  // images come from two places, so neither is simply the manifest's.
+  const screenValues = !screenOption
+    ? null
+    : screenOption.type === "album"
+      ? (albums || []).map((one) => one.id)
+      : screenOption.type === "image"
+        ? [
+            ...(uploads || []).map((one) => one.name),
+            ...optionValues(manifest, screenOption).map((one) => one.name || one),
+          ]
+        : ["icon", "choice"].includes(screenOption.type)
+          ? optionValues(manifest, screenOption)
+          : null;
+
+  // The list, built once: the field list and the screen render the same thing.
+  const roomList = !room ? null : room.entities.length > 0 ? (
+    <DeviceEntities
+      available={room.entities.filter((one) => !takenByBand.includes(one.entity_id))}
+      chosen={widget.options?.entities}
+      capacity={capacity}
+      onChange={(next) => onSetOption(widget.id, "entities", next)}
+    />
+  ) : (
+    <p className="hint">This room has nothing else in it.</p>
+  );
+
+  // How many of the room's things the card is showing, against how many the
+  // chosen size can draw -- which is the question the row is asked.
+  const roomListSummary = !room
+    ? ""
+    : room.entities.length === 0
+      ? "Nothing in it"
+      : `${(widget.options?.entities || []).length || room.entities.length} of ${room.entities.length}`;
 
   const title = widget.options?.name || type?.label || widget.type;
   const tone = categoryTone(type?.category);
@@ -432,6 +646,27 @@ export default function Inspector({
         // it. The rule is simply that a label may only wrap one real form
         // control, and these three option types wrap a button instead.
         const isButton = ["entity", "device", "area"].includes(option.type);
+
+        // On a phone the big ones are a row that opens a screen -- see
+        // wantsScreen. A button, not a label: it opens something rather than
+        // naming a control.
+        if (narrow && wantsScreen(option, manifest)) {
+          return (
+            <button
+              key={option.key}
+              type="button"
+              className="option-row"
+              onClick={() => setScreen(option.key)}
+            >
+              <span className="option-row-label">{option.label}</span>
+              <span className="option-row-value">
+                {valueSummary(option, widget.options?.[option.key], { albums, uploads })}
+              </span>
+              <ChevronRight size={15} />
+            </button>
+          );
+        }
+
         const Wrapper = isButton ? "div" : "label";
         return (
           <Wrapper
@@ -461,23 +696,26 @@ export default function Inspector({
       {/* The room's counted list, after the readings rather than among them.
           The band's entities are each one field; this is a list, and it is what
           the buckets tally -- the lights, plugs, media and openings. */}
-      {room && (
-        <div className="field-block">
-          <span>Things in the room</span>
-          {room.entities.length > 0 ? (
-            <DeviceEntities
-              available={room.entities.filter(
-                (one) => !takenByBand.includes(one.entity_id)
-              )}
-              chosen={widget.options?.entities}
-              capacity={capacity}
-              onChange={(next) => onSetOption(widget.id, "entities", next)}
-            />
-          ) : (
-            <p className="hint">This room has nothing else in it.</p>
-          )}
-        </div>
-      )}
+      {room &&
+        (narrow ? (
+          // On a phone it is a row like the big options above it. It is longer
+          // than any of them -- a room with a dozen things in it is a dozen
+          // rows of tick and arrows -- so if anything earns a screen, this does.
+          <button
+            type="button"
+            className="option-row"
+            onClick={() => setScreen(ROOM_LIST)}
+          >
+            <span className="option-row-label">Things in the room</span>
+            <span className="option-row-value">{roomListSummary}</span>
+            <ChevronRight size={15} />
+          </button>
+        ) : (
+          <div className="field-block">
+            <span>Things in the room</span>
+            {roomList}
+          </div>
+        ))}
 
       {options.length === 0 && <p className="hint">This widget has no options.</p>}
 
@@ -541,6 +779,62 @@ export default function Inspector({
               <ChevronUp size={15} />
             </span>
           </button>
+        ) : screen ? (
+          // One option, with the sheet to itself. The back button is the whole
+          // way out: there is nothing to confirm, because every control here
+          // writes as it is changed exactly as it does in the list.
+          <>
+            <div className="inspector-head">
+              <button
+                className="icon-button plain"
+                onClick={() => setScreen(null)}
+                aria-label={`Back to ${title} options`}
+              >
+                <ChevronLeft size={15} />
+              </button>
+              <div style={{ minWidth: 0 }}>
+                <div className="inspector-meta">{title}</div>
+                <h2>{screen === ROOM_LIST ? "Things in the room" : screenOption?.label || "Option"}</h2>
+              </div>
+              <button className="icon-button plain" onClick={onClose} aria-label="Close">
+                ×
+              </button>
+            </div>
+            <SheetBody>
+              {screen === ROOM_LIST && <div className="option-screen">{roomList}</div>}
+              {screenOption && (
+                <div className="option-screen">
+                  {/* A list of values gets the list control; anything else --
+                      the text widget's paragraph -- gets the same control it
+                      has in the field list, with the room to be read. */}
+                  {screenValues ? (
+                    <ScreenList
+                      option={screenOption}
+                      values={screenValues}
+                      value={widget.options?.[screenOption.key] || ""}
+                      uploads={uploads}
+                      onChange={(next) => onSetOption(widget.id, screenOption.key, next)}
+                    />
+                  ) : (
+                  <Option
+                    option={screenOption}
+                    manifest={manifest}
+                    widget={widget}
+                    value={widget.options?.[screenOption.key]}
+                    entities={entities}
+                    devices={devices}
+                    areas={areas}
+                    uploads={uploads}
+                    albums={albums}
+                    capacity={capacity}
+                    onChange={(next) => onSetOption(widget.id, screenOption.key, next)}
+                    onChangeMany={(patch) => onSetOptions(widget.id, patch)}
+                  />
+                  )}
+                </div>
+              )}
+            </SheetBody>
+          </>
         ) : (
           <>
             {head}

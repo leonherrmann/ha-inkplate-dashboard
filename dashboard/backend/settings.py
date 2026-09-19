@@ -27,7 +27,34 @@ DEVICE_PORT = int(os.environ.get("DEVICE_PORT", "8098"))
 # What the device should prefix image URLs with. Left empty, the add-on asks the
 # Supervisor for the host's address and works it out; set it when that guesses
 # wrong, e.g. with multiple interfaces or a reverse proxy.
-IMAGE_BASE_URL = os.environ.get("IMAGE_BASE_URL", "").strip()
+#
+# Corrected rather than trusted. The firmware's HTTP client wants
+# `http://host:port` exactly and refuses anything else -- and what is typed into
+# an add-on option is an address as a person writes one: `192.168.178.35`, with
+# no scheme and no port. That was on a real install, and the failure is a bad
+# one to read from the outside: images do not download, the boot log never
+# arrives, and the manifest falls back to a single 15KB MQTT publish, which is
+# the very thing that path exists to avoid.
+def _usable_base_url(raw: str) -> str:
+    """`192.168.178.35` -> `http://192.168.178.35:8098`, and leave a good one alone."""
+    address = (raw or "").strip().rstrip("/")
+    if not address:
+        return ""
+
+    if "://" not in address:
+        address = f"http://{address}"
+
+    scheme, _, rest = address.partition("://")
+    # A port is what follows a colon in the *host* part; an IPv6 literal is in
+    # brackets and its colons are not that.
+    host = rest.split("/", 1)[0]
+    has_port = ":" in (host.rsplit("]", 1)[-1] if host.startswith("[") else host)
+    if not has_port and scheme == "http":
+        address = f"{address}:{DEVICE_PORT}"
+    return address
+
+
+IMAGE_BASE_URL = _usable_base_url(os.environ.get("IMAGE_BASE_URL", ""))
 
 # Releases of the firmware repo are watched here rather than by the device: they
 # are served over HTTPS, and the device has no TLS stack by design.
@@ -43,6 +70,16 @@ FIRMWARE_REPO = os.environ.get("FIRMWARE_REPO", "").strip()
 FIRMWARE_POLL_MINUTES = float(os.environ.get("FIRMWARE_POLL_MINUTES", "5"))
 if os.environ.get("FIRMWARE_POLL_HOURS"):
     FIRMWARE_POLL_MINUTES = float(os.environ["FIRMWARE_POLL_HOURS"]) * 60
+
+# Which panel the release binaries are built for.
+#
+# The firmware manifest is shared by every panel -- one binary at one URL -- and
+# the binaries are not interchangeable: a V2 image on a V1 is an ESP32 driving a
+# framebuffer of the wrong size, and the way back is a USB cable. The offer
+# therefore says what it is for and a panel of another model ignores it. The
+# firmware repo's CI builds for the V2, which is why that is the default; change
+# it if you point FIRMWARE_REPO at a repo that builds for the other one.
+FIRMWARE_MODEL = os.environ.get("FIRMWARE_MODEL", "inkplate5v2").strip()
 
 # Only needed for a private repo, where the releases API answers 404 without
 # one. A fine-grained token with read access to that repo's contents is enough.
@@ -61,11 +98,18 @@ HA_WS_URL = os.environ.get("HA_WS_URL", "ws://supervisor/core/websocket")
 HA_REST_URL = os.environ.get("HA_REST_URL", "http://supervisor/core/api")
 
 
-class Topics:
-    """The MQTT contract shared with the firmware."""
+class DeviceTopics:
+    """The topics one panel owns, under `<root>/devices/<id>/`.
 
-    def __init__(self, device_id: str):
-        self.root = device_id
+    Every panel has a set of these. What they carry is unchanged from when
+    there was one panel and they hung directly off the root -- the id is simply
+    now part of the path, so two panels cannot overwrite each other's status,
+    manifest or layout.
+    """
+
+    def __init__(self, root: str, panel_id: str):
+        self.id = panel_id
+        self.root = f"{root}/devices/{panel_id}"
         self.manifest = f"{self.root}/manifest"
         self.config_set = f"{self.root}/config/set"
         self.config_current = f"{self.root}/config/current"
@@ -91,20 +135,72 @@ class Topics:
         # layout told it. See backend/adopt.py for why they need adopting and
         # why that ends rather than looping.
         self.settings = f"{self.root}/settings"
-        # Retained list of uploaded images and where to fetch them, so a
-        # rebooting device knows what to pull without asking
-        self.images_manifest = f"{self.root}/images/manifest"
-        # What build is on offer and where to fetch it
-        self.firmware_manifest = f"{self.root}/firmware/manifest"
         # Installed and offered version in one payload, which is the shape Home
         # Assistant's update entity wants. Written by the add-on for Home
         # Assistant; the device neither publishes nor reads it.
         self.firmware_state = f"{self.root}/firmware/state"
+        # What build is on offer to *this* panel and where to fetch it. Per
+        # device because the binaries are not interchangeable: one release holds
+        # an image per board, and a panel offered the other one refuses it.
+        self.firmware_manifest = f"{self.root}/firmware/manifest"
         # Where the newest screenshot can be fetched. Written by the add-on for
         # Home Assistant's image entity, which follows a URL rather than taking
         # the bytes -- 20KB of PNG through the broker on every capture, retained,
         # is a great deal of traffic for a picture that changes when asked.
         self.screenshot = f"{self.root}/screenshot"
+
+
+class Topics:
+    """The MQTT contract shared with the firmware.
+
+    Two kinds of topic hang off the installation's root. **Shared** ones are
+    written once and read by every panel: the entity states, the image manifest
+    and the firmware manifest. Three hundred entity readings republished per
+    panel would multiply the broker's traffic by the number of panels to say the
+    same thing to each of them, and all three are the same for all of them.
+
+    **Per panel** ones live under `devices/<id>/` -- see DeviceTopics. The
+    `devices/` segment is there so that no panel id can collide with a shared
+    topic; ids are derived from a MAC and will not be called `state`, but the
+    contract should not rest on that.
+    """
+
+    def __init__(self, device_id: str):
+        self.root = device_id
+        self.devices = f"{self.root}/devices"
+        # Retained list of uploaded images and where to fetch them, so a
+        # rebooting device knows what to pull without asking
+        self.images_manifest = f"{self.root}/images/manifest"
+        # What build is on offer and where to fetch it
+        self.firmware_manifest = f"{self.root}/firmware/manifest"
+
+    def device(self, panel_id: str) -> DeviceTopics:
+        return DeviceTopics(self.root, panel_id)
+
+    def every_device(self, leaf: str) -> str:
+        """A subscription covering that leaf on every panel, present or future.
+
+        How panels are discovered: nothing has to be configured or asked for,
+        because a panel announcing itself on its own status topic matches this.
+        """
+        return f"{self.devices}/+/{leaf}"
+
+    def panel_of(self, topic: str) -> str | None:
+        """Which panel a message arrived from, or None if it is not a panel's."""
+        prefix = f"{self.devices}/"
+        if not topic.startswith(prefix):
+            return None
+        rest = topic[len(prefix):]
+        panel_id, _, leaf = rest.partition("/")
+        return panel_id if panel_id and leaf else None
+
+    def leaf_of(self, topic: str) -> str | None:
+        """The part after the panel id: "status", "config/current"."""
+        prefix = f"{self.devices}/"
+        if not topic.startswith(prefix):
+            return None
+        _, _, leaf = topic[len(prefix):].partition("/")
+        return leaf or None
 
     def state(self, entity_id: str, attribute: str | None = None) -> str:
         if attribute:

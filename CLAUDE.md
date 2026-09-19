@@ -19,6 +19,12 @@ not available.
 and option; this repo renders an editor for it. Never hardcode a widget, size,
 option or category list here.
 
+**It owns the grid, too, and there is more than one.** An Inkplate 5 V2 is 5x3
+cells of 220x166 on 1280x720; a V1 is 4x2 of 215x202 on 960x540. Ask
+`backend/grids.py` rather than writing either down — a photo rendered for one
+panel is the wrong size for the other, and a canvas drawn to one puts the
+other's widgets in the wrong place.
+
 It arrives two ways and both write through `manifest_store`: `POST
 /device/manifest` on the device port, which is how current firmware sends it,
 and the retained MQTT topic, for firmware that knows no other way. HTTP because
@@ -26,6 +32,39 @@ and the retained MQTT topic, for firmware that knows no other way. HTTP because
 option's value list may be inline as `values` or name a shared one with
 `values_ref`; `optionValues()` in `format.js` is the only thing that knows the
 difference.
+
+## Several panels
+
+Every panel has its own dashboard: its own pages, widgets, sleep, rotation and
+orientation. **Everything in the backend that touches one takes the panel it is
+about** -- `store.load(panel_id)`, `manifest_store.load(panel_id)`,
+`link.panel(panel_id)`, `reports.screenshot(panel_id)`. The editor sends
+`?panel=<id>`; without it the default (the oldest known) answers, so an old link
+still works.
+
+A panel appears by announcing itself -- a retained `status` on a wildcard
+subscription, or a manifest POST -- and nothing is paired or configured. What
+the add-on keeps of its own is the *name*; everything else is asked of the
+manifest, the layout or the live MQTT state at the point it is needed.
+
+In the browser, `api.js` holds the selected panel and appends it to the scoped
+calls, rather than forty components passing it down. Choosing one clears the
+layout, the undo stack and the page selection: an edit made against the wrong
+panel's grid is saved to the wrong dashboard.
+
+An install from before this has one `layout.json` and one `manifest.json`; the
+first panel to ask inherits them (`panels.claim_legacy`). Forgetting a panel
+never deletes its layout -- unplugged for a fortnight and gone for good look
+identical from here.
+
+**One release, a binary per board, an offer per panel.** The firmware is one
+source tree compiled for two panels and the images are not interchangeable -- a
+V2 image on a V1 is a framebuffer of the wrong size, recoverable only over USB.
+A release carries `ha_dashboard-inkplate5v2.bin` and `-inkplate5v1.bin`;
+`firmware.py` holds each under the model in its name, the device port serves
+them at `/firmware-<model>.bin`, and each panel is offered the one for its own
+model on its own topic. A release with a single unnamed `.bin` -- every release
+before this -- is filed under `FIRMWARE_MODEL`, which is what it always was.
 
 ## Running the checks
 
@@ -72,6 +111,7 @@ specificity bugs of that shape, all invisible in a static desktop render.
 cd dashboard/frontend && npx serve dist -l 8127     # in one shell
 cd ../../../test-harnesses && node sheetcheck.mjs   # 40 checks, mobile sheet
 cd ../../../test-harnesses && node pickercheck.mjs
+cd ../../../test-harnesses && node devicecheck.mjs   # the Device screen, phone and desktop
 ```
 
 `/entities`, `/devices` and `/areas` answer with a **bare array**, not an
@@ -92,6 +132,23 @@ a surface that covers a whole page cannot rely on a blur to hide it.
 - `dashboard/frontend/src/` — `App.jsx` owns the layout state,
   `Inspector.jsx` renders a widget's options from the manifest,
   `WidgetPreview.jsx` draws each widget on the canvas.
+- **On a phone the toolbar is shorter than on a desktop.** The four selection
+  actions are not on it: they are already on the widget's own sheet, which at
+  that width is over the canvas and nearer than the bar. Zoom is a menu rather
+  than three pills. `PageBar` chooses with `useNarrow` rather than hiding a
+  second copy with CSS -- two copies are two tab stops.
+- **On a phone the Device screen is a list of rows, one per setting**, each
+  opening on its own; the desktop keeps the four cards side by side. Same shape
+  as the sheet's option rows, deliberately -- these are the same idea, and a
+  setting is something you set once and read at a glance after that.
+- **A big option in the sheet is a row that opens a screen**, not a control
+  expanded in the list: a room card has twelve options and nobody is looking at
+  eleven of them. `wantsScreen()` in `Inspector.jsx` decides, and the firmware
+  says which `text` options are multi-line -- a name and a paragraph are both
+  "text" and want different controls.
+- **The sheet's peek height is measured, not `auto`.** A transition with `auto`
+  at one end does not run, so the sheet snapped open instead of rising; Sheet.jsx
+  measures the row and puts the number back as a length.
 - **Below 820px the inspector is a bottom sheet** (`Sheet.jsx`, design 1b) at
   three heights, portalled to `document.body`. It marks `<html>` with
   `.sheet-open` and `data-sheet`, and the stylesheet answers with `--sheet-h`:
@@ -112,6 +169,10 @@ a surface that covers a whole page cannot rely on a blur to hide it.
   prototype's setter.
 - The image manifest published over MQTT must fit the device's **16KB buffer** —
   going over drops the message rather than truncating it.
+- **`image_base_url` is corrected, not trusted.** The firmware wants
+  `http://host:port` exactly and refuses anything else; what people type is
+  `192.168.178.35`. Seen on a real install, where it cost the images, the boot
+  log, and the HTTP manifest — which then fell back to one 15KB MQTT publish.
 - Anything written to `DATA_DIR` that a background task also reads must be
   written atomically (temp file + `os.replace`). A truncating write once deleted
   a user's photo album.

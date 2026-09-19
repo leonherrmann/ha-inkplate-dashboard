@@ -21,7 +21,15 @@ from settings import CHARGE_THRESHOLD_V, CHARGE_WINDOW_MINUTES, DATA_DIR
 
 log = logging.getLogger(__name__)
 
-HISTORY_PATH = os.path.join(DATA_DIR, "history.json")
+# One file per panel. Voltage and availability are facts about a particular
+# panel, and a shared file would have drawn one sparkline out of two batteries.
+# The file a single-panel install left behind is adopted by the first panel to
+# record a sample, so an existing week of history is not thrown away.
+LEGACY_HISTORY_PATH = os.path.join(DATA_DIR, "history.json")
+
+
+def history_path(panel_id: str) -> str:
+    return os.path.join(DATA_DIR, f"history-{panel_id}.json")
 
 # One sample per quarter hour for a week: enough to see a discharge curve and
 # any nightly dropouts, small enough to keep as plain JSON.
@@ -36,47 +44,54 @@ MIN_EVIDENCE_SECONDS = 5 * 60
 
 class History:
     def __init__(self) -> None:
-        self._samples: list[dict[str, Any]] = []
-        self._loaded = False
+        # Per panel, keyed by id, loaded lazily.
+        self._samples: dict[str, list[dict[str, Any]]] = {}
 
     # -- storage -----------------------------------------------------------
 
-    def _load(self) -> None:
-        if self._loaded:
-            return
-        self._loaded = True
-        try:
-            with open(HISTORY_PATH, "r", encoding="utf-8") as handle:
-                self._samples = json.load(handle)
-        except FileNotFoundError:
-            self._samples = []
-        except (json.JSONDecodeError, OSError) as error:
-            log.warning("Could not read history (%s), starting fresh", error)
-            self._samples = []
+    def _load(self, panel_id: str) -> list[dict[str, Any]]:
+        held = self._samples.get(panel_id)
+        if held is not None:
+            return held
 
-    def _save(self) -> None:
+        samples: list[dict[str, Any]] = []
+        for candidate in (history_path(panel_id), LEGACY_HISTORY_PATH):
+            try:
+                with open(candidate, "r", encoding="utf-8") as handle:
+                    samples = json.load(handle)
+                break
+            except FileNotFoundError:
+                continue
+            except (json.JSONDecodeError, OSError) as error:
+                log.warning("Could not read history (%s), starting fresh", error)
+                break
+
+        self._samples[panel_id] = samples
+        return samples
+
+    def _save(self, panel_id: str) -> None:
         os.makedirs(DATA_DIR, exist_ok=True)
         try:
-            with open(HISTORY_PATH, "w", encoding="utf-8") as handle:
-                json.dump(self._samples, handle)
+            with open(history_path(panel_id), "w", encoding="utf-8") as handle:
+                json.dump(self._samples.get(panel_id, []), handle)
         except OSError as error:
             log.warning("Could not write history (%s)", error)
 
     # -- recording ---------------------------------------------------------
 
-    def record(self, stats: dict[str, Any], online: bool) -> None:
-        """Takes a sample, at most one per SAMPLE_SECONDS."""
-        self._load()
+    def record(self, panel_id: str, stats: dict[str, Any], online: bool) -> None:
+        """Takes a sample for one panel, at most one per SAMPLE_SECONDS."""
+        samples = self._load(panel_id)
         now = time.time()
 
-        if self._samples and now - self._samples[-1]["t"] < SAMPLE_SECONDS:
+        if samples and now - samples[-1]["t"] < SAMPLE_SECONDS:
             return
 
         voltage = stats.get("voltage")
         if voltage is None:
             return
 
-        self._samples.append(
+        samples.append(
             {
                 "t": round(now),
                 "v": round(float(voltage), 3),
@@ -86,16 +101,15 @@ class History:
         )
 
         cutoff = now - RETENTION_SECONDS
-        self._samples = [sample for sample in self._samples if sample["t"] >= cutoff]
-        self._save()
+        self._samples[panel_id] = [sample for sample in samples if sample["t"] >= cutoff]
+        self._save(panel_id)
 
     # -- reading -----------------------------------------------------------
 
-    def samples(self) -> list[dict[str, Any]]:
-        self._load()
-        return self._samples
+    def samples(self, panel_id: str) -> list[dict[str, Any]]:
+        return self._load(panel_id)
 
-    def charging(self, current_voltage: float | None) -> bool | None:
+    def charging(self, panel_id: str, current_voltage: float | None) -> bool | None:
         """True if voltage has risen over the window, None if not enough data.
 
         Must be called with the incoming reading *before* it is recorded, so the
@@ -107,13 +121,13 @@ class History:
         None matters: "we cannot tell yet" is a different answer from "not
         charging", and a freshly started add-on is in the first state for a while.
         """
-        self._load()
+        samples = self._load(panel_id)
         if current_voltage is None:
             return None
 
         now = time.time()
         window_start = now - CHARGE_WINDOW_MINUTES * 60
-        earlier = [sample for sample in self._samples if sample["t"] >= window_start]
+        earlier = [sample for sample in samples if sample["t"] >= window_start]
         if not earlier:
             return None
 

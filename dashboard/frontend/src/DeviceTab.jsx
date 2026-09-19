@@ -6,12 +6,14 @@ import OrientationSettings from "./OrientationSettings.jsx";
 import TimerSettings from "./TimerSettings.jsx";
 import DeviceReports from "./DeviceReports.jsx";
 import SyncCard from "./SyncCard.jsx";
+import PanelPicker, { MODEL_LABELS } from "./PanelPicker.jsx";
 import Sparkline from "./Sparkline.jsx";
+import { useNarrow } from "./Sheet.jsx";
 import * as api from "./api.js";
 import { Battery, formatAge, formatUptime, signalLabel } from "./DeviceStats.jsx";
 import { ORIENTATIONS } from "./OrientationSettings.jsx";
 import { TIMER_TICKS } from "./TimerSettings.jsx";
-import { REFRESH_LEVELS } from "./RefreshSettings.jsx";
+import { DEFAULT_GHOST_PERCENT as REFRESH_DEFAULT, REFRESH_LEVELS } from "./RefreshSettings.jsx";
 import {
   ArrowRight,
   ChevronLeft,
@@ -108,6 +110,25 @@ function DeviceOverrides({ overrides, onAdopt, onPush }) {
 // strip -- it is a place you go when something is wrong rather than one of four
 // equal views, and that is how the design has it on both desktop and phone.
 
+// One setting, as a row: what it is, what it is set to, and a way in.
+//
+// The phone's Device screen was every setting expanded -- two picture buttons
+// for orientation, four radio rows for the refresh rate, a toggle and two
+// paragraphs for the timers -- stacked down a 390px screen. Every one of them
+// is something you change once and then read at a glance, if ever, so they read
+// as a list and open one at a time. The same shape the widget sheet uses for
+// its big options, so the two are recognisably the same idea.
+function SettingRow({ label, value, onOpen, children }) {
+  return (
+    <button type="button" className="setting-row" onClick={onOpen}>
+      <span className="setting-row-label">{label}</span>
+      <span className="setting-row-value">{value}</span>
+      {children}
+      <ChevronRight size={14} />
+    </button>
+  );
+}
+
 function Fact({ value, label, tone }) {
   return (
     <div className="fact">
@@ -119,6 +140,11 @@ function Fact({ value, label, tone }) {
 
 export default function DeviceTab({
   status,
+  panels,
+  panelId,
+  onSelectPanel,
+  onRenamePanel,
+  onForgetPanel,
   sync,
   lastSeenAge,
   sleep,
@@ -135,6 +161,9 @@ export default function DeviceTab({
   onShowInfo,
   onPush,
 }) {
+  // The phone shows the settings as a list and one at a time; the desktop shows
+  // the cards side by side, which is what the width is for.
+  const narrow = useNarrow();
   const [view, setView] = useState("settings");
   const [samples, setSamples] = useState(null);
   const [firmware, setFirmware] = useState(null);
@@ -190,10 +219,113 @@ export default function DeviceTab({
   const cachedAll = images?.known > 0 && images.cached === images.known;
   // The device reports what it is running; anything else on offer is newer by
   // definition, because the add-on only ever holds the latest release.
+  // ...unless it was built for the other panel. One firmware manifest is read
+  // by every panel, and a V2 image on a V1 is an ESP32 driving a framebuffer of
+  // the wrong size. The firmware refuses it for itself; the editor says so
+  // rather than offering a button whose only effect is a line in a log.
+  const wrongModel = firmware?.model_matches === false;
   const canUpdate =
-    Boolean(firmware?.held?.version) && firmware.held.version !== firmware?.device?.running;
+    Boolean(firmware?.held?.version) &&
+    firmware.held.version !== firmware?.device?.running &&
+    !wrongModel;
 
   const pageLocked = Boolean(status?.page_locked);
+
+  // The three things that are sent the moment they are pressed rather than on a
+  // push. Built once: the desktop column shows it beside the settings and the
+  // phone puts it behind a row, and two copies would drift.
+  const commandsCard = (
+            <section className="card">
+              <div className="eyebrow">Commands · sent now</div>
+              <div className="group" style={{ gap: 8, marginTop: 12 }}>
+                <button className="action-row" onClick={onRefresh}>
+                  <RefreshIcon size={15} />
+                  Full refresh
+                  <small>clears ghosting</small>
+                </button>
+                <button className="action-row" onClick={onShowInfo}>
+                  <InfoIcon size={15} />
+                  Diagnostics on the panel
+                  <small>for when MQTT is down</small>
+                </button>
+                <button className="action-row danger" disabled={busy === "onboard"} onClick={sendToSetup}>
+                  <WifiSetupIcon size={15} />
+                  Back to WiFi setup
+                  <small>needs confirming</small>
+                </button>
+              </div>
+              <p className="hint" style={{ marginTop: 12 }}>
+                Fire and forget: success means the request went out, not that the panel acted.
+              </p>
+            </section>
+  );
+
+  // What each setting is set to, for the row that stands in for it. Read from
+  // the same constants the controls are built from, so a level renamed in one
+  // place cannot say something different in the other.
+  const orientationLabel =
+    ORIENTATIONS.find((one) => one.degrees === Number(orientation ?? 0))?.label || "Upright";
+  const refreshPercent = refresh?.ghost_percent ?? REFRESH_DEFAULT;
+  const refreshLevel = REFRESH_LEVELS.find((one) => one.percent === Number(refreshPercent));
+  const sleepLabel = sleep?.enabled ? `${sleep.start} – ${sleep.end}` : "Off";
+  const timerLabel = TIMER_TICKS.find((one) => one.ms === Number(timerTickMs ?? 5000))?.label ||
+    "Every 5 seconds";
+
+  // The settings, as the phone shows them: a row each, and the card itself on a
+  // screen of its own. The desktop grid below is unchanged -- a column that can
+  // hold four cards side by side has nothing to gain from hiding three of them.
+  const SETTING_SCREENS = {
+    orientation: {
+      title: "Orientation",
+      card: <OrientationSettings orientation={orientation} onChange={onOrientationChange} />,
+    },
+    refresh: {
+      title: "Screen refresh",
+      card: <RefreshSettings refresh={refresh} onChange={onRefreshChange} />,
+    },
+    sleep: {
+      title: "Night sleep",
+      card: <SleepSettings sleep={sleep} onChange={onSleepChange} />,
+    },
+    timers: {
+      title: "Timers",
+      card: (
+        <TimerSettings
+          tickMs={timerTickMs}
+          onChange={onTimerTickChange}
+          autoStart={pomodoroAutoStart}
+          onAutoStartChange={onPomodoroAutoStartChange}
+        />
+      ),
+    },
+    commands: { title: "Commands", card: commandsCard },
+  };
+
+  // One setting, on its own screen. The head matches the Diagnostics screen's,
+  // because they are the same kind of place: somewhere you went from the list.
+  if (narrow && SETTING_SCREENS[view]) {
+    const screen = SETTING_SCREENS[view];
+    return (
+      <div className="screen-layout">
+        <div className="screen-head">
+          <button
+            className="icon-button"
+            onClick={() => setView("settings")}
+            aria-label="Back to Device"
+          >
+            <ChevronLeft size={15} />
+          </button>
+          <div>
+            <div className="eyebrow">Device</div>
+            <h2>{screen.title}</h2>
+          </div>
+        </div>
+        <div className="device-screen">
+          <div className="settings-grid">{screen.card}</div>
+        </div>
+      </div>
+    );
+  }
 
   if (view === "diagnostics") {
     return (
@@ -203,7 +335,17 @@ export default function DeviceTab({
             <ChevronLeft size={15} />
           </button>
           <div>
-            <div className="eyebrow">Device</div>
+            {/* Whose diagnostics. Every reading on this screen is one panel's,
+                and with more than one the name is the difference between a
+                battery graph that means something and one that does not. */}
+            <PanelPicker
+              compact
+              panels={panels}
+              selected={panelId}
+              onSelect={onSelectPanel}
+              onRename={onRenamePanel}
+              onForget={onForgetPanel}
+            />
             <h2>Diagnostics</h2>
           </div>
         </div>
@@ -333,9 +475,15 @@ export default function DeviceTab({
                     </p>
                   )}
                   <p className="hint" style={{ marginTop: 10 }}>
-                    {canUpdate
-                      ? "The panel downloads it, checks the hash and restarts. If the new build cannot boot, the bootloader puts the old one back."
-                      : "The panel is running the newest release held here."}
+                    {wrongModel
+                      ? `This release has builds for ${(firmware.built_for || [])
+                          .map((one) => MODEL_LABELS[one] || one)
+                          .join(" and ")}, and this panel is a ${
+                          MODEL_LABELS[firmware.panel_model] || firmware.panel_model
+                        }. The panel ignores an image built for another board; update it over USB, or release one built for this one.`
+                      : canUpdate
+                        ? "The panel downloads it, checks the hash and restarts. If the new build cannot boot, the bootloader puts the old one back."
+                        : "The panel is running the newest release held here."}
                   </p>
                 </>
               )}
@@ -350,29 +498,83 @@ export default function DeviceTab({
     <div className="screen-layout wide">
       <div className="screen-head">
         <div>
-          <div className="eyebrow">Takes effect on push</div>
+          {/* Every setting below is stored in this panel's own layout and
+              pushed to this panel alone. */}
+          <PanelPicker
+            compact
+            panels={panels}
+            selected={panelId}
+            onSelect={onSelectPanel}
+            onRename={onRenamePanel}
+            onForget={onForgetPanel}
+          />
           <h2>Device</h2>
         </div>
       </div>
 
       <div className="device-screen">
         <div className="settings-grid">
-          <OrientationSettings orientation={orientation} onChange={onOrientationChange} />
-          <RefreshSettings refresh={refresh} onChange={onRefreshChange} />
-          <SleepSettings sleep={sleep} onChange={onSleepChange} />
-          <TimerSettings
-            tickMs={timerTickMs}
-            onChange={onTimerTickChange}
-            autoStart={pomodoroAutoStart}
-            onAutoStartChange={onPomodoroAutoStartChange}
-          />
+          {narrow ? (
+            // A list of what everything is set to, each opening on its own.
+            // Every setting here is changed once and read at a glance after
+            // that, which is what a row is for -- and four expanded cards down
+            // a 390px screen is most of it spent on controls nobody is using.
+            <section className="card setting-list">
+              <SettingRow
+                label="Orientation"
+                value={orientationLabel}
+                onOpen={() => setView("orientation")}
+              />
+              <SettingRow
+                label="Screen refresh"
+                value={`${refreshPercent}% · ${refreshLevel?.short?.split(" · ")[0] || ""}`}
+                onOpen={() => setView("refresh")}
+              />
+              <SettingRow
+                label="Night sleep"
+                value={sleepLabel}
+                onOpen={() => setView("sleep")}
+              />
+              <SettingRow
+                label="Timers"
+                value={`${timerLabel.replace("Every ", "")}${
+                  pomodoroAutoStart === false ? " · auto-start off" : ""
+                }`}
+                onOpen={() => setView("timers")}
+              />
+              <SettingRow
+                label="Commands"
+                value="Refresh, info, WiFi setup"
+                onOpen={() => setView("commands")}
+              />
+              <SettingRow
+                label="Diagnostics & firmware"
+                value={canUpdate ? "Update ready" : firmware?.device?.running || ""}
+                onOpen={() => setView("diagnostics")}
+              >
+                {canUpdate && <span className="badge violet">update ready</span>}
+              </SettingRow>
+            </section>
+          ) : (
+            <>
+              <OrientationSettings orientation={orientation} onChange={onOrientationChange} />
+              <RefreshSettings refresh={refresh} onChange={onRefreshChange} />
+              <SleepSettings sleep={sleep} onChange={onSleepChange} />
+              <TimerSettings
+                tickMs={timerTickMs}
+                onChange={onTimerTickChange}
+                autoStart={pomodoroAutoStart}
+                onAutoStartChange={onPomodoroAutoStartChange}
+              />
 
-          <button className="action-row" onClick={() => setView("diagnostics")}>
-            <InfoIcon size={15} />
-            Diagnostics &amp; firmware
-            {canUpdate && <span className="badge violet">update ready</span>}
-            <ChevronRight size={14} />
-          </button>
+              <button className="action-row" onClick={() => setView("diagnostics")}>
+                <InfoIcon size={15} />
+                Diagnostics &amp; firmware
+                {canUpdate && <span className="badge violet">update ready</span>}
+                <ChevronRight size={14} />
+              </button>
+            </>
+          )}
         </div>
 
         <div className="side-column">
@@ -417,29 +619,7 @@ export default function DeviceTab({
             </div>
           )}
 
-          <section className="card">
-            <div className="eyebrow">Commands · sent now</div>
-            <div className="group" style={{ gap: 8, marginTop: 12 }}>
-              <button className="action-row" onClick={onRefresh}>
-                <RefreshIcon size={15} />
-                Full refresh
-                <small>clears ghosting</small>
-              </button>
-              <button className="action-row" onClick={onShowInfo}>
-                <InfoIcon size={15} />
-                Diagnostics on the panel
-                <small>for when MQTT is down</small>
-              </button>
-              <button className="action-row danger" disabled={busy === "onboard"} onClick={sendToSetup}>
-                <WifiSetupIcon size={15} />
-                Back to WiFi setup
-                <small>needs confirming</small>
-              </button>
-            </div>
-            <p className="hint" style={{ marginTop: 12 }}>
-              Fire and forget: success means the request went out, not that the panel acted.
-            </p>
-          </section>
+          {!narrow && commandsCard}
         </div>
       </div>
     </div>

@@ -1,4 +1,4 @@
-"""Watches the firmware repo's releases and holds the binary for the device.
+"""Watches the firmware repo's releases and holds the binaries for the panels.
 
 The device cannot fetch a release itself: GitHub is HTTPS, and linking a TLS
 stack into the firmware for that would cost more flash than its entire icon set.
@@ -7,8 +7,16 @@ on the same plain-HTTP port the device already uses for images.
 
 Unauthenticated GitHub API calls are limited to 60 an hour per address. The
 five-minute poll spends twelve of those, and each poll is one call: the release
-listing. The binary is only fetched when the version in it has actually
-changed, so a panel already up to date costs nothing but that one request.
+listing. The binaries are only fetched when the version in the listing has
+actually changed, so a panel already up to date costs nothing but that request.
+
+**One release, one version, a binary per panel.** The firmware is one source
+tree that compiles for two boards, and the two images are not interchangeable:
+a V2 image on a V1 drives a framebuffer of the wrong size and is recoverable
+only over USB. A release therefore carries an asset per model, named after it --
+`ha_dashboard-inkplate5v2.bin` -- and this holds each one under that name. A
+release with a single unnamed `.bin`, which is every release made before this,
+is taken to be FIRMWARE_MODEL, which is what it always was.
 """
 
 import asyncio
@@ -20,13 +28,36 @@ from typing import Any
 
 import aiohttp
 
-from settings import DATA_DIR, FIRMWARE_REPO, FIRMWARE_POLL_MINUTES, FIRMWARE_TOKEN
+from settings import (
+    DATA_DIR,
+    FIRMWARE_MODEL,
+    FIRMWARE_POLL_MINUTES,
+    FIRMWARE_REPO,
+    FIRMWARE_TOKEN,
+)
 
 log = logging.getLogger(__name__)
 
 FIRMWARE_DIR = os.path.join(DATA_DIR, "firmware")
 STATE_PATH = os.path.join(FIRMWARE_DIR, "state.json")
-BINARY_NAME = "firmware.bin"
+
+# What the device port serves each build as. The model is in the name rather
+# than in a query so that a panel's URL is a *different* URL -- a cache, a proxy
+# or a retained manifest holding the other one would otherwise be handing a
+# panel the wrong image under a name that looks right.
+def binary_name(model: str) -> str:
+    return f"firmware-{model}.bin"
+
+
+# Which models a release's assets can be for. Read from the asset names rather
+# than configured: the release says what it built, and an add-on that had to be
+# told would be wrong the moment the firmware gained a board.
+def model_in(asset_name: str) -> str | None:
+    stem = asset_name[:-4] if asset_name.endswith(".bin") else asset_name
+    for part in stem.replace("_", "-").split("-"):
+        if part.startswith("inkplate"):
+            return part
+    return None
 
 # A release asset larger than this is not one of ours; the app partition is 1.9MB
 MAX_BYTES = 4 * 1024 * 1024
@@ -51,12 +82,23 @@ class FirmwareStore:
         with open(STATE_PATH, "w", encoding="utf-8") as handle:
             json.dump(self.state, handle, indent=2)
 
-    @property
-    def binary_path(self) -> str:
-        return os.path.join(FIRMWARE_DIR, BINARY_NAME)
+    def binary_path(self, model: str) -> str:
+        return os.path.join(FIRMWARE_DIR, binary_name(model))
 
-    def have_binary(self) -> bool:
-        return bool(self.state.get("version")) and os.path.isfile(self.binary_path)
+    def builds(self) -> dict[str, Any]:
+        """What is held, by model: {"inkplate5v2": {"bytes":…, "sha256":…}}."""
+        held = self.state.get("builds")
+        return held if isinstance(held, dict) else {}
+
+    def have_binary(self, model: str | None = None) -> bool:
+        """Whether there is a build to offer -- for one model, or for any."""
+        if not self.state.get("version"):
+            return False
+        wanted = [model] if model else list(self.builds())
+        return any(one and os.path.isfile(self.binary_path(one)) for one in wanted)
+
+    def models(self) -> list[str]:
+        return sorted(one for one in self.builds() if os.path.isfile(self.binary_path(one)))
 
     # -- lifecycle ---------------------------------------------------------
 
@@ -108,42 +150,70 @@ class FirmwareStore:
                 release = await response.json()
 
             version = release.get("tag_name") or release.get("name")
-            asset = next(
-                (a for a in release.get("assets", []) if a.get("name", "").endswith(".bin")),
-                None,
-            )
-            if not version or not asset:
+            assets = [
+                one
+                for one in release.get("assets", [])
+                if str(one.get("name", "")).endswith(".bin")
+            ]
+            if not version or not assets:
                 self.state["error"] = f"Release {version} has no .bin attached"
                 self._save()
                 return False
 
-            if asset.get("size", 0) > MAX_BYTES:
-                self.state["error"] = f"{asset['name']} is too large to be firmware"
+            # An asset per model, by name. A release from before the firmware
+            # built for two boards has one unnamed binary, and it is the model
+            # this add-on was told about -- which is what it always was.
+            wanted: dict[str, dict[str, Any]] = {}
+            for asset in assets:
+                if asset.get("size", 0) > MAX_BYTES:
+                    log.warning("Ignoring %s: too large to be firmware", asset["name"])
+                    continue
+                wanted[model_in(asset["name"]) or FIRMWARE_MODEL] = asset
+
+            if not wanted:
+                self.state["error"] = f"Release {version} has no usable .bin attached"
                 self._save()
                 return False
 
-            if self.state.get("version") == version and self.have_binary():
-                return False  # already held
+            if self.state.get("version") == version and all(
+                self.have_binary(model) for model in wanted
+            ):
+                return False  # already held, every build of it
 
-            log.info("Downloading firmware %s (%s)", version, asset["name"])
-            payload = await self._download_asset(session, asset)
+            log.info(
+                "Downloading firmware %s for %s", version, ", ".join(sorted(wanted))
+            )
+            payloads = {
+                model: await self._download_asset(session, asset)
+                for model, asset in wanted.items()
+            }
 
         os.makedirs(FIRMWARE_DIR, exist_ok=True)
-        with open(self.binary_path, "wb") as handle:
-            handle.write(payload)
+        builds: dict[str, Any] = {}
+        for model, payload in payloads.items():
+            with open(self.binary_path(model), "wb") as handle:
+                handle.write(payload)
+            builds[model] = {
+                "bytes": len(payload),
+                # The device checks this before making the image bootable, so a
+                # transfer that went wrong never gets run.
+                "sha256": hashlib.sha256(payload).hexdigest(),
+                "asset": wanted[model]["name"],
+            }
 
         self.state = {
             "version": version,
-            "bytes": len(payload),
-            # The device checks this before making the image bootable, so a
-            # transfer that went wrong never gets run.
-            "sha256": hashlib.sha256(payload).hexdigest(),
+            "builds": builds,
             "notes": (release.get("body") or "")[:2000],
             "published": release.get("published_at"),
             "error": None,
         }
         self._save()
-        log.info("Holding firmware %s, %d bytes", version, len(payload))
+        log.info(
+            "Holding firmware %s: %s",
+            version,
+            ", ".join(f"{model} ({build['bytes']} bytes)" for model, build in builds.items()),
+        )
         return True
 
     @staticmethod
@@ -176,15 +246,25 @@ class FirmwareStore:
             response.raise_for_status()
             return await response.read()
 
-    def manifest(self, base_url: str) -> dict[str, Any]:
-        """What the device needs to decide whether to update, and where from."""
-        if not self.have_binary() or not base_url:
+    def manifest(self, base_url: str, model: str | None = None) -> dict[str, Any]:
+        """What one panel needs to decide whether to update, and where from.
+
+        Empty when there is no build for that model, which is the honest answer:
+        a panel offered another board's image would refuse it anyway, and an
+        empty offer is what stops the editor showing an Update button for it.
+        """
+        wanted = model or FIRMWARE_MODEL
+        build = self.builds().get(wanted)
+        if not build or not self.have_binary(wanted) or not base_url:
             return {}
         return {
             "version": self.state["version"],
-            "url": f"{base_url.rstrip('/')}/{BINARY_NAME}",
-            "bytes": self.state["bytes"],
-            "sha256": self.state["sha256"],
+            "url": f"{base_url.rstrip('/')}/{binary_name(wanted)}",
+            "bytes": build["bytes"],
+            "sha256": build["sha256"],
+            # Which panel it is for. The firmware refuses an offer that is not
+            # its own, whichever topic it arrived on.
+            "model": wanted,
         }
 
 

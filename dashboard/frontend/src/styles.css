@@ -2476,7 +2476,12 @@ input.picker-search {
   /* peek is the one height the content decides: it is a single row, and a fixed
      number here would either clip a wrapped name or leave a gap under a short
      one. --sheet-h still carries a figure for it, because the page below has to
-     reserve the room whether or not CSS is the thing measuring it. */
+     reserve the room whether or not CSS is the thing measuring it.
+     
+     `auto` only until the row has been measured. Sheet.jsx writes the measured
+     height back as an inline length, because a transition with `auto` at one
+     end does not run -- which is why raising the sheet from peek used to snap
+     rather than rise. */
   .sheet-peek {
     height: auto;
   }
@@ -4414,4 +4419,335 @@ input[type="range"]::-moz-range-thumb {
   .editor-split {
     flex-direction: column;
   }
+}
+
+
+/* --- choosing which panel to edit ------------------------------------------
+   The identity in the device card is a picker when there is more than one
+   panel. The chevron is drawn rather than a glyph so it inherits the text
+   colour and needs no font that might not have loaded. */
+.device-chevron {
+  display: inline-block;
+  width: 0;
+  height: 0;
+  margin-left: 7px;
+  vertical-align: middle;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 5px solid currentColor;
+  opacity: 0.55;
+}
+
+/* A badge that is also a button. Everything the plain badge has, plus the
+   pointer and the hover the rest of the interface uses for a link. */
+.badge.link {
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.badge.link:hover {
+  color: var(--ink);
+}
+
+.panel-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 18px;
+  overflow-y: auto;
+}
+
+.panel-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.6);
+  box-shadow: inset 0 0 0 1px rgba(27, 26, 31, 0.08);
+}
+
+.panel-row.selected {
+  box-shadow: inset 0 0 0 2px var(--accent, #1b1a1f);
+}
+
+/* The whole row is the target, not just the name: a dropdown entry that only
+   answers to a three-word hit area is one people miss on a phone. */
+.panel-choose {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+  text-align: left;
+  justify-content: flex-start;
+}
+
+.panel-choose:hover {
+  border: 0;
+}
+
+.panel-text {
+  display: block;
+  min-width: 0;
+}
+
+.panel-name {
+  display: block;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.panel-spec {
+  display: block;
+  font-size: 12px;
+  opacity: 0.62;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.panel-rename {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.panel-rename input {
+  flex: 1;
+  min-width: 0;
+}
+
+.panel-empty,
+.picker-note {
+  margin: 0;
+  padding: 0 18px 16px;
+  font-size: 12.5px;
+  opacity: 0.62;
+}
+
+/* Small, quiet variants of the button the rest of the editor uses. Only the
+   panel list needs them, and only because a row has two actions on it. */
+.button.small,
+button.small {
+  padding: 5px 10px;
+  font-size: 12.5px;
+}
+
+.button.ghost,
+button.ghost {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px rgba(27, 26, 31, 0.14);
+}
+
+
+/* The panel name in a screen heading, where the eyebrow was. A button that
+   reads as the label it replaced: same size, same colour, same letter-spacing,
+   with the chevron the only thing saying it can be pressed. */
+.panel-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
+.panel-eyebrow:hover {
+  border: 0;
+  opacity: 0.75;
+}
+
+
+/* --- an option that has a screen of its own ---------------------------------
+   The sheet's field list turns its big options into these rows -- label, what
+   it is set to, a chevron -- so a list of twelve is a list of twelve *rows*
+   rather than twelve expanded controls. See wantsScreen in Inspector.jsx. */
+.option-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 11px 12px;
+  border: 0;
+  border-radius: var(--r-sm, 12px);
+  background: rgba(255, 255, 255, 0.65);
+  box-shadow: inset 0 0 0 1px var(--ink-12);
+  text-align: left;
+  font: inherit;
+}
+
+.option-row:hover {
+  border: 0;
+}
+
+.option-row-label {
+  font-size: 13px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The value is the secondary half of the row: it says what the option is set
+   to, and the label says what the option is. Ellipsised rather than wrapped --
+   a row that grows to two lines for a long icon name breaks the rhythm of the
+   list it is in. */
+.option-row-value {
+  font-size: 12.5px;
+  color: var(--ink-60);
+  max-width: 52%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* On its own screen the control is the only thing there, so it gets the width
+   and, for the text widget, rather more rows than the list could spare. */
+.option-screen > select,
+.option-screen > textarea,
+.option-screen > input {
+  width: 100%;
+}
+
+.option-screen > textarea {
+  min-height: 40vh;
+}
+
+
+/* The list an option gets on its own screen. Rows rather than a select: three
+   hundred icon names is a wheel on a phone and a column taller than the window
+   on a desktop, and neither can be searched. */
+.option-search {
+  display: block;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding-bottom: 8px;
+  /* The list scrolls under it, so it needs a ground of its own rather than the
+     translucent sheet's -- and the same white the sheet composites to, or the
+     field reads as a band of a different colour laid over it. */
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.option-search input {
+  width: 100%;
+}
+
+.option-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.option-item {
+  display: flex;
+  align-items: center;
+  /* Explicit: the app's base button rule centres its content, which on a list
+     of forty names reads as a poem rather than as something to scan down. */
+  justify-content: flex-start;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: var(--r-sm, 12px);
+  background: transparent;
+  box-shadow: none;
+  text-align: left;
+  font: inherit;
+  text-transform: capitalize;
+}
+
+.option-item:hover {
+  border: 0;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.option-item.selected {
+  background: var(--grad, #4c4ddc);
+  color: #fff;
+  font-weight: 600;
+}
+
+/* What the panel will actually draw, dithering and all, for the one option the
+   add-on holds the picture for. */
+.option-item-shot {
+  width: 44px;
+  height: 28px;
+  object-fit: contain;
+  border-radius: 4px;
+  background: #fff;
+  image-rendering: pixelated;
+  flex: none;
+}
+
+
+/* The phone's Device screen: a list of what everything is set to, each row
+   opening that one setting. Shares its shape with the widget sheet's option
+   rows -- the two are the same idea, and reading as one pattern is the point. */
+.setting-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+}
+
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  width: 100%;
+  padding: 13px 10px;
+  border: 0;
+  border-radius: var(--r-sm, 12px);
+  background: transparent;
+  box-shadow: none;
+  text-align: left;
+  font: inherit;
+}
+
+.setting-row:hover {
+  border: 0;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+/* A hairline between rows rather than a box around each: a list of six boxes
+   is six things, and this is one thing with six lines in it. */
+.setting-row + .setting-row {
+  box-shadow: inset 0 1px 0 var(--ink-12);
+}
+
+.setting-row-label {
+  font-weight: 600;
+  font-size: 13.5px;
+  white-space: nowrap;
+}
+
+/* The value takes what is left and ellipsises: "22:00 – 07:00" fits, and a
+   refresh level's own words do not have to. */
+.setting-row-value {
+  margin-left: auto;
+  min-width: 0;
+  font-size: 12.5px;
+  color: var(--ink-60);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

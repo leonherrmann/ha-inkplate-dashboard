@@ -1,5 +1,6 @@
 import { Battery, formatAge, signalLabel } from "./DeviceStats.jsx";
-import { MonitorIcon, PushIcon } from "./Icons.jsx";
+import { PushIcon } from "./Icons.jsx";
+import PanelPicker from "./PanelPicker.jsx";
 
 // Identity, health, and the one action worth a solid fill, at the top of the
 // editor's own column.
@@ -8,7 +9,18 @@ import { MonitorIcon, PushIcon } from "./Icons.jsx";
 // design has no title bar: the facts about the device belong beside the thing
 // you are editing onto it, not above the whole application.
 
-export default function DeviceCard({ status, panel, lastSeenAge, sync, onPush, onOpenDevice }) {
+export default function DeviceCard({
+  status,
+  panels,
+  panelId,
+  onSelectPanel,
+  onRenamePanel,
+  onForgetPanel,
+  lastSeenAge,
+  sync,
+  onPush,
+  onOpenDevice,
+}) {
   const stats = status?.stats;
   const online = Boolean(status?.online);
 
@@ -21,19 +33,25 @@ export default function DeviceCard({ status, panel, lastSeenAge, sync, onPush, o
 
   return (
     <section className="card device-card">
-      <button className="device-ident" onClick={onOpenDevice} title="Open the Device screen">
-        <span className="device-mark">
-          <MonitorIcon size={17} />
-        </span>
-        <span className="device-text">
-          <span className="device-name">Inkplate 5</span>
-          <span className="device-spec">
-            {panel.width} × {panel.height} · 1-bit
-          </span>
-        </span>
-      </button>
+      {/* The identity *is* the panel chooser now. It was a button that opened
+          the Device screen; that is one tap further away here, from the badge
+          row, because which panel you are editing is asked far more often than
+          its diagnostics are. */}
+      <PanelPicker
+        panels={panels}
+        selected={panelId}
+        onSelect={onSelectPanel}
+        onRename={onRenamePanel}
+        onForget={onForgetPanel}
+      />
 
       <div className="device-badges">
+        {/* The way through to the Device screen, which the identity used to be.
+            A badge rather than a button of its own: it is one of the facts
+            about the panel, and it opens the page that has the rest of them. */}
+        <button className="badge link" onClick={onOpenDevice} title="Open the Device screen">
+          Diagnostics
+        </button>
         <span className={online ? "badge teal" : "badge"}>
           <span className={online ? "dot online" : "dot offline"} />
           {online ? "Online" : "Offline"} {formatAge(lastSeenAge)}
