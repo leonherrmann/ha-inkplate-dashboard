@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026.9.53
+
+- **The `firmware_model` option is gone.** Which board a build was for is read
+  from the release's own asset names, and which board the one legacy offer
+  carries is worked out from the panels — a panel that is behind gets it, and a
+  panel still running firmware that can only read that topic keeps it. Nobody
+  should have to know that setting, and getting it wrong decided which panel was
+  allowed to update.
+- **Firmware offers now follow the panels.** A panel switched on after the
+  add-on started is offered a build straight away, rather than waiting for a
+  restart or a new release. This is what left the first Inkplate 5 with no
+  update showing while the V2 beside it updated fine.
+
 ## 2026.9.52
 
 - **Fixes saving a layout, which answered 500 in 2026.9.51.** Announcing a

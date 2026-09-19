@@ -29,7 +29,6 @@ from registry import registry
 from weather import weather
 from settings import (
     DEVICE_PORT,
-    FIRMWARE_MODEL,
     FIRMWARE_REPO,
     HA_REST_URL,
     IMAGE_BASE_URL,
@@ -75,6 +74,80 @@ async def image_base_url() -> str:
     return f"http://{host}:{DEVICE_PORT}" if host else ""
 
 
+def _models_behind() -> list[str]:
+    """The boards of the panels that are not running what is held.
+
+    Read from what each panel reports rather than from a setting: the add-on
+    knows every panel's model and every panel's version, so asking anybody which
+    board to offer a build to would be asking about something it can see.
+    """
+    held = firmware.store.state.get("version")
+    if not held:
+        return []
+
+    behind = []
+    for panel in panels.all():
+        model = panel.get("model")
+        if not model or not firmware.store.have_binary(model):
+            continue
+        running = ((link.panel(panel["id"]).stats or {}).get("firmware") or {}).get("running")
+        # A panel that has never said what it runs counts as behind: it is
+        # either new or old, and both want the offer.
+        if running != held:
+            behind.append(model)
+    return behind
+
+
+# What the firmware offers depend on: the release held, and every panel's board
+# and running version. Kept so that the offers can be republished when one of
+# them moves and *only* then -- the device link calls back on every message a
+# panel sends, and re-publishing four retained topics on each of those would be
+# a great deal of broker traffic to say the same thing.
+_offer_fingerprint: tuple | None = None
+
+
+def _offers_would_change() -> bool:
+    global _offer_fingerprint
+    now = (
+        firmware.store.state.get("version"),
+        tuple(
+            (
+                panel["id"],
+                panel.get("model"),
+                ((link.panel(panel["id"]).stats or {}).get("firmware") or {}).get("running"),
+            )
+            for panel in panels.all()
+        ),
+    )
+    if now == _offer_fingerprint:
+        return False
+    _offer_fingerprint = now
+    return True
+
+
+def _on_device_message() -> None:
+    """A panel said something. Re-offer firmware if that changed the answer.
+
+    This is what makes a panel that is switched on *after* the add-on started
+    get an offer at all -- and, when the first panel of a new board appears, what
+    hands it the shared topic it may be the only one able to read. Before this,
+    offers were published at startup and when a release changed, so a panel that
+    arrived in between waited for one of those.
+
+    Called from paho's own thread, so the work is handed to the event loop
+    rather than done here.
+    """
+    loop = _loop
+    if loop is None or not _offers_would_change():
+        return
+    asyncio.run_coroutine_threadsafe(publish_firmware(), loop)
+
+
+# The loop publish_firmware has to run on, captured at startup: the device link
+# calls back from the MQTT thread, where there is no running loop.
+_loop: asyncio.AbstractEventLoop | None = None
+
+
 async def publish_firmware() -> None:
     """Tell each panel what build is on offer for it, and where to fetch it.
 
@@ -83,16 +156,18 @@ async def publish_firmware() -> None:
     with no build for its model is sent an empty offer, which is the honest
     answer and what stops the editor showing it an Update button.
 
-    The shared topic is written too, carrying the configured model's build. That
-    is where firmware older than per-device topics looks, and a panel that has
-    not been updated yet is exactly the panel that needs an update.
+    The one shared topic is written too, for firmware older than per-device
+    topics -- which board's build it carries is worked out from the panels
+    themselves; see FirmwareStore.shared_model.
     """
     base = await image_base_url()
     for panel in panels.all():
         link.publish_firmware_for(
             panel["id"], firmware.store.manifest(base, panel.get("model"))
         )
-    link.publish_firmware(firmware.store.manifest(base))
+    link.publish_firmware(
+        firmware.store.manifest(base, firmware.store.shared_model(_models_behind()))
+    )
     # A newly found release is what the update entity in Home Assistant exists
     # to report, so it hears about it at the same moment the device does.
     link.announce()
@@ -231,6 +306,12 @@ async def watch_screenshots() -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    global _loop
+    _loop = asyncio.get_running_loop()
+    # Every message from a panel goes through here; see _on_device_message for
+    # why it is cheap.
+    link.on_change = _on_device_message
+
     # Said out loud when the option had to be corrected: the panel wants
     # `http://host:port` exactly, an address typed into an add-on option is
     # usually neither, and silently fixing it would hide a setting that does not
@@ -857,7 +938,7 @@ async def get_firmware(panel: str | None = None) -> dict[str, Any]:
         # sent a manifest has not said what it is, and refusing to offer it an
         # update would be worse than offering one its firmware can refuse for
         # itself.
-        "built_for": firmware.store.models() or [FIRMWARE_MODEL],
+        "built_for": firmware.store.models() or [firmware.LEGACY_MODEL],
         "panel_model": model,
         "model_matches": not model or held_for_panel,
     }

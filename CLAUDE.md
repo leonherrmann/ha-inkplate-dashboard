@@ -57,13 +57,18 @@ first panel to ask inherits them (`panels.claim_legacy`). Forgetting a panel
 never deletes its layout -- unplugged for a fortnight and gone for good look
 identical from here.
 
-**A panel of a model that has never had a release needs one flash to join.**
-Firmware older than per-device topics reads only the shared `firmware/manifest`,
-and that topic can only carry one model -- so a panel of the *other* model
-refuses everything on it and shows no update, correctly. The way in without a
-cable is to put that panel's build on the shared topic once (set `firmware_model`
-to its model, or publish the add-on's own offer there); it updates itself from
-then on. This bit exactly once, for the V1 before v2026.9.51.
+**Which board the one shared `firmware/manifest` carries is worked out, not
+configured.** Firmware older than per-device topics reads only that topic, it
+can name one model, and such firmware *clears* an offer whose model is not its
+own -- so pointing it at the wrong board does not merely fail to help one panel,
+it takes the offer away from another. `FirmwareStore.shared_model()` decides: a
+legacy-model panel that is behind keeps it, otherwise a panel of another board
+that is behind gets it, otherwise the legacy model. That is what lets the first
+panel of a new board take its first update without a cable.
+
+**Firmware offers are republished when a panel appears or changes version**, not
+only at startup and on a new release -- `link.on_change` -> `_on_device_message`
+in main.py, fingerprinted so a quiet panel costs no publishes.
 
 **One release, a binary per board, an offer per panel.** The firmware is one
 source tree compiled for two panels and the images are not interchangeable -- a

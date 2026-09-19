@@ -16,7 +16,7 @@ a V2 image on a V1 drives a framebuffer of the wrong size and is recoverable
 only over USB. A release therefore carries an asset per model, named after it --
 `ha_dashboard-inkplate5v2.bin` -- and this holds each one under that name. A
 release with a single unnamed `.bin`, which is every release made before this,
-is taken to be FIRMWARE_MODEL, which is what it always was.
+is taken to be LEGACY_MODEL below, which is what it always was.
 """
 
 import asyncio
@@ -30,13 +30,19 @@ import aiohttp
 
 from settings import (
     DATA_DIR,
-    FIRMWARE_MODEL,
     FIRMWARE_POLL_MINUTES,
     FIRMWARE_REPO,
     FIRMWARE_TOKEN,
 )
 
 log = logging.getLogger(__name__)
+
+# The board this firmware was built for before it was built for two, and so:
+# what an unnamed release asset must be, and what the one shared offer carries
+# when no panel needs it to carry anything else. A constant rather than an
+# option -- it is a fact about which releases exist, and nobody should have to
+# know it, let alone choose it.
+LEGACY_MODEL = "inkplate5v2"
 
 FIRMWARE_DIR = os.path.join(DATA_DIR, "firmware")
 STATE_PATH = os.path.join(FIRMWARE_DIR, "state.json")
@@ -168,7 +174,7 @@ class FirmwareStore:
                 if asset.get("size", 0) > MAX_BYTES:
                     log.warning("Ignoring %s: too large to be firmware", asset["name"])
                     continue
-                wanted[model_in(asset["name"]) or FIRMWARE_MODEL] = asset
+                wanted[model_in(asset["name"]) or LEGACY_MODEL] = asset
 
             if not wanted:
                 self.state["error"] = f"Release {version} has no usable .bin attached"
@@ -246,6 +252,34 @@ class FirmwareStore:
             response.raise_for_status()
             return await response.read()
 
+    def shared_model(self, behind: list[str]) -> str:
+        """Which build the one shared, legacy offer carries.
+
+        There is a single `<root>/firmware/manifest`, it can name one model, and
+        firmware old enough to read only that topic *clears* an offer whose
+        model is not its own. So handing it to the wrong board does not merely
+        fail to help one panel -- it takes the offer away from another.
+
+        The rule, in order:
+
+          - A panel of the legacy model is behind: the topic is its, because any
+            panel that depends on this topic at all is one of those.
+          - Otherwise some other board is behind and the legacy ones are not:
+            the topic is that board's, which is how the first panel of a new
+            model gets its first update without a cable.
+          - Nobody is behind: the legacy model, so a panel arriving later on old
+            firmware finds something it can read.
+
+        `behind` is the models of the panels that are not running what is held.
+        Decided from the panels the add-on can see rather than from a setting:
+        an add-on that knows every panel's model has no business asking.
+        """
+        if not behind or LEGACY_MODEL in behind:
+            return LEGACY_MODEL
+        # Sorted so two boards behind at once is a stable answer rather than a
+        # topic that flips between them on every publish.
+        return sorted(behind)[0]
+
     def manifest(self, base_url: str, model: str | None = None) -> dict[str, Any]:
         """What one panel needs to decide whether to update, and where from.
 
@@ -253,7 +287,7 @@ class FirmwareStore:
         a panel offered another board's image would refuse it anyway, and an
         empty offer is what stops the editor showing an Update button for it.
         """
-        wanted = model or FIRMWARE_MODEL
+        wanted = model or LEGACY_MODEL
         build = self.builds().get(wanted)
         if not build or not self.have_binary(wanted) or not base_url:
             return {}

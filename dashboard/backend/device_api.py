@@ -27,7 +27,6 @@ import images
 import manifest_store
 import panels
 import reports
-from settings import FIRMWARE_MODEL
 
 log = logging.getLogger("inkplate.device")
 
@@ -95,10 +94,10 @@ async def get_firmware() -> FileResponse:
     """Where firmware older than per-model builds fetches from.
 
     It asked for this path and knew nothing of models, so it gets the build for
-    the model this add-on is configured for -- which, for a panel old enough to
+    the board those releases were made for -- which, for a panel old enough to
     be asking, is the one it is.
     """
-    path = firmware.store.binary_path(FIRMWARE_MODEL)
+    path = firmware.store.binary_path(firmware.LEGACY_MODEL)
     if not os.path.isfile(path):
         raise HTTPException(status_code=404, detail="No firmware held")
     return FileResponse(path, media_type="application/octet-stream")

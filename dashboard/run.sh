@@ -10,11 +10,6 @@ export DEVICE_PORT=8098
 export DATA_DIR=/data
 export STATIC_DIR=/app/static
 export DEVICE_ID="$(bashio::config 'device_id')"
-# Which panel the releases in firmware_repo are built for. Every panel reads one
-# firmware manifest, and the binaries are not interchangeable -- a V2 image on a
-# V1 is a framebuffer of the wrong size. A panel of another model ignores an
-# offer that says it is not for it.
-export FIRMWARE_MODEL="$(bashio::config 'firmware_model')"
 export LOG_LEVEL="$(bashio::config 'log_level')"
 # has_value rather than reading straight through: bashio hands back the literal
 # string "null" for an option that was never given a value, which is truthy and
