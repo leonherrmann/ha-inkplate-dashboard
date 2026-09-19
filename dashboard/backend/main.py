@@ -76,8 +76,22 @@ async def image_base_url() -> str:
 
 
 async def publish_firmware() -> None:
-    """Tell the device what build is on offer, and where to fetch it."""
+    """Tell each panel what build is on offer for it, and where to fetch it.
+
+    Per panel, because the binaries are not interchangeable: one release holds
+    an image per board, and a panel offered the other one refuses it. A panel
+    with no build for its model is sent an empty offer, which is the honest
+    answer and what stops the editor showing it an Update button.
+
+    The shared topic is written too, carrying the configured model's build. That
+    is where firmware older than per-device topics looks, and a panel that has
+    not been updated yet is exactly the panel that needs an update.
+    """
     base = await image_base_url()
+    for panel in panels.all():
+        link.publish_firmware_for(
+            panel["id"], firmware.store.manifest(base, panel.get("model"))
+        )
     link.publish_firmware(firmware.store.manifest(base))
     # A newly found release is what the update entity in Home Assistant exists
     # to report, so it hears about it at the same moment the device does.
@@ -828,17 +842,24 @@ async def get_firmware(panel: str | None = None) -> dict[str, Any]:
     # an offer that is not its own -- so the editor has to be able to say that
     # rather than showing an Update button that does nothing.
     model = (panels.get(panel_id) or {}).get("model")
+    # A release holds an image per board. What matters to this panel is whether
+    # one of them is for *it* -- not what else the release contains.
+    held_for_panel = bool(model and firmware.store.have_binary(model))
     return {
         "repo": FIRMWARE_REPO,
         "held": firmware.store.state,
         "device": reported,
-        "servable": bool(firmware.store.have_binary() and await image_base_url()),
-        "built_for": FIRMWARE_MODEL,
+        "servable": bool(
+            firmware.store.have_binary(model or None) and await image_base_url()
+        ),
+        # Which boards this release was built for, and whether one of them is
+        # this panel's. Unknown model is not a mismatch: a panel that has never
+        # sent a manifest has not said what it is, and refusing to offer it an
+        # update would be worse than offering one its firmware can refuse for
+        # itself.
+        "built_for": firmware.store.models() or [FIRMWARE_MODEL],
         "panel_model": model,
-        # Unknown model is not a mismatch: a panel that has never sent a
-        # manifest has not said what it is, and refusing to offer it an update
-        # would be worse than offering one its firmware can refuse for itself.
-        "model_matches": not model or model == FIRMWARE_MODEL,
+        "model_matches": not model or held_for_panel,
     }
 
 

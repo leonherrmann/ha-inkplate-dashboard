@@ -27,6 +27,7 @@ import images
 import manifest_store
 import panels
 import reports
+from settings import FIRMWARE_MODEL
 
 log = logging.getLogger("inkplate.device")
 
@@ -69,13 +70,35 @@ async def get_image(name: str) -> FileResponse:
     return FileResponse(path, media_type="application/octet-stream")
 
 
-@app.get("/firmware.bin")
-async def get_firmware() -> FileResponse:
-    """The release binary, re-served in plain HTTP because the device has no TLS."""
+@app.get("/firmware-{model}.bin")
+async def get_firmware_for(model: str) -> FileResponse:
+    """The release binary for one board, re-served in plain HTTP: the device has
+    no TLS, and the two boards' images are not interchangeable.
+
+    The model is in the path rather than in a query so that each panel's URL is
+    a *different* URL -- a cache, a proxy or a retained manifest holding the
+    other one would otherwise hand a panel the wrong image under a name that
+    looks right.
+    """
     # The file, not the store's cached state: this runs in its own process, so
     # its copy of that state is whatever it was at startup and goes stale the
     # moment the editor downloads a release.
-    path = firmware.store.binary_path
+    safe = "".join(one for one in model if one.isalnum())
+    path = firmware.store.binary_path(safe)
+    if not safe or not os.path.isfile(path):
+        raise HTTPException(status_code=404, detail=f"No firmware held for {model}")
+    return FileResponse(path, media_type="application/octet-stream")
+
+
+@app.get("/firmware.bin")
+async def get_firmware() -> FileResponse:
+    """Where firmware older than per-model builds fetches from.
+
+    It asked for this path and knew nothing of models, so it gets the build for
+    the model this add-on is configured for -- which, for a panel old enough to
+    be asking, is the one it is.
+    """
+    path = firmware.store.binary_path(FIRMWARE_MODEL)
     if not os.path.isfile(path):
         raise HTTPException(status_code=404, detail="No firmware held")
     return FileResponse(path, media_type="application/octet-stream")

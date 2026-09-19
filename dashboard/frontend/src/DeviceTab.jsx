@@ -476,7 +476,11 @@ export default function DeviceTab({
                   )}
                   <p className="hint" style={{ marginTop: 10 }}>
                     {wrongModel
-                      ? `This build is for the ${MODEL_LABELS[firmware.built_for] || firmware.built_for}, and this panel is a ${MODEL_LABELS[firmware.panel_model] || firmware.panel_model}. The panel ignores it; point firmware_repo at a repo that builds for this one, or update it over USB.`
+                      ? `This release has builds for ${(firmware.built_for || [])
+                          .map((one) => MODEL_LABELS[one] || one)
+                          .join(" and ")}, and this panel is a ${
+                          MODEL_LABELS[firmware.panel_model] || firmware.panel_model
+                        }. The panel ignores an image built for another board; update it over USB, or release one built for this one.`
                       : canUpdate
                         ? "The panel downloads it, checks the hash and restarts. If the new build cannot boot, the bootloader puts the old one back."
                         : "The panel is running the newest release held here."}

@@ -139,6 +139,10 @@ class DeviceTopics:
         # Assistant's update entity wants. Written by the add-on for Home
         # Assistant; the device neither publishes nor reads it.
         self.firmware_state = f"{self.root}/firmware/state"
+        # What build is on offer to *this* panel and where to fetch it. Per
+        # device because the binaries are not interchangeable: one release holds
+        # an image per board, and a panel offered the other one refuses it.
+        self.firmware_manifest = f"{self.root}/firmware/manifest"
         # Where the newest screenshot can be fetched. Written by the add-on for
         # Home Assistant's image entity, which follows a URL rather than taking
         # the bytes -- 20KB of PNG through the broker on every capture, retained,

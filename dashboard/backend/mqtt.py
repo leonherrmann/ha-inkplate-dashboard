@@ -333,10 +333,27 @@ class DeviceLink:
         log.info("Published an image manifest listing %d images", len(manifest.get("images", [])))
 
     def publish_firmware(self, manifest: dict[str, Any]) -> None:
-        """Retained, so a device that was asleep sees the offer when it wakes."""
+        """The shared offer, for firmware that knows no per-device topic.
+
+        Retained, so a device that was asleep sees it when it wakes.
+        """
         self._publish(topics.firmware_manifest, json.dumps(manifest), retain=True)
         if manifest:
-            log.info("Offering firmware %s", manifest.get("version"))
+            log.info(
+                "Offering firmware %s for %s on the shared topic",
+                manifest.get("version"),
+                manifest.get("model"),
+            )
+
+    def publish_firmware_for(self, panel_id: str, manifest: dict[str, Any]) -> None:
+        """One panel's offer, which is the one it can actually install."""
+        self._publish(
+            topics.device(panel_id).firmware_manifest, json.dumps(manifest), retain=True
+        )
+        if manifest:
+            log.info("Offering firmware %s to %s", manifest.get("version"), panel_id)
+        else:
+            log.info("No firmware build held for %s", panel_id)
 
     def publish_screenshot(self, panel_id: str, url: str) -> None:
         """Point Home Assistant at the newest screenshot.

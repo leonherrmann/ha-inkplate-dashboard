@@ -57,11 +57,14 @@ first panel to ask inherits them (`panels.claim_legacy`). Forgetting a panel
 never deletes its layout -- unplugged for a fortnight and gone for good look
 identical from here.
 
-**The firmware offer is shared and the binaries are not interchangeable.** One
-manifest, one URL, every panel reading it -- and a V2 image on a V1 is an ESP32
-driving a framebuffer of the wrong size, recoverable only over USB. So the offer
-carries `model` (`FIRMWARE_MODEL`, default `inkplate5v2`, since that is what the
-firmware repo's CI builds) and a panel ignores an offer that is not its own.
+**One release, a binary per board, an offer per panel.** The firmware is one
+source tree compiled for two panels and the images are not interchangeable -- a
+V2 image on a V1 is a framebuffer of the wrong size, recoverable only over USB.
+A release carries `ha_dashboard-inkplate5v2.bin` and `-inkplate5v1.bin`;
+`firmware.py` holds each under the model in its name, the device port serves
+them at `/firmware-<model>.bin`, and each panel is offered the one for its own
+model on its own topic. A release with a single unnamed `.bin` -- every release
+before this -- is filed under `FIRMWARE_MODEL`, which is what it always was.
 
 ## Running the checks
 
