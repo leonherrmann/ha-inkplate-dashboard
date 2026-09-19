@@ -57,6 +57,14 @@ first panel to ask inherits them (`panels.claim_legacy`). Forgetting a panel
 never deletes its layout -- unplugged for a fortnight and gone for good look
 identical from here.
 
+**A panel of a model that has never had a release needs one flash to join.**
+Firmware older than per-device topics reads only the shared `firmware/manifest`,
+and that topic can only carry one model -- so a panel of the *other* model
+refuses everything on it and shows no update, correctly. The way in without a
+cable is to put that panel's build on the shared topic once (set `firmware_model`
+to its model, or publish the add-on's own offer there); it updates itself from
+then on. This bit exactly once, for the V1 before v2026.9.51.
+
 **One release, a binary per board, an offer per panel.** The firmware is one
 source tree compiled for two panels and the images are not interchangeable -- a
 V2 image on a V1 is a framebuffer of the wrong size, recoverable only over USB.
