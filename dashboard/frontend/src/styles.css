@@ -4751,3 +4751,127 @@ button.ghost {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* --- choosing an icon by looking at it ------------------------------------
+   A grid of the outlines the panel draws, in the sheet's own screen on a phone
+   and in the shared picker modal on a wide screen. See IconGrid.jsx. */
+
+.icon-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.icon-section-heading {
+  margin: 0 0 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--ink-60);
+}
+
+.icon-grid {
+  display: grid;
+  /* Five to a row in the sheet, more where there is room. Small enough that a
+     section is a block to scan rather than a column to scroll. */
+  grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
+  gap: 8px;
+}
+
+.icon-tile {
+  display: flex;
+  /* Explicit, like .option-item: the app's base button rule lays its content
+     out in a row and centres it. */
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  min-height: 82px;
+  padding: 10px 5px 8px;
+  background: #fff;
+  border: 1px solid var(--ink-12);
+  border-radius: var(--r-sm);
+  box-shadow: none;
+  color: inherit;
+}
+
+.icon-tile:hover {
+  border-color: var(--ink-40);
+  background: #fff;
+}
+
+.icon-tile.selected {
+  background: var(--grad);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: var(--grad-lift-sm);
+}
+
+.icon-glyph {
+  width: 28px;
+  height: 28px;
+  flex: none;
+}
+
+/* Two lines, then ellipsis: "roller shades closed" is three words and the tile
+   is one icon wide. Truncating to one line would leave "roller shades" and
+   "roller shades closed" reading identically, which is the whole distinction. */
+.icon-tile-label {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 10.5px;
+  line-height: 1.25;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+/* An icon the manifest offers that this build has no drawing for -- a firmware
+   newer than the add-on. It still picks; it just cannot be shown. */
+.icon-tile-missing {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  font-size: 16px;
+  color: var(--ink-40);
+}
+
+/* The glyph beside the name, in the row that opens the screen and on the
+   trigger that opens the modal. */
+.option-row-glyph {
+  width: 17px;
+  height: 17px;
+  flex: none;
+  vertical-align: -3px;
+  margin-right: 5px;
+}
+
+.icon-trigger-glyph {
+  width: 20px;
+  height: 20px;
+  flex: none;
+}
+
+/* Inside the modal the grid is the part that scrolls, and the search and the
+   clear row need the shell's own side padding -- .picker is a flex column with
+   no padding of its own, so anything dropped in it would otherwise sit against
+   the rounded edge. */
+.picker .icon-sections {
+  overflow-y: auto;
+  padding: 0 16px 16px;
+  min-height: 0;
+}
+
+.picker .option-search {
+  padding: 0 16px 8px;
+  background: transparent;
+}
+
+.picker .option-item {
+  width: auto;
+  margin: 0 16px 8px;
+}

@@ -4,6 +4,7 @@ import EntityPicker from "./EntityPicker.jsx";
 import DevicePicker, { MAX_DEVICE_ENTITIES } from "./DevicePicker.jsx";
 import AreaPicker, { MAX_ROOM_ENTITIES } from "./AreaPicker.jsx";
 import DeviceEntities from "./DeviceEntities.jsx";
+import { IconField, IconGlyph, IconGrid } from "./IconGrid.jsx";
 import Sheet, { SheetBody, SheetFoot, useNarrow, HALF, PEEK } from "./Sheet.jsx";
 import { imagePreviewUrl } from "./api.js";
 import { LAYER_MOVES, widgetSize, widgetType } from "./layout.js";
@@ -146,24 +147,22 @@ function valueSummary(option, value, { albums, uploads }) {
 }
 
 
-// The control a big option gets once it has a screen to itself.
+// The control a big option gets once it has a screen to itself: images and
+// albums, which are lists of names the add-on holds.
 //
-// A list of rows rather than the select it is in the field list. A select of
-// three hundred icon names is a wheel on a phone and a column taller than the
-// window on a desktop, and neither can be searched -- which is the only way to
-// find "rooms_shower" among them without reading the lot.
+// A list of rows rather than a select. A select of a hundred uploads is a wheel
+// on a phone and a column taller than the window on a desktop, and neither can
+// be searched -- which is the only way to find one without reading the lot.
+//
+// Icons went the same way and then further: they are pictures, so they get a
+// grid of the drawings instead. See IconGrid.jsx.
 //
 // The search field appears only past a dozen values: below that it is a box
 // asking you to type in order to see what you could already see.
 function ScreenList({ option, values, value, onChange, uploads }) {
   const [query, setQuery] = useState("");
 
-  const label = (one) => {
-    if (option.type === "icon" && option.filter && one.startsWith(option.filter)) {
-      return one.slice(option.filter.length).replace(/_/g, " ");
-    }
-    return String(one).replace(/_/g, " ");
-  };
+  const label = (one) => String(one).replace(/_/g, " ");
 
   const terms = query.trim().toLowerCase();
   const shown = terms
@@ -369,19 +368,16 @@ function Option({ option, manifest, widget, value, entities, devices, areas, upl
   }
 
   // The firmware ships the icon names it can resolve, so this cannot produce
-  // something it will fail to draw.
+  // something it will fail to draw. What it draws is shown rather than named --
+  // see IconGrid.jsx.
   if (option.type === "icon") {
     return (
-      <select value={value || ""} onChange={(event) => onChange(event.target.value)}>
-        <option value="">— default —</option>
-        {optionValues(manifest, option).map((name) => (
-          <option key={name} value={name}>
-            {option.filter && name.startsWith(option.filter)
-              ? name.slice(option.filter.length)
-              : name}
-          </option>
-        ))}
-      </select>
+      <IconField
+        option={option}
+        values={optionValues(manifest, option)}
+        value={value || ""}
+        onChange={onChange}
+      />
     );
   }
 
@@ -660,6 +656,12 @@ export default function Inspector({
             >
               <span className="option-row-label">{option.label}</span>
               <span className="option-row-value">
+                {/* The icon itself beside its name: the row is what the list is
+                    read from, and "shower" and "shield" are a great deal easier
+                    to tell apart as pictures. */}
+                {option.type === "icon" && widget.options?.[option.key] && (
+                  <IconGlyph name={widget.options[option.key]} className="option-row-glyph" />
+                )}
                 {valueSummary(option, widget.options?.[option.key], { albums, uploads })}
               </span>
               <ChevronRight size={15} />
@@ -807,7 +809,15 @@ export default function Inspector({
                   {/* A list of values gets the list control; anything else --
                       the text widget's paragraph -- gets the same control it
                       has in the field list, with the room to be read. */}
-                  {screenValues ? (
+                  {screenValues && screenOption.type === "icon" ? (
+                    /* Icons get shown rather than named -- see IconGrid.jsx. */
+                    <IconGrid
+                      option={screenOption}
+                      values={screenValues}
+                      value={widget.options?.[screenOption.key] || ""}
+                      onChange={(next) => onSetOption(widget.id, screenOption.key, next)}
+                    />
+                  ) : screenValues ? (
                     <ScreenList
                       option={screenOption}
                       values={screenValues}

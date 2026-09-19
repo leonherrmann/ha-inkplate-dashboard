@@ -140,7 +140,15 @@ cd dashboard/frontend && npx serve dist -l 8127     # in one shell
 cd ../../../test-harnesses && node sheetcheck.mjs   # 40 checks, mobile sheet
 cd ../../../test-harnesses && node pickercheck.mjs
 cd ../../../test-harnesses && node devicecheck.mjs   # the Device screen, phone and desktop
+cd ../../../test-harnesses && node iconcheck.mjs     # the icon grid, both shells
 ```
+
+**The icon picker shows the firmware's own outlines**, copied into
+`frontend/src/iconGlyphs.js` by `dashboard/tools/icon-glyphs.py` from the
+firmware's `icon_svg/`. Re-run it when the firmware gains an icon. The manifest
+still decides which icons *exist*, so one with no outline here still lists —
+`iconcheck.mjs` opens with the comparison and names any that have drifted, which
+is the alarm for the two repos having been released apart.
 
 `/entities`, `/devices` and `/areas` answer with a **bare array**, not an
 object — a stub that wraps them crashes the inspector rather than emptying it.

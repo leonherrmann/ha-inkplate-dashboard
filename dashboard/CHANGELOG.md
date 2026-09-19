@@ -1,5 +1,24 @@
 # Changelog
 
+## 2026.9.57
+
+- **The icon picker shows the icons.** It was a list of names — a dropdown of
+  seventy-one on a desktop, rows of `entity_roller_shades_closed` on a phone —
+  which asks you to know in advance which drawing each name stands for, and to
+  tell two apart by reading them. It is now a grid of the outlines the panel
+  actually draws, grouped into Lighting, Climate, Air, Doors and windows,
+  Security, Media and Power, with the search still there for going straight to
+  one. A list short enough to take in at once, like the room card's ten, is left
+  as a plain grid with no headings over it.
+
+  The option's row shows the icon beside its name too, so a widget's settings can
+  be read without opening anything.
+
+  The outlines are the firmware's own, copied over by `tools/icon-glyphs.py`.
+  Which icons exist is still the manifest's to say: a firmware newer than this
+  add-on lists its new icon immediately, shown by name until the drawings are
+  copied across again.
+
 ## 2026.9.56
 
 - **Converting a picture is about three times faster**, and the picture it
