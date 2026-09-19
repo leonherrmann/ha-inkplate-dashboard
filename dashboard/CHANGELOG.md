@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026.9.54
+
+- **Fixes screenshots from the Inkplate 5 (960×540).** A screenshot is the
+  panel's framebuffer verbatim and the two panels' are different sizes — 115,200
+  bytes against 64,800 — but the length was checked against one of them, so the
+  smaller panel's picture was refused as a truncated upload every time:
+  `Expected 115200 bytes of framebuffer, got 64800`. The size now comes from the
+  sending panel's own grid, and a genuinely wrong length says which panel it was
+  expecting.
+
 ## 2026.9.53
 
 - **The `firmware_model` option is gone.** Which board a build was for is read

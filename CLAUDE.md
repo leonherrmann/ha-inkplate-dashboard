@@ -182,6 +182,10 @@ a surface that covers a whole page cannot rely on a blur to hide it.
   prototype's setter.
 - The image manifest published over MQTT must fit the device's **16KB buffer** —
   going over drops the message rather than truncating it.
+- **Nothing in the backend may hardcode the panel's pixels.** A screenshot is
+  the framebuffer verbatim and the two panels' are 115,200 and 64,800 bytes;
+  `reports.py` had one pair of constants and refused the smaller panel's picture
+  as a truncated upload. Ask `grids.of(panel_id)`.
 - **`image_base_url` is corrected, not trusted.** The firmware wants
   `http://host:port` exactly and refuses anything else; what people type is
   `192.168.178.35`. Seen on a real install, where it cost the images, the boot

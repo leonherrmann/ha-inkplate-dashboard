@@ -18,6 +18,7 @@ from typing import Any
 
 from PIL import Image
 
+import grids
 from settings import DATA_DIR
 
 log = logging.getLogger(__name__)
@@ -36,12 +37,21 @@ def screenshot_meta_path(panel_id: str) -> str:
 def log_path(panel_id: str) -> str:
     return os.path.join(DATA_DIR, f"device-log-{panel_id}.txt")
 
-# The panel, in the only mode this firmware uses it in. A screenshot is the
-# framebuffer verbatim, so its length is fixed and anything else is a mistake
-# rather than a smaller picture.
-PANEL_WIDTH = 1280
-PANEL_HEIGHT = 720
-FRAME_BYTES = PANEL_WIDTH // 8 * PANEL_HEIGHT
+# A screenshot is the framebuffer verbatim, so its length is fixed by the panel
+# it came from -- and **the panels are not the same size**: 1280x720 is 115,200
+# bytes and 960x540 is 64,800. This was one pair of constants, which meant the
+# smaller panel's screenshot was refused as a truncated upload every time:
+# "Expected 115200 bytes, got 64800". The size comes from the sending panel's
+# own grid now; see grids.py, which reads it from the manifest that panel
+# published.
+def frame_size(panel_id: str) -> tuple[int, int]:
+    grid = grids.of(panel_id)
+    return grid.width, grid.height
+
+
+def frame_bytes(panel_id: str) -> int:
+    width, height = frame_size(panel_id)
+    return width // 8 * height
 
 # The device's framebuffer is 1 bit per pixel, **LSB first within each byte**,
 # and a **set bit is ink** -- both the opposite of what PIL's plain "1" rawmode
@@ -88,12 +98,17 @@ DEFAULT_ROTATION = 2
 
 def save_screenshot(panel_id: str, raw: bytes, rotation: int = DEFAULT_ROTATION) -> dict[str, Any]:
     """Store the framebuffer as a PNG. Raises ValueError if it is not one."""
-    if len(raw) != FRAME_BYTES:
+    width, height = frame_size(panel_id)
+    expected = width // 8 * height
+    if len(raw) != expected:
+        # Named, because the two panels' sizes are both plausible numbers and
+        # the useful question is which panel this was supposed to be from.
         raise ValueError(
-            f"Expected {FRAME_BYTES} bytes of framebuffer, got {len(raw)}"
+            f"Expected {expected} bytes of framebuffer for {panel_id} "
+            f"({width}x{height}), got {len(raw)}"
         )
 
-    image = Image.frombytes("1", (PANEL_WIDTH, PANEL_HEIGHT), raw, "raw", FRAME_RAWMODE)
+    image = Image.frombytes("1", (width, height), raw, "raw", FRAME_RAWMODE)
 
     turn = UNROTATE.get(rotation % 4)
     if turn is not None:
@@ -109,8 +124,8 @@ def save_screenshot(panel_id: str, raw: bytes, rotation: int = DEFAULT_ROTATION)
     meta = {
         "taken_at": time.time(),
         # The picture's own size, which is not the panel's when the device is
-        # drawing at a quarter turn: the buffer is always 1280x720, but what was
-        # drawn into it is 720x1280.
+        # drawing at a quarter turn: the buffer is the panel's shape, but what
+        # was drawn into it may be the other way round.
         "width": image.width,
         "height": image.height,
         "rotation": rotation,
@@ -119,7 +134,7 @@ def save_screenshot(panel_id: str, raw: bytes, rotation: int = DEFAULT_ROTATION)
     with open(screenshot_meta_path(panel_id), "w", encoding="utf-8") as handle:
         json.dump(meta, handle)
 
-    log.info("Stored a screenshot: %d bytes as PNG", meta["bytes"])
+    log.info("Stored a screenshot of %s: %d bytes as PNG", panel_id, meta["bytes"])
     return meta
 
 
@@ -135,8 +150,11 @@ def screenshot(panel_id: str) -> dict[str, Any] | None:
         # The picture is what matters; a lost sidecar should not hide it
         meta = {}
     meta.setdefault("taken_at", os.path.getmtime(screenshot_path(panel_id)))
-    meta.setdefault("width", PANEL_WIDTH)
-    meta.setdefault("height", PANEL_HEIGHT)
+    # Only reached when the sidecar is lost: the panel's own shape is the best
+    # guess at what its picture is.
+    width, height = frame_size(panel_id)
+    meta.setdefault("width", width)
+    meta.setdefault("height", height)
     return meta
 
 
