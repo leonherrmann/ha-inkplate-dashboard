@@ -198,14 +198,21 @@ ALBUM_POLL_SECONDS = 6 * 3600
 ALBUM_FIRST_POLL_SECONDS = 120
 
 
-def _every_layout() -> list[dict[str, Any]]:
-    """Every panel's draft, for the jobs that are about all of them at once.
+def _every_layout() -> list[tuple[grids.Grid, dict[str, Any]]]:
+    """Every panel's draft, each with the grid it is drawn against.
 
     The albums are shared -- one library of pictures, one set of rendered
     variants -- so which photos are wanted is a question about the layouts of
     every panel together, not about whichever one the editor is showing.
+
+    The grid rides along because a photo widget's *pixel* size is the panel's,
+    not the layout's: a 3x2 photo is 710x362 on a V2 and 685x408 on a V1, and
+    those are two different pictures to render and two different filenames. This
+    returned bare layouts for a while, which the album refresh unpacked as pairs
+    and died on -- so nothing was rendered at all, and the first panel to ask for
+    a size nobody had rendered yet drew ALBUM IS EMPTY.
     """
-    return [store.load(panel["id"]) for panel in panels.all()]
+    return [(grids.of(panel["id"]), store.load(panel["id"])) for panel in panels.all()]
 
 
 async def refresh_albums(layouts: list[dict[str, Any]] | None = None) -> dict[str, Any]:

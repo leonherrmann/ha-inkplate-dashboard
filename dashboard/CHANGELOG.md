@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026.9.55
+
+- **Fixes photo widgets showing ALBUM IS EMPTY.** Album refreshes have been
+  failing since panels became separate: the refresh takes each layout with the
+  grid it is drawn against, and it was still being handed bare layouts, so it
+  raised before rendering anything. Nothing new was rendered — which only shows
+  on a panel asking for a picture size that had never been rendered before, so
+  an Inkplate 5 beside a V2 drew an empty card while the V2 looked fine.
+
 ## 2026.9.54
 
 - **Fixes screenshots from the Inkplate 5 (960×540).** A screenshot is the

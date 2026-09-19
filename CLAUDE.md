@@ -79,6 +79,13 @@ them at `/firmware-<model>.bin`, and each panel is offered the one for its own
 model on its own topic. A release with a single unnamed `.bin` -- every release
 before this -- is filed under `FIRMWARE_MODEL`, which is what it always was.
 
+**Check the seam, not just the module.** Twice a fault has hidden between a
+module and its caller while the module's own harness passed: `publish_firmware_state`
+referred to a name from another function, and `albums.refresh()` was given bare
+layouts after it started taking `(grid, layout)` pairs. Both were invisible to
+harnesses that called the module directly. When a signature changes, add a check
+that drives *main's* function.
+
 ## Running the checks
 
 `python3` on PATH is miniconda 3.8 and **cannot parse this backend** (`str |
