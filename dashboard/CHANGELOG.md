@@ -1,5 +1,32 @@
 # Changelog
 
+## 2026.9.51
+
+Ships with firmware `v2026.9.51`, and the two go together: this version talks
+to panels on their own topics and the old firmware does not answer there.
+**Update the add-on first, then the panels** — each panel keeps drawing its
+stored dashboard while it waits.
+
+- **Several panels, each with its own dashboard.** A panel introduces itself
+  the moment it is switched on; nothing is paired or configured. It gets its
+  own pages, widgets, orientation, screen refresh, night sleep, timers,
+  history, screenshot, boot log and Home Assistant device. The identity in the
+  editor is now a dropdown; rename a panel there, and forget one that has gone
+  for good — its dashboard is kept either way.
+- **The Inkplate 5 (960×540) is supported alongside the V2.** The firmware is
+  one source tree built for both, and the editor draws the grid each panel
+  publishes: 5×3 cells of 220×166 on a V2, 4×2 of 215×202 on a V1.
+- **A release now carries a binary per board**, and each panel is offered the
+  one built for it. The images are not interchangeable — the wrong one needs a
+  USB cable to undo — so a panel refuses an offer that is not its own.
+- **`image_base_url` is read as an address rather than a URL.** `192.168.178.35`
+  becomes `http://192.168.178.35:8098`. Typed without a scheme it used to cost
+  the images, the boot log and the HTTP manifest, silently.
+- **On a phone**: the editor toolbar drops what the widget sheet already
+  carries, the sheet rises instead of snapping open, a big option opens on a
+  screen of its own with a searchable list, and the Device screen is a list of
+  settings rather than every one of them expanded.
+
 ## 2026.9.49
 
 Ships with firmware `v2026.9.49`. **Install this add-on before updating the
