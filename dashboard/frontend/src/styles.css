@@ -4696,3 +4696,58 @@ button.ghost {
   image-rendering: pixelated;
   flex: none;
 }
+
+
+/* The phone's Device screen: a list of what everything is set to, each row
+   opening that one setting. Shares its shape with the widget sheet's option
+   rows -- the two are the same idea, and reading as one pattern is the point. */
+.setting-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+}
+
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  width: 100%;
+  padding: 13px 10px;
+  border: 0;
+  border-radius: var(--r-sm, 12px);
+  background: transparent;
+  box-shadow: none;
+  text-align: left;
+  font: inherit;
+}
+
+.setting-row:hover {
+  border: 0;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+/* A hairline between rows rather than a box around each: a list of six boxes
+   is six things, and this is one thing with six lines in it. */
+.setting-row + .setting-row {
+  box-shadow: inset 0 1px 0 var(--ink-12);
+}
+
+.setting-row-label {
+  font-weight: 600;
+  font-size: 13.5px;
+  white-space: nowrap;
+}
+
+/* The value takes what is left and ellipsises: "22:00 – 07:00" fits, and a
+   refresh level's own words do not have to. */
+.setting-row-value {
+  margin-left: auto;
+  min-width: 0;
+  font-size: 12.5px;
+  color: var(--ink-60);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

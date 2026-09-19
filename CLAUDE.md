@@ -108,6 +108,7 @@ specificity bugs of that shape, all invisible in a static desktop render.
 cd dashboard/frontend && npx serve dist -l 8127     # in one shell
 cd ../../../test-harnesses && node sheetcheck.mjs   # 40 checks, mobile sheet
 cd ../../../test-harnesses && node pickercheck.mjs
+cd ../../../test-harnesses && node devicecheck.mjs   # the Device screen, phone and desktop
 ```
 
 `/entities`, `/devices` and `/areas` answer with a **bare array**, not an
@@ -133,6 +134,10 @@ a surface that covers a whole page cannot rely on a blur to hide it.
   that width is over the canvas and nearer than the bar. Zoom is a menu rather
   than three pills. `PageBar` chooses with `useNarrow` rather than hiding a
   second copy with CSS -- two copies are two tab stops.
+- **On a phone the Device screen is a list of rows, one per setting**, each
+  opening on its own; the desktop keeps the four cards side by side. Same shape
+  as the sheet's option rows, deliberately -- these are the same idea, and a
+  setting is something you set once and read at a glance after that.
 - **A big option in the sheet is a row that opens a screen**, not a control
   expanded in the list: a room card has twelve options and nobody is looking at
   eleven of them. `wantsScreen()` in `Inspector.jsx` decides, and the firmware
