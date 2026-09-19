@@ -217,6 +217,14 @@ async def watch_screenshots() -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Said out loud when the option had to be corrected: the panel wants
+    # `http://host:port` exactly, an address typed into an add-on option is
+    # usually neither, and silently fixing it would hide a setting that does not
+    # say what the user thinks it says.
+    typed = os.environ.get("IMAGE_BASE_URL", "").strip()
+    if typed and typed.rstrip("/") != IMAGE_BASE_URL:
+        log.info("Reading image_base_url '%s' as '%s'", typed, IMAGE_BASE_URL)
+
     link.start()
     bridge.start()
     weather.start()

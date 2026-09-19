@@ -166,6 +166,10 @@ a surface that covers a whole page cannot rely on a blur to hide it.
   prototype's setter.
 - The image manifest published over MQTT must fit the device's **16KB buffer** —
   going over drops the message rather than truncating it.
+- **`image_base_url` is corrected, not trusted.** The firmware wants
+  `http://host:port` exactly and refuses anything else; what people type is
+  `192.168.178.35`. Seen on a real install, where it cost the images, the boot
+  log, and the HTTP manifest — which then fell back to one 15KB MQTT publish.
 - Anything written to `DATA_DIR` that a background task also reads must be
   written atomically (temp file + `os.replace`). A truncating write once deleted
   a user's photo album.

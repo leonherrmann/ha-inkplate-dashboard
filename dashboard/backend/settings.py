@@ -27,7 +27,34 @@ DEVICE_PORT = int(os.environ.get("DEVICE_PORT", "8098"))
 # What the device should prefix image URLs with. Left empty, the add-on asks the
 # Supervisor for the host's address and works it out; set it when that guesses
 # wrong, e.g. with multiple interfaces or a reverse proxy.
-IMAGE_BASE_URL = os.environ.get("IMAGE_BASE_URL", "").strip()
+#
+# Corrected rather than trusted. The firmware's HTTP client wants
+# `http://host:port` exactly and refuses anything else -- and what is typed into
+# an add-on option is an address as a person writes one: `192.168.178.35`, with
+# no scheme and no port. That was on a real install, and the failure is a bad
+# one to read from the outside: images do not download, the boot log never
+# arrives, and the manifest falls back to a single 15KB MQTT publish, which is
+# the very thing that path exists to avoid.
+def _usable_base_url(raw: str) -> str:
+    """`192.168.178.35` -> `http://192.168.178.35:8098`, and leave a good one alone."""
+    address = (raw or "").strip().rstrip("/")
+    if not address:
+        return ""
+
+    if "://" not in address:
+        address = f"http://{address}"
+
+    scheme, _, rest = address.partition("://")
+    # A port is what follows a colon in the *host* part; an IPv6 literal is in
+    # brackets and its colons are not that.
+    host = rest.split("/", 1)[0]
+    has_port = ":" in (host.rsplit("]", 1)[-1] if host.startswith("[") else host)
+    if not has_port and scheme == "http":
+        address = f"{address}:{DEVICE_PORT}"
+    return address
+
+
+IMAGE_BASE_URL = _usable_base_url(os.environ.get("IMAGE_BASE_URL", ""))
 
 # Releases of the firmware repo are watched here rather than by the device: they
 # are served over HTTPS, and the device has no TLS stack by design.
