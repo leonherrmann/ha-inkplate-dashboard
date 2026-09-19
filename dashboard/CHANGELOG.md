@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026.9.52
+
+- **Fixes saving a layout, which answered 500 in 2026.9.51.** Announcing a
+  panel to Home Assistant referred to a name that only exists in another
+  function, and the line was reached as soon as a panel had reported what
+  firmware it was running — which is to say, always, in a real install. Every
+  edit in the editor failed; pushing was unaffected.
+
 ## 2026.9.51
 
 Ships with firmware `v2026.9.51`, and the two go together: this version talks

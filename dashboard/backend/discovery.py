@@ -471,7 +471,7 @@ class Discovery:
         if not DISCOVERY_PREFIX or not running:
             return
         link.publish_raw(
-            device_topics.firmware_state,
+            topics.device(panel_id).firmware_state,
             json.dumps({"installed_version": running, "latest_version": latest or running}),
             retain=True,
         )
