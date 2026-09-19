@@ -103,6 +103,12 @@ function roomRoles(available) {
 const SCREEN_TYPES = ["icon", "image", "album"];
 const CHOICE_LIMIT = 5;
 
+// The room card's counted list is not one of the manifest's options -- it is
+// worked out here from the area -- but it is the longest thing in the sheet by
+// some way: every light, plug, speaker and door in the room, each a row with a
+// tick and two arrows. It gets a screen under a key of its own.
+const ROOM_LIST = "__room_entities";
+
 function wantsScreen(option, manifest) {
   if (SCREEN_TYPES.includes(option.type)) return true;
   if (option.type === "text") return Boolean(option.multiline);
@@ -538,6 +544,26 @@ export default function Inspector({
           ? optionValues(manifest, screenOption)
           : null;
 
+  // The list, built once: the field list and the screen render the same thing.
+  const roomList = !room ? null : room.entities.length > 0 ? (
+    <DeviceEntities
+      available={room.entities.filter((one) => !takenByBand.includes(one.entity_id))}
+      chosen={widget.options?.entities}
+      capacity={capacity}
+      onChange={(next) => onSetOption(widget.id, "entities", next)}
+    />
+  ) : (
+    <p className="hint">This room has nothing else in it.</p>
+  );
+
+  // How many of the room's things the card is showing, against how many the
+  // chosen size can draw -- which is the question the row is asked.
+  const roomListSummary = !room
+    ? ""
+    : room.entities.length === 0
+      ? "Nothing in it"
+      : `${(widget.options?.entities || []).length || room.entities.length} of ${room.entities.length}`;
+
   const title = widget.options?.name || type?.label || widget.type;
   const tone = categoryTone(type?.category);
 
@@ -670,23 +696,26 @@ export default function Inspector({
       {/* The room's counted list, after the readings rather than among them.
           The band's entities are each one field; this is a list, and it is what
           the buckets tally -- the lights, plugs, media and openings. */}
-      {room && (
-        <div className="field-block">
-          <span>Things in the room</span>
-          {room.entities.length > 0 ? (
-            <DeviceEntities
-              available={room.entities.filter(
-                (one) => !takenByBand.includes(one.entity_id)
-              )}
-              chosen={widget.options?.entities}
-              capacity={capacity}
-              onChange={(next) => onSetOption(widget.id, "entities", next)}
-            />
-          ) : (
-            <p className="hint">This room has nothing else in it.</p>
-          )}
-        </div>
-      )}
+      {room &&
+        (narrow ? (
+          // On a phone it is a row like the big options above it. It is longer
+          // than any of them -- a room with a dozen things in it is a dozen
+          // rows of tick and arrows -- so if anything earns a screen, this does.
+          <button
+            type="button"
+            className="option-row"
+            onClick={() => setScreen(ROOM_LIST)}
+          >
+            <span className="option-row-label">Things in the room</span>
+            <span className="option-row-value">{roomListSummary}</span>
+            <ChevronRight size={15} />
+          </button>
+        ) : (
+          <div className="field-block">
+            <span>Things in the room</span>
+            {roomList}
+          </div>
+        ))}
 
       {options.length === 0 && <p className="hint">This widget has no options.</p>}
 
@@ -765,13 +794,14 @@ export default function Inspector({
               </button>
               <div style={{ minWidth: 0 }}>
                 <div className="inspector-meta">{title}</div>
-                <h2>{screenOption?.label || "Option"}</h2>
+                <h2>{screen === ROOM_LIST ? "Things in the room" : screenOption?.label || "Option"}</h2>
               </div>
               <button className="icon-button plain" onClick={onClose} aria-label="Close">
                 ×
               </button>
             </div>
             <SheetBody>
+              {screen === ROOM_LIST && <div className="option-screen">{roomList}</div>}
               {screenOption && (
                 <div className="option-screen">
                   {/* A list of values gets the list control; anything else --
