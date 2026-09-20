@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026.9.60
+
+- **Fixes the Inkplate 5's widget previews: the chip row's were missing and the
+  rest sat 10px out of place.** The previews are real renders from the firmware,
+  and each carries the offset it should be drawn at. Those offsets were measured
+  against the V2's 30px margin rather than the V1's 20px — so every card was
+  placed 10px out, and a chip, which the simulator had quietly moved into the
+  chip row before rendering it, was placed 434px below its own box: off the
+  bottom of the canvas, leaving the transparent blocks.
+
+  The pictures themselves were right the whole time; only where to put them was
+  wrong. Every PNG in the set is unchanged.
+
 ## 2026.9.59
 
 - **Fixes chips not landing where you put them on an Inkplate 5.** A layout is a

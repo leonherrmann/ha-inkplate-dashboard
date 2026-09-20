@@ -1,12 +1,12 @@
 {
   "air-1x1": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "air-1x1.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "air-1x1-tall.png",
       "height": 246,
       "width": 221
@@ -14,13 +14,13 @@
     "width": 221
   },
   "air-2x1": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "air-2x1.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "air-2x1-tall.png",
       "height": 246,
       "width": 456
@@ -28,13 +28,13 @@
     "width": 456
   },
   "air-2x2": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "air-2x2.png",
     "height": 430,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "air-2x2-tall.png",
       "height": 506,
       "width": 456
@@ -42,13 +42,13 @@
     "width": 456
   },
   "air-3x2": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "air-3x2.png",
     "height": 430,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "air-3x2-tall.png",
       "height": 506,
       "width": 691
@@ -56,20 +56,20 @@
     "width": 691
   },
   "battery": {
-    "dx": 4,
-    "dy": 447,
+    "dx": 14,
+    "dy": 13,
     "file": "battery.png",
     "height": 30,
     "width": 112
   },
   "climate-1x1-rooms_bed": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "climate-1x1-rooms_bed.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "climate-1x1-rooms_bed-tall.png",
       "height": 246,
       "width": 221
@@ -77,13 +77,13 @@
     "width": 221
   },
   "climate-1x1-rooms_chair": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "climate-1x1-rooms_chair.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "climate-1x1-rooms_chair-tall.png",
       "height": 246,
       "width": 221
@@ -91,13 +91,13 @@
     "width": 221
   },
   "climate-1x1-rooms_checkroom": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "climate-1x1-rooms_checkroom.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "climate-1x1-rooms_checkroom-tall.png",
       "height": 246,
       "width": 221
@@ -105,13 +105,13 @@
     "width": 221
   },
   "climate-1x1-rooms_couch": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "climate-1x1-rooms_couch.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "climate-1x1-rooms_couch-tall.png",
       "height": 246,
       "width": 221
@@ -119,13 +119,13 @@
     "width": 221
   },
   "climate-1x1-rooms_desk": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "climate-1x1-rooms_desk.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "climate-1x1-rooms_desk-tall.png",
       "height": 246,
       "width": 221
@@ -133,13 +133,13 @@
     "width": 221
   },
   "climate-1x1-rooms_hallway": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "climate-1x1-rooms_hallway.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "climate-1x1-rooms_hallway-tall.png",
       "height": 246,
       "width": 221
@@ -147,13 +147,13 @@
     "width": 221
   },
   "climate-1x1-rooms_hanger": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "climate-1x1-rooms_hanger.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "climate-1x1-rooms_hanger-tall.png",
       "height": 246,
       "width": 221
@@ -161,13 +161,13 @@
     "width": 221
   },
   "climate-1x1-rooms_kitchen": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "climate-1x1-rooms_kitchen.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "climate-1x1-rooms_kitchen-tall.png",
       "height": 246,
       "width": 221
@@ -175,13 +175,13 @@
     "width": 221
   },
   "climate-1x1-rooms_local_laundry_service": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "climate-1x1-rooms_local_laundry_service.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "climate-1x1-rooms_local_laundry_service-tall.png",
       "height": 246,
       "width": 221
@@ -189,13 +189,13 @@
     "width": 221
   },
   "climate-1x1-rooms_shower": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "climate-1x1-rooms_shower.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "climate-1x1-rooms_shower-tall.png",
       "height": 246,
       "width": 221
@@ -203,13 +203,13 @@
     "width": 221
   },
   "climate-2x1-rooms_bed": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "climate-2x1-rooms_bed.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "climate-2x1-rooms_bed-tall.png",
       "height": 246,
       "width": 456
@@ -217,13 +217,13 @@
     "width": 456
   },
   "climate-2x1-rooms_chair": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "climate-2x1-rooms_chair.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "climate-2x1-rooms_chair-tall.png",
       "height": 246,
       "width": 456
@@ -231,13 +231,13 @@
     "width": 456
   },
   "climate-2x1-rooms_checkroom": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "climate-2x1-rooms_checkroom.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "climate-2x1-rooms_checkroom-tall.png",
       "height": 246,
       "width": 456
@@ -245,13 +245,13 @@
     "width": 456
   },
   "climate-2x1-rooms_couch": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "climate-2x1-rooms_couch.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "climate-2x1-rooms_couch-tall.png",
       "height": 246,
       "width": 456
@@ -259,13 +259,13 @@
     "width": 456
   },
   "climate-2x1-rooms_desk": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "climate-2x1-rooms_desk.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "climate-2x1-rooms_desk-tall.png",
       "height": 246,
       "width": 456
@@ -273,13 +273,13 @@
     "width": 456
   },
   "climate-2x1-rooms_hallway": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "climate-2x1-rooms_hallway.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "climate-2x1-rooms_hallway-tall.png",
       "height": 246,
       "width": 456
@@ -287,13 +287,13 @@
     "width": 456
   },
   "climate-2x1-rooms_hanger": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "climate-2x1-rooms_hanger.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "climate-2x1-rooms_hanger-tall.png",
       "height": 246,
       "width": 456
@@ -301,13 +301,13 @@
     "width": 456
   },
   "climate-2x1-rooms_kitchen": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "climate-2x1-rooms_kitchen.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "climate-2x1-rooms_kitchen-tall.png",
       "height": 246,
       "width": 456
@@ -315,13 +315,13 @@
     "width": 456
   },
   "climate-2x1-rooms_local_laundry_service": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "climate-2x1-rooms_local_laundry_service.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "climate-2x1-rooms_local_laundry_service-tall.png",
       "height": 246,
       "width": 456
@@ -329,13 +329,13 @@
     "width": 456
   },
   "climate-2x1-rooms_shower": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "climate-2x1-rooms_shower.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "climate-2x1-rooms_shower-tall.png",
       "height": 246,
       "width": 456
@@ -343,13 +343,13 @@
     "width": 456
   },
   "climate-2x2-rooms_bed": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "climate-2x2-rooms_bed.png",
     "height": 430,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "climate-2x2-rooms_bed-tall.png",
       "height": 506,
       "width": 456
@@ -357,13 +357,13 @@
     "width": 456
   },
   "climate-2x2-rooms_chair": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "climate-2x2-rooms_chair.png",
     "height": 430,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "climate-2x2-rooms_chair-tall.png",
       "height": 506,
       "width": 456
@@ -371,13 +371,13 @@
     "width": 456
   },
   "climate-2x2-rooms_checkroom": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "climate-2x2-rooms_checkroom.png",
     "height": 430,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "climate-2x2-rooms_checkroom-tall.png",
       "height": 506,
       "width": 456
@@ -385,13 +385,13 @@
     "width": 456
   },
   "climate-2x2-rooms_couch": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "climate-2x2-rooms_couch.png",
     "height": 430,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "climate-2x2-rooms_couch-tall.png",
       "height": 506,
       "width": 456
@@ -399,13 +399,13 @@
     "width": 456
   },
   "climate-2x2-rooms_desk": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "climate-2x2-rooms_desk.png",
     "height": 430,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "climate-2x2-rooms_desk-tall.png",
       "height": 506,
       "width": 456
@@ -413,13 +413,13 @@
     "width": 456
   },
   "climate-2x2-rooms_hallway": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "climate-2x2-rooms_hallway.png",
     "height": 430,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "climate-2x2-rooms_hallway-tall.png",
       "height": 506,
       "width": 456
@@ -427,13 +427,13 @@
     "width": 456
   },
   "climate-2x2-rooms_hanger": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "climate-2x2-rooms_hanger.png",
     "height": 430,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "climate-2x2-rooms_hanger-tall.png",
       "height": 506,
       "width": 456
@@ -441,13 +441,13 @@
     "width": 456
   },
   "climate-2x2-rooms_kitchen": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "climate-2x2-rooms_kitchen.png",
     "height": 430,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "climate-2x2-rooms_kitchen-tall.png",
       "height": 506,
       "width": 456
@@ -455,13 +455,13 @@
     "width": 456
   },
   "climate-2x2-rooms_local_laundry_service": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "climate-2x2-rooms_local_laundry_service.png",
     "height": 430,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "climate-2x2-rooms_local_laundry_service-tall.png",
       "height": 506,
       "width": 456
@@ -469,13 +469,13 @@
     "width": 456
   },
   "climate-2x2-rooms_shower": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "climate-2x2-rooms_shower.png",
     "height": 430,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "climate-2x2-rooms_shower-tall.png",
       "height": 506,
       "width": 456
@@ -483,13 +483,13 @@
     "width": 456
   },
   "clock-2x1": {
-    "dx": 6,
-    "dy": 45,
+    "dx": 16,
+    "dy": 55,
     "file": "clock-2x1.png",
     "height": 91,
     "tall": {
-      "dx": 6,
-      "dy": 64,
+      "dx": 16,
+      "dy": 74,
       "file": "clock-2x1-tall.png",
       "height": 91,
       "width": 441
@@ -497,13 +497,13 @@
     "width": 441
   },
   "clock-2x2": {
-    "dx": 7,
-    "dy": 117,
+    "dx": 17,
+    "dy": 127,
     "file": "clock-2x2.png",
     "height": 169,
     "tall": {
-      "dx": 7,
-      "dy": 155,
+      "dx": 17,
+      "dy": 165,
       "file": "clock-2x2-tall.png",
       "height": 169,
       "width": 427
@@ -511,13 +511,13 @@
     "width": 427
   },
   "device-2x2": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "device-2x2.png",
     "height": 430,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "device-2x2-tall.png",
       "height": 506,
       "width": 456
@@ -525,13 +525,13 @@
     "width": 456
   },
   "device-3x2": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "device-3x2.png",
     "height": 430,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "device-3x2-tall.png",
       "height": 506,
       "width": 691
@@ -539,13 +539,13 @@
     "width": 691
   },
   "entity-1x1-binary_sensor": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "entity-1x1-binary_sensor.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "entity-1x1-binary_sensor-tall.png",
       "height": 246,
       "width": 221
@@ -553,13 +553,13 @@
     "width": 221
   },
   "entity-1x1-climate": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "entity-1x1-climate.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "entity-1x1-climate-tall.png",
       "height": 246,
       "width": 221
@@ -567,13 +567,13 @@
     "width": 221
   },
   "entity-1x1-cover": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "entity-1x1-cover.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "entity-1x1-cover-tall.png",
       "height": 246,
       "width": 221
@@ -581,13 +581,13 @@
     "width": 221
   },
   "entity-1x1-fan": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "entity-1x1-fan.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "entity-1x1-fan-tall.png",
       "height": 246,
       "width": 221
@@ -595,13 +595,13 @@
     "width": 221
   },
   "entity-1x1-light": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "entity-1x1-light.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "entity-1x1-light-tall.png",
       "height": 246,
       "width": 221
@@ -609,13 +609,13 @@
     "width": 221
   },
   "entity-1x1-lock": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "entity-1x1-lock.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "entity-1x1-lock-tall.png",
       "height": 246,
       "width": 221
@@ -623,13 +623,13 @@
     "width": 221
   },
   "entity-1x1-media_player": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "entity-1x1-media_player.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "entity-1x1-media_player-tall.png",
       "height": 246,
       "width": 221
@@ -637,13 +637,13 @@
     "width": 221
   },
   "entity-1x1-person": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "entity-1x1-person.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "entity-1x1-person-tall.png",
       "height": 246,
       "width": 221
@@ -651,13 +651,13 @@
     "width": 221
   },
   "entity-1x1-sensor": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "entity-1x1-sensor.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "entity-1x1-sensor-tall.png",
       "height": 246,
       "width": 221
@@ -665,13 +665,13 @@
     "width": 221
   },
   "entity-1x1-switch": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "entity-1x1-switch.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "entity-1x1-switch-tall.png",
       "height": 246,
       "width": 221
@@ -679,13 +679,13 @@
     "width": 221
   },
   "entity-1x1-update": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "entity-1x1-update.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "entity-1x1-update-tall.png",
       "height": 246,
       "width": 221
@@ -693,13 +693,13 @@
     "width": 221
   },
   "entity-1x1-vacuum": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "entity-1x1-vacuum.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "entity-1x1-vacuum-tall.png",
       "height": 246,
       "width": 221
@@ -707,13 +707,13 @@
     "width": 221
   },
   "entity-2x1-binary_sensor": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "entity-2x1-binary_sensor.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "entity-2x1-binary_sensor-tall.png",
       "height": 246,
       "width": 456
@@ -721,13 +721,13 @@
     "width": 456
   },
   "entity-2x1-climate": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "entity-2x1-climate.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "entity-2x1-climate-tall.png",
       "height": 246,
       "width": 456
@@ -735,13 +735,13 @@
     "width": 456
   },
   "entity-2x1-cover": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "entity-2x1-cover.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "entity-2x1-cover-tall.png",
       "height": 246,
       "width": 456
@@ -749,13 +749,13 @@
     "width": 456
   },
   "entity-2x1-fan": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "entity-2x1-fan.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "entity-2x1-fan-tall.png",
       "height": 246,
       "width": 456
@@ -763,13 +763,13 @@
     "width": 456
   },
   "entity-2x1-light": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "entity-2x1-light.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "entity-2x1-light-tall.png",
       "height": 246,
       "width": 456
@@ -777,13 +777,13 @@
     "width": 456
   },
   "entity-2x1-lock": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "entity-2x1-lock.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "entity-2x1-lock-tall.png",
       "height": 246,
       "width": 456
@@ -791,13 +791,13 @@
     "width": 456
   },
   "entity-2x1-media_player": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "entity-2x1-media_player.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "entity-2x1-media_player-tall.png",
       "height": 246,
       "width": 456
@@ -805,13 +805,13 @@
     "width": 456
   },
   "entity-2x1-person": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "entity-2x1-person.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "entity-2x1-person-tall.png",
       "height": 246,
       "width": 456
@@ -819,13 +819,13 @@
     "width": 456
   },
   "entity-2x1-sensor": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "entity-2x1-sensor.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "entity-2x1-sensor-tall.png",
       "height": 246,
       "width": 456
@@ -833,13 +833,13 @@
     "width": 456
   },
   "entity-2x1-switch": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "entity-2x1-switch.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "entity-2x1-switch-tall.png",
       "height": 246,
       "width": 456
@@ -847,13 +847,13 @@
     "width": 456
   },
   "entity-2x1-update": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "entity-2x1-update.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "entity-2x1-update-tall.png",
       "height": 246,
       "width": 456
@@ -861,13 +861,13 @@
     "width": 456
   },
   "entity-2x1-vacuum": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "entity-2x1-vacuum.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "entity-2x1-vacuum-tall.png",
       "height": 246,
       "width": 456
@@ -875,13 +875,13 @@
     "width": 456
   },
   "entity-2x2-binary_sensor": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "entity-2x2-binary_sensor.png",
     "height": 430,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "entity-2x2-binary_sensor-tall.png",
       "height": 506,
       "width": 456
@@ -889,13 +889,13 @@
     "width": 456
   },
   "entity-2x2-climate": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "entity-2x2-climate.png",
     "height": 430,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "entity-2x2-climate-tall.png",
       "height": 506,
       "width": 456
@@ -903,13 +903,13 @@
     "width": 456
   },
   "entity-2x2-cover": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "entity-2x2-cover.png",
     "height": 430,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "entity-2x2-cover-tall.png",
       "height": 506,
       "width": 456
@@ -917,13 +917,13 @@
     "width": 456
   },
   "entity-2x2-fan": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "entity-2x2-fan.png",
     "height": 430,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "entity-2x2-fan-tall.png",
       "height": 506,
       "width": 456
@@ -931,13 +931,13 @@
     "width": 456
   },
   "entity-2x2-light": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "entity-2x2-light.png",
     "height": 430,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "entity-2x2-light-tall.png",
       "height": 506,
       "width": 456
@@ -945,13 +945,13 @@
     "width": 456
   },
   "entity-2x2-lock": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "entity-2x2-lock.png",
     "height": 430,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "entity-2x2-lock-tall.png",
       "height": 506,
       "width": 456
@@ -959,13 +959,13 @@
     "width": 456
   },
   "entity-2x2-media_player": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "entity-2x2-media_player.png",
     "height": 430,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "entity-2x2-media_player-tall.png",
       "height": 506,
       "width": 456
@@ -973,13 +973,13 @@
     "width": 456
   },
   "entity-2x2-person": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "entity-2x2-person.png",
     "height": 430,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "entity-2x2-person-tall.png",
       "height": 506,
       "width": 456
@@ -987,13 +987,13 @@
     "width": 456
   },
   "entity-2x2-sensor": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "entity-2x2-sensor.png",
     "height": 430,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "entity-2x2-sensor-tall.png",
       "height": 506,
       "width": 456
@@ -1001,13 +1001,13 @@
     "width": 456
   },
   "entity-2x2-switch": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "entity-2x2-switch.png",
     "height": 430,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "entity-2x2-switch-tall.png",
       "height": 506,
       "width": 456
@@ -1015,13 +1015,13 @@
     "width": 456
   },
   "entity-2x2-update": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "entity-2x2-update.png",
     "height": 430,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "entity-2x2-update-tall.png",
       "height": 506,
       "width": 456
@@ -1029,13 +1029,13 @@
     "width": 456
   },
   "entity-2x2-vacuum": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "entity-2x2-vacuum.png",
     "height": 430,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "entity-2x2-vacuum-tall.png",
       "height": 506,
       "width": 456
@@ -1043,97 +1043,97 @@
     "width": 456
   },
   "entity_chip-binary_sensor": {
-    "dx": -10,
-    "dy": 434,
+    "dx": 0,
+    "dy": 0,
     "file": "entity_chip-binary_sensor.png",
     "height": 62,
     "width": 131
   },
   "entity_chip-climate": {
-    "dx": -10,
-    "dy": 434,
+    "dx": 0,
+    "dy": 0,
     "file": "entity_chip-climate.png",
     "height": 62,
     "width": 150
   },
   "entity_chip-cover": {
-    "dx": -10,
-    "dy": 434,
+    "dx": 0,
+    "dy": 0,
     "file": "entity_chip-cover.png",
     "height": 62,
     "width": 123
   },
   "entity_chip-fan": {
-    "dx": -10,
-    "dy": 434,
+    "dx": 0,
+    "dy": 0,
     "file": "entity_chip-fan.png",
     "height": 62,
     "width": 123
   },
   "entity_chip-light": {
-    "dx": -10,
-    "dy": 434,
+    "dx": 0,
+    "dy": 0,
     "file": "entity_chip-light.png",
     "height": 62,
     "width": 123
   },
   "entity_chip-lock": {
-    "dx": -10,
-    "dy": 434,
+    "dx": 0,
+    "dy": 0,
     "file": "entity_chip-lock.png",
     "height": 62,
     "width": 150
   },
   "entity_chip-media_player": {
-    "dx": -10,
-    "dy": 434,
+    "dx": 0,
+    "dy": 0,
     "file": "entity_chip-media_player.png",
     "height": 62,
     "width": 217
   },
   "entity_chip-person": {
-    "dx": -10,
-    "dy": 434,
+    "dx": 0,
+    "dy": 0,
     "file": "entity_chip-person.png",
     "height": 62,
     "width": 138
   },
   "entity_chip-sensor": {
-    "dx": -10,
-    "dy": 434,
+    "dx": 0,
+    "dy": 0,
     "file": "entity_chip-sensor.png",
     "height": 62,
     "width": 150
   },
   "entity_chip-switch": {
-    "dx": -10,
-    "dy": 434,
+    "dx": 0,
+    "dy": 0,
     "file": "entity_chip-switch.png",
     "height": 62,
     "width": 104
   },
   "entity_chip-update": {
-    "dx": -10,
-    "dy": 434,
+    "dx": 0,
+    "dy": 0,
     "file": "entity_chip-update.png",
     "height": 62,
     "width": 177
   },
   "entity_chip-vacuum": {
-    "dx": -10,
-    "dy": 434,
+    "dx": 0,
+    "dy": 0,
     "file": "entity_chip-vacuum.png",
     "height": 62,
     "width": 171
   },
   "light-1x1": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "light-1x1.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "light-1x1-tall.png",
       "height": 246,
       "width": 221
@@ -1141,13 +1141,13 @@
     "width": 221
   },
   "light-2x1": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "light-2x1.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "light-2x1-tall.png",
       "height": 246,
       "width": 456
@@ -1155,13 +1155,13 @@
     "width": 456
   },
   "light-2x2": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "light-2x2.png",
     "height": 430,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "light-2x2-tall.png",
       "height": 506,
       "width": 456
@@ -1169,13 +1169,13 @@
     "width": 456
   },
   "light-3x2": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "light-3x2.png",
     "height": 430,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "light-3x2-tall.png",
       "height": 506,
       "width": 691
@@ -1183,13 +1183,13 @@
     "width": 691
   },
   "media-1x1": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "media-1x1.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "media-1x1-tall.png",
       "height": 246,
       "width": 221
@@ -1197,13 +1197,13 @@
     "width": 221
   },
   "media-2x1": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "media-2x1.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "media-2x1-tall.png",
       "height": 246,
       "width": 456
@@ -1211,13 +1211,13 @@
     "width": 456
   },
   "media-2x2": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "media-2x2.png",
     "height": 430,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "media-2x2-tall.png",
       "height": 506,
       "width": 456
@@ -1225,13 +1225,13 @@
     "width": 456
   },
   "media-3x2": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "media-3x2.png",
     "height": 430,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "media-3x2-tall.png",
       "height": 506,
       "width": 691
@@ -1239,20 +1239,20 @@
     "width": 691
   },
   "mqtt": {
-    "dx": -10,
-    "dy": 434,
+    "dx": 0,
+    "dy": 0,
     "file": "mqtt.png",
     "height": 62,
     "width": 66
   },
   "opening-1x1": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "opening-1x1.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "opening-1x1-tall.png",
       "height": 246,
       "width": 221
@@ -1260,13 +1260,13 @@
     "width": 221
   },
   "opening-2x1": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "opening-2x1.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "opening-2x1-tall.png",
       "height": 246,
       "width": 456
@@ -1274,13 +1274,13 @@
     "width": 456
   },
   "opening-2x2": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "opening-2x2.png",
     "height": 430,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "opening-2x2-tall.png",
       "height": 506,
       "width": 456
@@ -1288,13 +1288,13 @@
     "width": 456
   },
   "opening-3x2": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "opening-3x2.png",
     "height": 430,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "opening-3x2-tall.png",
       "height": 506,
       "width": 691
@@ -1302,13 +1302,13 @@
     "width": 691
   },
   "room-1x1-rooms_bed": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "room-1x1-rooms_bed.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "room-1x1-rooms_bed-tall.png",
       "height": 246,
       "width": 221
@@ -1316,13 +1316,13 @@
     "width": 221
   },
   "room-1x1-rooms_chair": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "room-1x1-rooms_chair.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "room-1x1-rooms_chair-tall.png",
       "height": 246,
       "width": 221
@@ -1330,13 +1330,13 @@
     "width": 221
   },
   "room-1x1-rooms_checkroom": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "room-1x1-rooms_checkroom.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "room-1x1-rooms_checkroom-tall.png",
       "height": 246,
       "width": 221
@@ -1344,13 +1344,13 @@
     "width": 221
   },
   "room-1x1-rooms_couch": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "room-1x1-rooms_couch.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "room-1x1-rooms_couch-tall.png",
       "height": 246,
       "width": 221
@@ -1358,13 +1358,13 @@
     "width": 221
   },
   "room-1x1-rooms_desk": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "room-1x1-rooms_desk.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "room-1x1-rooms_desk-tall.png",
       "height": 246,
       "width": 221
@@ -1372,13 +1372,13 @@
     "width": 221
   },
   "room-1x1-rooms_hallway": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "room-1x1-rooms_hallway.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "room-1x1-rooms_hallway-tall.png",
       "height": 246,
       "width": 221
@@ -1386,13 +1386,13 @@
     "width": 221
   },
   "room-1x1-rooms_hanger": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "room-1x1-rooms_hanger.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "room-1x1-rooms_hanger-tall.png",
       "height": 246,
       "width": 221
@@ -1400,13 +1400,13 @@
     "width": 221
   },
   "room-1x1-rooms_kitchen": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "room-1x1-rooms_kitchen.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "room-1x1-rooms_kitchen-tall.png",
       "height": 246,
       "width": 221
@@ -1414,13 +1414,13 @@
     "width": 221
   },
   "room-1x1-rooms_local_laundry_service": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "room-1x1-rooms_local_laundry_service.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "room-1x1-rooms_local_laundry_service-tall.png",
       "height": 246,
       "width": 221
@@ -1428,13 +1428,13 @@
     "width": 221
   },
   "room-1x1-rooms_shower": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "room-1x1-rooms_shower.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "room-1x1-rooms_shower-tall.png",
       "height": 246,
       "width": 221
@@ -1442,13 +1442,13 @@
     "width": 221
   },
   "room-2x1-rooms_bed": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "room-2x1-rooms_bed.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "room-2x1-rooms_bed-tall.png",
       "height": 246,
       "width": 456
@@ -1456,13 +1456,13 @@
     "width": 456
   },
   "room-2x1-rooms_chair": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "room-2x1-rooms_chair.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "room-2x1-rooms_chair-tall.png",
       "height": 246,
       "width": 456
@@ -1470,13 +1470,13 @@
     "width": 456
   },
   "room-2x1-rooms_checkroom": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "room-2x1-rooms_checkroom.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "room-2x1-rooms_checkroom-tall.png",
       "height": 246,
       "width": 456
@@ -1484,13 +1484,13 @@
     "width": 456
   },
   "room-2x1-rooms_couch": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "room-2x1-rooms_couch.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "room-2x1-rooms_couch-tall.png",
       "height": 246,
       "width": 456
@@ -1498,13 +1498,13 @@
     "width": 456
   },
   "room-2x1-rooms_desk": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "room-2x1-rooms_desk.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "room-2x1-rooms_desk-tall.png",
       "height": 246,
       "width": 456
@@ -1512,13 +1512,13 @@
     "width": 456
   },
   "room-2x1-rooms_hallway": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "room-2x1-rooms_hallway.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "room-2x1-rooms_hallway-tall.png",
       "height": 246,
       "width": 456
@@ -1526,13 +1526,13 @@
     "width": 456
   },
   "room-2x1-rooms_hanger": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "room-2x1-rooms_hanger.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "room-2x1-rooms_hanger-tall.png",
       "height": 246,
       "width": 456
@@ -1540,13 +1540,13 @@
     "width": 456
   },
   "room-2x1-rooms_kitchen": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "room-2x1-rooms_kitchen.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "room-2x1-rooms_kitchen-tall.png",
       "height": 246,
       "width": 456
@@ -1554,13 +1554,13 @@
     "width": 456
   },
   "room-2x1-rooms_local_laundry_service": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "room-2x1-rooms_local_laundry_service.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "room-2x1-rooms_local_laundry_service-tall.png",
       "height": 246,
       "width": 456
@@ -1568,13 +1568,13 @@
     "width": 456
   },
   "room-2x1-rooms_shower": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "room-2x1-rooms_shower.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "room-2x1-rooms_shower-tall.png",
       "height": 246,
       "width": 456
@@ -1582,13 +1582,13 @@
     "width": 456
   },
   "room-2x2-rooms_bed": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "room-2x2-rooms_bed.png",
     "height": 430,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "room-2x2-rooms_bed-tall.png",
       "height": 506,
       "width": 456
@@ -1596,13 +1596,13 @@
     "width": 456
   },
   "room-2x2-rooms_chair": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "room-2x2-rooms_chair.png",
     "height": 430,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "room-2x2-rooms_chair-tall.png",
       "height": 506,
       "width": 456
@@ -1610,13 +1610,13 @@
     "width": 456
   },
   "room-2x2-rooms_checkroom": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "room-2x2-rooms_checkroom.png",
     "height": 430,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "room-2x2-rooms_checkroom-tall.png",
       "height": 506,
       "width": 456
@@ -1624,13 +1624,13 @@
     "width": 456
   },
   "room-2x2-rooms_couch": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "room-2x2-rooms_couch.png",
     "height": 430,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "room-2x2-rooms_couch-tall.png",
       "height": 506,
       "width": 456
@@ -1638,13 +1638,13 @@
     "width": 456
   },
   "room-2x2-rooms_desk": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "room-2x2-rooms_desk.png",
     "height": 430,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "room-2x2-rooms_desk-tall.png",
       "height": 506,
       "width": 456
@@ -1652,13 +1652,13 @@
     "width": 456
   },
   "room-2x2-rooms_hallway": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "room-2x2-rooms_hallway.png",
     "height": 430,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "room-2x2-rooms_hallway-tall.png",
       "height": 506,
       "width": 456
@@ -1666,13 +1666,13 @@
     "width": 456
   },
   "room-2x2-rooms_hanger": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "room-2x2-rooms_hanger.png",
     "height": 430,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "room-2x2-rooms_hanger-tall.png",
       "height": 506,
       "width": 456
@@ -1680,13 +1680,13 @@
     "width": 456
   },
   "room-2x2-rooms_kitchen": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "room-2x2-rooms_kitchen.png",
     "height": 430,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "room-2x2-rooms_kitchen-tall.png",
       "height": 506,
       "width": 456
@@ -1694,13 +1694,13 @@
     "width": 456
   },
   "room-2x2-rooms_local_laundry_service": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "room-2x2-rooms_local_laundry_service.png",
     "height": 430,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "room-2x2-rooms_local_laundry_service-tall.png",
       "height": 506,
       "width": 456
@@ -1708,13 +1708,13 @@
     "width": 456
   },
   "room-2x2-rooms_shower": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "room-2x2-rooms_shower.png",
     "height": 430,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "room-2x2-rooms_shower-tall.png",
       "height": 506,
       "width": 456
@@ -1722,13 +1722,13 @@
     "width": 456
   },
   "room-3x2-rooms_bed": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "room-3x2-rooms_bed.png",
     "height": 430,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "room-3x2-rooms_bed-tall.png",
       "height": 506,
       "width": 691
@@ -1736,13 +1736,13 @@
     "width": 691
   },
   "room-3x2-rooms_chair": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "room-3x2-rooms_chair.png",
     "height": 430,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "room-3x2-rooms_chair-tall.png",
       "height": 506,
       "width": 691
@@ -1750,13 +1750,13 @@
     "width": 691
   },
   "room-3x2-rooms_checkroom": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "room-3x2-rooms_checkroom.png",
     "height": 430,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "room-3x2-rooms_checkroom-tall.png",
       "height": 506,
       "width": 691
@@ -1764,13 +1764,13 @@
     "width": 691
   },
   "room-3x2-rooms_couch": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "room-3x2-rooms_couch.png",
     "height": 430,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "room-3x2-rooms_couch-tall.png",
       "height": 506,
       "width": 691
@@ -1778,13 +1778,13 @@
     "width": 691
   },
   "room-3x2-rooms_desk": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "room-3x2-rooms_desk.png",
     "height": 430,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "room-3x2-rooms_desk-tall.png",
       "height": 506,
       "width": 691
@@ -1792,13 +1792,13 @@
     "width": 691
   },
   "room-3x2-rooms_hallway": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "room-3x2-rooms_hallway.png",
     "height": 430,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "room-3x2-rooms_hallway-tall.png",
       "height": 506,
       "width": 691
@@ -1806,13 +1806,13 @@
     "width": 691
   },
   "room-3x2-rooms_hanger": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "room-3x2-rooms_hanger.png",
     "height": 430,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "room-3x2-rooms_hanger-tall.png",
       "height": 506,
       "width": 691
@@ -1820,13 +1820,13 @@
     "width": 691
   },
   "room-3x2-rooms_kitchen": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "room-3x2-rooms_kitchen.png",
     "height": 430,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "room-3x2-rooms_kitchen-tall.png",
       "height": 506,
       "width": 691
@@ -1834,13 +1834,13 @@
     "width": 691
   },
   "room-3x2-rooms_local_laundry_service": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "room-3x2-rooms_local_laundry_service.png",
     "height": 430,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "room-3x2-rooms_local_laundry_service-tall.png",
       "height": 506,
       "width": 691
@@ -1848,13 +1848,13 @@
     "width": 691
   },
   "room-3x2-rooms_shower": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "room-3x2-rooms_shower.png",
     "height": 430,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "room-3x2-rooms_shower-tall.png",
       "height": 506,
       "width": 691
@@ -1862,20 +1862,20 @@
     "width": 691
   },
   "update": {
-    "dx": -10,
-    "dy": 434,
+    "dx": 0,
+    "dy": 0,
     "file": "update.png",
     "height": 62,
     "width": 154
   },
   "weather-2x1": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "weather-2x1.png",
     "height": 208,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "weather-2x1-tall.png",
       "height": 246,
       "width": 456
@@ -1883,13 +1883,13 @@
     "width": 456
   },
   "weather-2x2": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "weather-2x2.png",
     "height": 430,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "weather-2x2-tall.png",
       "height": 506,
       "width": 456
@@ -1897,13 +1897,13 @@
     "width": 456
   },
   "weather-3x2": {
-    "dx": -10,
-    "dy": -10,
+    "dx": 0,
+    "dy": 0,
     "file": "weather-3x2.png",
     "height": 430,
     "tall": {
-      "dx": -10,
-      "dy": -10,
+      "dx": 0,
+      "dy": 0,
       "file": "weather-3x2-tall.png",
       "height": 506,
       "width": 691
@@ -1911,8 +1911,8 @@
     "width": 691
   },
   "wifi": {
-    "dx": -10,
-    "dy": 434,
+    "dx": 0,
+    "dy": 0,
     "file": "wifi.png",
     "height": 62,
     "width": 66
