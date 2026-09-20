@@ -1,5 +1,31 @@
 # Changelog
 
+## 2026.9.61
+
+- **The panel can stand on its side.** Orientation offers all four ways up, not
+  just the two. A quarter turn swaps the panel's width and height and turns the
+  grid with it — a V2 becomes 3 columns by 6 instead of 5 by 3, an Inkplate 5
+  becomes 2 by 4 — and the panel republishes its manifest, so the editor
+  re-shapes itself within a second. Widgets that no longer fit the narrower grid
+  are dropped from the page, the same way a layout built for a V2 is fitted when
+  it arrives at an Inkplate 5.
+
+- **One cell everywhere: 210×172.** Both panels, both ways up. A widget is now
+  the same picture on every screen, which is what lets one set of renders and one
+  set of album pictures serve all four shapes. The cell was 220×166 on the V2 and
+  215×202 on the V1, so **every dashboard shifts slightly** — the cards keep their
+  cells, but the gaps and margins around them change.
+
+- **A page without a chip row no longer grows its cards.** They used to get taller
+  (166 → 200); now they keep their size and centre in the height the row gives
+  back. That also halves the album pictures a mixed layout needs, since the same
+  widget no longer has two footprints.
+
+- Album pictures are re-rendered at the new sizes on the next refresh: the
+  footprint is part of the filename, which is exactly what that naming is for.
+
+  Needs firmware v2026.9.54.
+
 ## 2026.9.60
 
 - **Fixes the Inkplate 5's widget previews: the chip row's were missing and the
