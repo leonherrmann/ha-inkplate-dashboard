@@ -2120,6 +2120,20 @@
     },
     "width": 476
   },
+  "weather-2x2": {
+    "dx": 0,
+    "dy": 0,
+    "file": "weather-2x2.png",
+    "height": 368,
+    "tall": {
+      "dx": 0,
+      "dy": 0,
+      "file": "weather-2x2-tall.png",
+      "height": 436,
+      "width": 476
+    },
+    "width": 476
+  },
   "weather-3x2": {
     "dx": 0,
     "dy": 0,
