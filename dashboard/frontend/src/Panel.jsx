@@ -17,6 +17,7 @@ import {
   isChipType,
   nearestVariant,
   otherChips,
+  panelModel,
   placeWidget,
   variantFootprint,
   widgetSize,
@@ -143,6 +144,7 @@ function DraggableWidget({
   scale,
   uploads,
   tall,
+  model,
 }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: widget.id,
@@ -194,6 +196,7 @@ function DraggableWidget({
       {...attributes}
     >
       <WidgetPreview
+        model={model}
         type={widget.type}
         options={widget.options}
         size={size}
@@ -358,6 +361,7 @@ export default function Panel({
                     scale={scale}
                     uploads={uploads}
                     tall={!hasChipRow(chipRow)}
+                    model={panelModel(manifest)}
                   />
                 ))}
               </div>

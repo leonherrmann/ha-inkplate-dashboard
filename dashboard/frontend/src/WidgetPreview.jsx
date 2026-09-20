@@ -231,8 +231,9 @@ function Shot({ shot, type }) {
 
 // tall is the page's chip row being off, where a card takes the row's height
 // and so is drawn from a different render of the same widget.
-export default function WidgetPreview({ type, options, size, uploads, sizeId, tall }) {
-  const shot = widgetShot(type, sizeId, options || {}, tall);
+export default function WidgetPreview({ type, options, size, uploads, sizeId, tall, model }) {
+  // model picks the panel's own set of renders -- see widgetShots.js.
+  const shot = widgetShot(type, sizeId, options || {}, tall, model);
   const Preview = previews[type];
 
   return (

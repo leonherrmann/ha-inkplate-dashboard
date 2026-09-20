@@ -22,6 +22,7 @@ import paho.mqtt.client as mqtt
 
 import adopt
 import firmware
+import grids
 import manifest_store
 import panels
 import store
@@ -305,7 +306,18 @@ class DeviceLink:
         between the editor waiting on a device and the editor waiting on itself.
         """
         topic = topics.device(panel_id).config_set
-        if not self._publish(topic, json.dumps(layout), retain=True):
+
+        # Stamped here rather than stored, and here rather than in the caller:
+        # a layout is pixel positions, which mean nothing without the grid they
+        # were placed on, and the panel a layout is being *sent to* is the only
+        # thing that knows which grid that was. A panel reflashed onto other
+        # hardware changes shape without its stored layout changing at all, so
+        # deriving it at the moment of publishing is the only version that
+        # cannot go stale. See Grid.as_laid_out_for.
+        payload = dict(layout)
+        payload["laid_out_for"] = grids.of(panel_id).as_laid_out_for()
+
+        if not self._publish(topic, json.dumps(payload), retain=True):
             return False
         log.info("Pushed layout version %s to %s", layout.get("version"), panel_id)
         return True

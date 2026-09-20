@@ -45,6 +45,36 @@ class Grid(NamedTuple):
             rows * unit_h + (rows - 1) * self.gap,
         )
 
+    def as_laid_out_for(self) -> dict[str, int]:
+        """This grid in the shape the firmware reads back out of a layout.
+
+        A layout is a list of pixel positions, and pixels only mean something
+        against the grid they were placed on. The firmware reads this under
+        `laid_out_for`, and a layout that does not carry it is assumed to have
+        been drawn for the V2 -- which was true of every layout that existed
+        before there were two panels, and is wrong for every layout drawn for
+        an Inkplate 5 since.
+
+        What that cost: the V1 re-mapped its *own* layout as though it were the
+        V2's, scaling every position across the difference between the panels.
+        Cards survived it, because they are re-placed by cell and land back on
+        the cell they came from. Chips are positioned to the pixel, so a chip
+        put against the right-hand margin in the editor arrived a quarter of
+        the panel short of it.
+
+        The manifest's own key names, so the two sides have nothing to agree
+        about beyond the spelling the firmware already publishes.
+        """
+        return {
+            "width": self.width,
+            "height": self.height,
+            "gap": self.gap,
+            "unit_w": self.unit_w,
+            "unit_h": self.unit_h,
+            "unit_h_off": self.unit_h_off,
+            "chip_h": self.chip_h,
+        }
+
     @property
     def full_screen_box(self) -> tuple[int, int]:
         """The full-screen box, chip row off.

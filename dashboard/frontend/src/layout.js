@@ -28,6 +28,17 @@ export const CHIP_ROW_POSITIONS = [
 
 export const DEFAULT_CHIP_ROW = "bottom";
 
+// Which panel a manifest describes, for the things that differ between them.
+//
+// The screenshots are one: a widget on the Inkplate 5 is not the V2's picture
+// scaled down -- its cell is 215x202 against 220x166 and the card is drawn for
+// the box it is in -- so each panel has a set of its own and this picks between
+// them. A manifest too old to say falls back to the V2, which is what every
+// manifest meant before there was a second panel.
+export function panelModel(manifest) {
+  return manifest?.device?.model || manifest?.display?.model || null;
+}
+
 export function hasChipRow(chipRow) {
   return chipRow !== "off";
 }

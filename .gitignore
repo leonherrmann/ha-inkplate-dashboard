@@ -19,3 +19,7 @@ dashboard/backend/static/
 # watching this folder.
 * [0-9].*
 * [0-9]
+
+# Runtime state from running the backend or its harnesses here. The real one
+# lives in /data inside the add-on container.
+dashboard/backend/data/

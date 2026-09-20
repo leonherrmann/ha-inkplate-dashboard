@@ -141,7 +141,23 @@ cd ../../../test-harnesses && node sheetcheck.mjs   # 40 checks, mobile sheet
 cd ../../../test-harnesses && node pickercheck.mjs
 cd ../../../test-harnesses && node devicecheck.mjs   # the Device screen, phone and desktop
 cd ../../../test-harnesses && node iconcheck.mjs     # the icon grid, both shells
+cd ../../../test-harnesses && node canvascheck.mjs   # each panel's own renders
 ```
+
+**The widget renders are per panel.** A widget on the Inkplate 5 is not the V2's
+picture scaled down -- its cell is 215x202 against 220x166 and a card is laid out
+for the box it is given -- so `src/widget-shots/` holds the V2's set and
+`src/widget-shots/inkplate5v1/` the V1's, picked by `panelModel(manifest)`. Both
+come from the firmware repo:
+
+```sh
+python3 sim/screenshots.py ~/…/frontend/src/widget-shots
+python3 sim/screenshots.py ~/…/frontend/src/widget-shots --panel v1
+```
+
+Run both, or the panel you skipped keeps the renders it had. `canvascheck.mjs`
+compares each render against the box it is drawn in, on both panels, which is
+the check that was missing when every card on the V1 came out 26px too wide.
 
 **The icon picker shows the firmware's own outlines**, copied into
 `frontend/src/iconGlyphs.js` by `dashboard/tools/icon-glyphs.py` from the

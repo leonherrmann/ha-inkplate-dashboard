@@ -16,8 +16,15 @@
 // of somebody else's content.
 
 import index from "./widget-shots/index.json";
+import indexV1 from "./widget-shots/inkplate5v1/index.json";
 
 const urls = import.meta.glob("./widget-shots/*.png", {
+  eager: true,
+  query: "?url",
+  import: "default",
+});
+
+const urlsV1 = import.meta.glob("./widget-shots/inkplate5v1/*.png", {
   eager: true,
   query: "?url",
   import: "default",
@@ -30,25 +37,49 @@ const urls = import.meta.glob("./widget-shots/*.png", {
 // same widget on a page with no chip row: its cells are 200 rather than 166, so
 // the card is taller and its content re-centred. Both are resolved here, and
 // widgetShot() picks between them.
-const shots = {};
-for (const [name, entry] of Object.entries(index)) {
-  const url = urls[`./widget-shots/${entry.file}`];
-  if (!url) continue;
-  const tallUrl = entry.tall && urls[`./widget-shots/${entry.tall.file}`];
-  shots[name] = { ...entry, url, tall: tallUrl ? { ...entry.tall, url: tallUrl } : null };
+function resolve(entries, files, dir) {
+  const shots = {};
+  for (const [name, entry] of Object.entries(entries)) {
+    const url = files[`${dir}${entry.file}`];
+    if (!url) continue;
+    const tallUrl = entry.tall && files[`${dir}${entry.tall.file}`];
+    shots[name] = { ...entry, url, tall: tallUrl ? { ...entry.tall, url: tallUrl } : null };
+  }
+
+  // Names are "type", "type-size" or "type-size-icon", so the first one or two
+  // segments are the useful prefixes. Sorted, so "whichever variant comes first"
+  // is stable between builds rather than depending on directory order.
+  const firstByPrefix = {};
+  for (const name of Object.keys(shots).sort()) {
+    const parts = name.split("-");
+    for (const depth of [1, 2]) {
+      const prefix = parts.slice(0, depth).join("-");
+      if (!firstByPrefix[prefix]) firstByPrefix[prefix] = shots[name];
+    }
+  }
+  return { shots, firstByPrefix };
 }
 
-// Names are "type", "type-size" or "type-size-icon", so the first one or two
-// segments are the useful prefixes. Sorted, so "whichever variant comes first"
-// is stable between builds rather than depending on directory order.
-const firstByPrefix = {};
-for (const name of Object.keys(shots).sort()) {
-  const parts = name.split("-");
-  for (const depth of [1, 2]) {
-    const prefix = parts.slice(0, depth).join("-");
-    if (!firstByPrefix[prefix]) firstByPrefix[prefix] = shots[name];
-  }
+// One set per panel. A widget on the Inkplate 5 is not the V2's picture at a
+// different scale: its cell is 215x202 against 220x166, and a card is laid out
+// for the box it is given rather than shrunk into it. Drawing the V2's renders
+// on a V1 canvas put every card 26px over its own footprint and up to 56px
+// short of it -- reported from the editor as "the widgets are the wrong size",
+// which is exactly what they were.
+const SETS = {
+  inkplate5v2: resolve(index, urls, "./widget-shots/"),
+  inkplate5v1: resolve(indexV1, urlsV1, "./widget-shots/inkplate5v1/"),
+};
+
+// What a panel that has not said which it is gets. Every manifest published
+// before there were two panels meant this one.
+const DEFAULT_MODEL = "inkplate5v2";
+
+function setFor(model) {
+  return SETS[model] || SETS[DEFAULT_MODEL];
 }
+
+const { shots, firstByPrefix } = SETS[DEFAULT_MODEL];
 
 // Most specific first. Two things can key a shot, for two different reasons.
 //
@@ -70,7 +101,8 @@ for (const name of Object.keys(shots).sort()) {
 // tall asks for the rendition drawn on a page with no chip row. It falls back
 // to the short one when a widget has no tall rendition -- the chips, and any
 // shot set generated before the setting existed -- rather than drawing nothing.
-export function widgetShot(type, sizeId, options = {}, tall = false) {
+export function widgetShot(type, sizeId, options = {}, tall = false, model = null) {
+  const { shots, firstByPrefix } = setFor(model);
   const icon = options.icon;
   const entity = options.entity;
   const domain =
