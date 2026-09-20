@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026.9.58
+
+- **The weather card has a 2x2**, between the 2x1 strip of five days and the
+  3x2. It stacks what the 3x2 puts side by side: today across the top — icon,
+  temperature and condition — with the coming five days as columns beneath. Needs
+  firmware v2026.9.53, which is what offers the size; this release is the preview
+  the editor draws beside it.
+
 ## 2026.9.57
 
 - **The icon picker shows the icons.** It was a list of names — a dropdown of
