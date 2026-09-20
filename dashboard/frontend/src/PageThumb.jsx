@@ -1,5 +1,5 @@
 import WidgetPreview from "./WidgetPreview.jsx";
-import { DEFAULT_CHIP_ROW, hasChipRow, panelModel, widgetSize } from "./layout.js";
+import { DEFAULT_CHIP_ROW, hasChipRow, panelModel, panelOrientation, widgetSize } from "./layout.js";
 
 // A page at thumbnail size, drawn from the same previews the canvas uses.
 //
@@ -51,6 +51,7 @@ export default function PageThumb({ page, manifest, uploads, panel, width = 120 
             >
               <WidgetPreview
                 model={panelModel(manifest)}
+                orientation={panelOrientation(manifest)}
                 type={widget.type}
                 options={widget.options}
                 size={size}

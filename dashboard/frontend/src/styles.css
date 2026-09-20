@@ -2899,9 +2899,19 @@ input.picker-search {
 }
 
 /* Which way up the panel hangs, as a sketch of the screen over its name */
+/* Four ways up rather than two: two to a row on a phone, all four across on a
+   desktop. A grid rather than the flex row this was, because four buttons in a
+   row on a narrow screen left each too thin for its label. */
 .orient {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 9px;
+}
+
+@media (min-width: 900px) {
+  .orient {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
 }
 
 .orient button {
@@ -2924,6 +2934,16 @@ input.picker-search {
   border-radius: 5px;
   background: rgba(27, 26, 31, 0.08);
 }
+
+/* A quarter turn is a different shape, not a different picture of the same one,
+   so the swatch is the shape being chosen: narrow and tall against wide and
+   short. Centred, because the button is as wide as the landscape one. */
+.orient .orient-screen.tall {
+  width: 40%;
+  height: 52px;
+  margin: 0 auto;
+}
+
 
 .orient button.active {
   border: 0;
