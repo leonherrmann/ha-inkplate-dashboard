@@ -7,14 +7,42 @@ import { optionValues } from "./format.js";
 // would put it. The firmware publishes the grid in its manifest, so this is only
 // the fallback for before it has been heard from.
 export const FALLBACK_GRID = {
-  gap: 30,
-  unit_w: 220,
-  unit_h: 166,
-  unit_h_off: 200,
+  gap: 37,
+  gap_x: 37,
+  gap_y: 30,
+  margin_x: 41,
+  margin_y: 29,
+  unit_w: 210,
+  unit_h: 172,
+  unit_h_off: 172,
   cols: 5,
   rows: 3,
-  chip_h: 72,
+  chip_h: 56,
 };
+
+// The two axes do not share a gap, and the margin at the panel's edge is not
+// the gap either. One cell -- 210x172 -- is used on both panels and both ways
+// up, and no cell that size divides 1280, 720, 960 and 540 exactly, so each
+// shape keeps its own gap and the leftover lives in the margin.
+//
+// Firmware older than that published one `gap` and no margins, and on it the
+// margin *was* the gap; falling back that way describes those panels exactly
+// rather than approximately.
+export function gapX(grid) {
+  return grid.gap_x ?? grid.gap;
+}
+
+export function gapY(grid) {
+  return grid.gap_y ?? grid.gap;
+}
+
+export function marginX(grid) {
+  return grid.margin_x ?? gapX(grid);
+}
+
+export function marginY(grid) {
+  return grid.margin_y ?? gapY(grid);
+}
 
 // A page carries a chip row at the top or the bottom, or none at all. This is a
 // *per page* choice: a full-screen clock page wants no row while a dashboard
@@ -39,6 +67,13 @@ export function panelModel(manifest) {
   return manifest?.device?.model || manifest?.display?.model || null;
 }
 
+// Which way up the panel is standing, as the person looking at it would say.
+// The width and height in the manifest are already the turned ones, so this is
+// only needed to pick the right set of renders.
+export function panelOrientation(manifest) {
+  return Number(manifest?.display?.orientation ?? 0) || 0;
+}
+
 export function hasChipRow(chipRow) {
   return chipRow !== "off";
 }
@@ -59,14 +94,22 @@ export function pageGrid(grid, chipRow) {
 // Where the chip row sits. Meaningless with the row off, where nothing should
 // be asking: a page with no row has no chips on it.
 export function chipRowTop(grid, panel, chipRow) {
-  return chipRow === "top" ? grid.gap : panel.height - grid.gap - grid.chip_h;
+  return chipRow === "top"
+    ? marginY(grid)
+    : panel.height - marginY(grid) - grid.chip_h;
 }
 
 // Where the card rows start. Only a row at the top moves them: with it at the
 // bottom, or with no row at all, the cards start at the edge gap. What changes
 // in the third case is how tall they then are, which is pageGrid's business.
 export function cardBandTop(grid, chipRow) {
-  return chipRow === "top" ? grid.gap + grid.chip_h + grid.gap : grid.gap;
+  if (chipRow === "off") {
+    // The cards keep their size and take the middle of what the row gives
+    // back, which is what the firmware does -- they no longer grow.
+    const band = grid.rows * grid.unit_h + (grid.rows - 1) * gapY(grid);
+    return Math.max(marginY(grid), Math.round((grid.height - band) / 2));
+  }
+  return chipRow === "top" ? marginY(grid) + grid.chip_h + gapY(grid) : marginY(grid);
 }
 
 // Where a widget's y lands when its page's chip row changes. Both the band top
@@ -96,13 +139,13 @@ export const SNAP_MODES = [
 export const DEFAULT_SNAP = "grid";
 
 export function gridPitch(grid, axis) {
-  return axis === "x" ? grid.unit_w + grid.gap : grid.unit_h + grid.gap;
+  return axis === "x" ? grid.unit_w + gapX(grid) : grid.unit_h + gapY(grid);
 }
 
 // Where the run of cells starts on this axis. Horizontally that is always the
 // edge gap; vertically it is wherever the chip row leaves the card band.
 export function axisOrigin(grid, axis, chipRow) {
-  return axis === "x" ? grid.gap : cardBandTop(grid, chipRow);
+  return axis === "x" ? marginX(grid) : cardBandTop(grid, chipRow);
 }
 
 export function gridOrigin(grid, axis, index, chipRow) {
@@ -156,15 +199,15 @@ function lastCellThatFits(limit, axis, grid, chipRow) {
 // widest each chip gets, so the spacing the editor guarantees is never tighter
 // than what the device draws.
 export function placeChipX(desired, width, others, grid, panel) {
-  const min = grid.gap;
-  const max = Math.max(min, panel.width - grid.gap - width);
+  const min = marginX(grid);
+  const max = Math.max(min, panel.width - marginX(grid) - width);
   const intoRow = (value) => clamp(Math.round(value), min, max);
 
   // The span of left edges at which this chip would collide with that one
   const blocked = others
     .map((other) => ({
-      from: other.x - grid.gap - width,
-      to: other.x + other.width + grid.gap,
+      from: other.x - gapX(grid) - width,
+      to: other.x + other.width + gapX(grid),
     }))
     .sort((a, b) => a.from - b.from);
 
@@ -251,9 +294,9 @@ export function isReachable(widget, size, panel) {
 export function defaultPosition(grid, options = {}) {
   const { chipRow = DEFAULT_CHIP_ROW, isChip = false, panel } = options;
   if (isChip && panel) {
-    return { x: grid.gap, y: chipRowTop(grid, panel, chipRow) };
+    return { x: marginX(grid), y: chipRowTop(grid, panel, chipRow) };
   }
-  return { x: grid.gap, y: cardBandTop(grid, chipRow) };
+  return { x: marginX(grid), y: cardBandTop(grid, chipRow) };
 }
 
 // Whether a manifest type lives in the chip row

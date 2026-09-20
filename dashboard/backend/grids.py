@@ -27,22 +27,35 @@ import manifest_store
 
 
 class Grid(NamedTuple):
-    gap: int
+    gap: int         # the horizontal one, kept for callers that want just "the gap"
     unit_w: int
     unit_h: int      # a page with a chip row
-    unit_h_off: int  # a page without one
+    unit_h_off: int  # a page without one -- the same number since the shared cell
     cols: int
     rows: int
     width: int
     height: int
     chip_h: int
+    # The two axes are not quite the same, and neither is the margin at the
+    # panel's edge. One cell of 210x172 is used on both panels and both ways up,
+    # and no cell that size divides 1280, 720, 960 and 540 exactly -- so each
+    # shape keeps its own gap and lets the leftover sit in the margin. Within a
+    # shape the two gaps are within a few pixels of each other and read as one.
+    gap_x: int = 0
+    gap_y: int = 0
+    margin_x: int = 0
+    margin_y: int = 0
+    # 0, 90, 180 or 270, as the person looking at the panel would say it. The
+    # width and height above are already the turned ones; this is here so the
+    # editor can say which way up it is.
+    orientation: int = 0
 
     def box(self, cols: int, rows: int, chip_row: str) -> tuple[int, int]:
         """A widget's pixel footprint, the same arithmetic Grid.h does."""
         unit_h = self.unit_h_off if chip_row == "off" else self.unit_h
         return (
-            cols * self.unit_w + (cols - 1) * self.gap,
-            rows * unit_h + (rows - 1) * self.gap,
+            cols * self.unit_w + (cols - 1) * self.gap_x,
+            rows * unit_h + (rows - 1) * self.gap_y,
         )
 
     def as_laid_out_for(self) -> dict[str, int]:
@@ -69,10 +82,15 @@ class Grid(NamedTuple):
             "width": self.width,
             "height": self.height,
             "gap": self.gap,
+            "gap_x": self.gap_x,
+            "gap_y": self.gap_y,
+            "margin_x": self.margin_x,
+            "margin_y": self.margin_y,
             "unit_w": self.unit_w,
             "unit_h": self.unit_h,
             "unit_h_off": self.unit_h_off,
             "chip_h": self.chip_h,
+            "orientation": self.orientation,
         }
 
     @property
@@ -87,15 +105,20 @@ class Grid(NamedTuple):
 
 # The Inkplate 5 V2, which is the panel this add-on was written for.
 V2 = Grid(
-    gap=30,
-    unit_w=220,
-    unit_h=166,
-    unit_h_off=200,
+    gap=37,
+    unit_w=210,
+    unit_h=172,
+    unit_h_off=172,
     cols=5,
     rows=3,
     width=1280,
     height=720,
-    chip_h=72,
+    chip_h=56,
+    gap_x=37,
+    gap_y=30,
+    margin_x=41,
+    margin_y=29,
+    orientation=0,
 )
 
 
@@ -116,6 +139,7 @@ def from_manifest(manifest: dict[str, Any] | None) -> Grid:
         value = source.get(key)
         return int(value) if isinstance(value, (int, float)) and value > 0 else fallback
 
+    gap_x = number(grid, "gap_x", number(grid, "gap", V2.gap_x))
     return Grid(
         gap=number(grid, "gap", V2.gap),
         unit_w=number(grid, "unit_w", V2.unit_w),
@@ -126,6 +150,14 @@ def from_manifest(manifest: dict[str, Any] | None) -> Grid:
         width=number(display, "width", V2.width),
         height=number(display, "height", V2.height),
         chip_h=number(grid, "chip_h", V2.chip_h),
+        # Firmware older than the per-axis split publishes one `gap` and no
+        # margin at all, and on that firmware the margin *was* the gap -- so
+        # falling back that way describes those panels exactly.
+        gap_x=gap_x,
+        gap_y=number(grid, "gap_y", gap_x),
+        margin_x=number(grid, "margin_x", gap_x),
+        margin_y=number(grid, "margin_y", number(grid, "gap_y", gap_x)),
+        orientation=int((display.get("orientation") or 0)),
     )
 
 

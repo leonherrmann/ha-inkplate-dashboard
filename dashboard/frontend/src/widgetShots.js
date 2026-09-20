@@ -17,6 +17,8 @@
 
 import index from "./widget-shots/index.json";
 import indexV1 from "./widget-shots/inkplate5v1/index.json";
+import indexV2Portrait from "./widget-shots/inkplate5v2-portrait/index.json";
+import indexV1Portrait from "./widget-shots/inkplate5v1-portrait/index.json";
 
 const urls = import.meta.glob("./widget-shots/*.png", {
   eager: true,
@@ -25,6 +27,18 @@ const urls = import.meta.glob("./widget-shots/*.png", {
 });
 
 const urlsV1 = import.meta.glob("./widget-shots/inkplate5v1/*.png", {
+  eager: true,
+  query: "?url",
+  import: "default",
+});
+
+const urlsV2Portrait = import.meta.glob("./widget-shots/inkplate5v2-portrait/*.png", {
+  eager: true,
+  query: "?url",
+  import: "default",
+});
+
+const urlsV1Portrait = import.meta.glob("./widget-shots/inkplate5v1-portrait/*.png", {
   eager: true,
   query: "?url",
   import: "default",
@@ -66,20 +80,33 @@ function resolve(entries, files, dir) {
 // on a V1 canvas put every card 26px over its own footprint and up to 56px
 // short of it -- reported from the editor as "the widgets are the wrong size",
 // which is exactly what they were.
+// One set per *shape*: each panel, each way up. The cell is the same 210x172
+// everywhere, but a card is not the same picture on a grid three columns wide as
+// on one five wide, and the sizes on offer differ too.
 const SETS = {
-  inkplate5v2: resolve(index, urls, "./widget-shots/"),
-  inkplate5v1: resolve(indexV1, urlsV1, "./widget-shots/inkplate5v1/"),
+  "inkplate5v2:0": resolve(index, urls, "./widget-shots/"),
+  "inkplate5v2:90": resolve(indexV2Portrait, urlsV2Portrait, "./widget-shots/inkplate5v2-portrait/"),
+  "inkplate5v1:0": resolve(indexV1, urlsV1, "./widget-shots/inkplate5v1/"),
+  "inkplate5v1:90": resolve(indexV1Portrait, urlsV1Portrait, "./widget-shots/inkplate5v1-portrait/"),
 };
 
 // What a panel that has not said which it is gets. Every manifest published
-// before there were two panels meant this one.
-const DEFAULT_MODEL = "inkplate5v2";
+// before there were two panels, or before a panel could be stood on its side,
+// meant this one.
+const DEFAULT_SHAPE = "inkplate5v2:0";
 
-function setFor(model) {
-  return SETS[model] || SETS[DEFAULT_MODEL];
+// 180 is the same shape as 0 and 270 the same as 90 -- the panel is turned over
+// within its own shape, and a card is drawn identically either way.
+function shapeKey(model, orientation) {
+  const portrait = orientation === 90 || orientation === 270;
+  return `${model || "inkplate5v2"}:${portrait ? 90 : 0}`;
 }
 
-const { shots, firstByPrefix } = SETS[DEFAULT_MODEL];
+function setFor(model, orientation) {
+  return SETS[shapeKey(model, orientation)] || SETS[DEFAULT_SHAPE];
+}
+
+const { shots, firstByPrefix } = SETS[DEFAULT_SHAPE];
 
 // Most specific first. Two things can key a shot, for two different reasons.
 //
@@ -101,8 +128,9 @@ const { shots, firstByPrefix } = SETS[DEFAULT_MODEL];
 // tall asks for the rendition drawn on a page with no chip row. It falls back
 // to the short one when a widget has no tall rendition -- the chips, and any
 // shot set generated before the setting existed -- rather than drawing nothing.
-export function widgetShot(type, sizeId, options = {}, tall = false, model = null) {
-  const { shots, firstByPrefix } = setFor(model);
+export function widgetShot(type, sizeId, options = {}, tall = false, model = null,
+                           orientation = 0) {
+  const { shots, firstByPrefix } = setFor(model, orientation);
   const icon = options.icon;
   const entity = options.entity;
   const domain =

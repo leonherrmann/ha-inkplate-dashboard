@@ -144,20 +144,29 @@ cd ../../../test-harnesses && node iconcheck.mjs     # the icon grid, both shell
 cd ../../../test-harnesses && node canvascheck.mjs   # each panel's own renders
 ```
 
-**The widget renders are per panel.** A widget on the Inkplate 5 is not the V2's
-picture scaled down -- its cell is 215x202 against 220x166 and a card is laid out
-for the box it is given -- so `src/widget-shots/` holds the V2's set and
-`src/widget-shots/inkplate5v1/` the V1's, picked by `panelModel(manifest)`. Both
-come from the firmware repo:
+**The widget renders are per shape — each panel, each way up.** The cell is the
+same 210x172 everywhere, but a card is not the same picture on a grid three
+columns wide as on one five wide, and the sizes on offer differ. So there are
+four sets: `src/widget-shots/` (V2 upright), `inkplate5v2-portrait/`,
+`inkplate5v1/` and `inkplate5v1-portrait/`, picked by `panelModel(manifest)` and
+`panelOrientation(manifest)`. All four come from the firmware repo:
 
 ```sh
 python3 sim/screenshots.py ~/…/frontend/src/widget-shots
+python3 sim/screenshots.py ~/…/frontend/src/widget-shots --panel v2p
 python3 sim/screenshots.py ~/…/frontend/src/widget-shots --panel v1
+python3 sim/screenshots.py ~/…/frontend/src/widget-shots --panel v1p
 ```
 
-Run both, or the panel you skipped keeps the renders it had. `canvascheck.mjs`
-compares each render against the box it is drawn in, on both panels, which is
-the check that was missing when every card on the V1 came out 26px too wide.
+Run all four, or the shape you skipped keeps the renders it had. `canvascheck.mjs`
+compares each render against the box it is drawn in, on all of them, which is the
+check that was missing when every card on the V1 came out 26px too wide.
+
+**The gaps differ per axis and the margin is not the gap.** `grids.py` and
+`layout.js` both read `gap_x`, `gap_y`, `margin_x` and `margin_y` from the
+manifest, falling back to the single `gap` for firmware that predates the split —
+on that firmware the margin *was* the gap, so the fallback is exact rather than
+approximate. Never place a widget with `grid.gap` alone.
 
 **The icon picker shows the firmware's own outlines**, copied into
 `frontend/src/iconGlyphs.js` by `dashboard/tools/icon-glyphs.py` from the
