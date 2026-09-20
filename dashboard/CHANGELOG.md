@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026.9.59
+
+- **Fixes chips not landing where you put them on an Inkplate 5.** A layout is a
+  list of pixel positions, and the panel was never told which grid those pixels
+  were measured against — so it assumed the V2's and rescaled its own layout
+  accordingly. A chip placed against the right-hand margin at x=720 arrived at
+  540, a quarter of the panel short of it. Cards were spared, being re-placed by
+  cell. Every layout now says which grid it was drawn for.
+
+- **Fixes the editor drawing an Inkplate 5's widgets at the wrong size.** The
+  previews are real renders from the firmware, and only the V2's existed: a card
+  is laid out for the box it is given — 215×202 against 220×166 — so every card
+  on that canvas was 26px over its own footprint and up to 56px short of it.
+  There is a set of renders per panel now, chosen by the model the panel reports.
+
+  Both need no firmware update: v2026.9.51 and later already understand
+  everything this sends.
+
 ## 2026.9.58
 
 - **The weather card has a 2x2**, between the 2x1 strip of five days and the
