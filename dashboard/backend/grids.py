@@ -30,7 +30,7 @@ class Grid(NamedTuple):
     gap: int         # the horizontal one, kept for callers that want just "the gap"
     unit_w: int
     unit_h: int      # a page with a chip row
-    unit_h_off: int  # a page without one -- the same number since 2026.9.61
+    unit_h_off: int  # a page without one -- the same number since the shared cell
     cols: int
     rows: int
     width: int
