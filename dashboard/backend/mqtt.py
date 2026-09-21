@@ -315,7 +315,19 @@ class DeviceLink:
         # deriving it at the moment of publishing is the only version that
         # cannot go stale. See Grid.as_laid_out_for.
         payload = dict(layout)
-        payload["laid_out_for"] = grids.of(panel_id).as_laid_out_for()
+
+        # One per shape, because a page carries an arrangement per shape and each
+        # was drawn against its own grid. The panel picks the arrangement for the
+        # way it is standing and reads the grid that goes with it -- and it can
+        # be turned from its own menu long after this was sent, so sending only
+        # the shape it happens to be in now would leave the other arrangement
+        # described by the wrong grid.
+        shapes = grids.shapes_of(panel_id)
+        landscape = shapes.get("landscape")
+        portrait = shapes.get("portrait")
+        payload["laid_out_for"] = (landscape or grids.of(panel_id)).as_laid_out_for()
+        if portrait:
+            payload["laid_out_for_portrait"] = portrait.as_laid_out_for()
 
         if not self._publish(topic, json.dumps(payload), retain=True):
             return False

@@ -162,6 +162,18 @@ Run all four, or the shape you skipped keeps the renders it had. `canvascheck.mj
 compares each render against the box it is drawn in, on all of them, which is the
 check that was missing when every card on the V1 came out 26px too wide.
 
+**A page keeps an arrangement per shape**, `widgets` and `widgets_portrait`,
+edited independently. The toolbar switches between them; `shapeGrid()` and
+`shapePanel()` in `layout.js` read the manifest's `shapes` block, which carries
+both ways the panel can stand. A page with no sideways arrangement shows the
+upright one bent onto the portrait grid — `fitToShape()`, which mirrors
+`LayoutFit.h` — and the first edit makes that arrangement real.
+
+Anything that walks a layout walks **both** arrangements: `grids.shapes_of()`
+returns a grid per shape and `_every_layout()` pairs each layout with each of
+them, so a photo widget that exists only in the sideways arrangement still gets
+its pictures rendered before the panel is turned.
+
 **The gaps differ per axis and the margin is not the gap.** `grids.py` and
 `layout.js` both read `gap_x`, `gap_y`, `margin_x` and `margin_y` from the
 manifest, falling back to the single `gap` for firmware that predates the split —
