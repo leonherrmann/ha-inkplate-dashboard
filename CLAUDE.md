@@ -102,6 +102,7 @@ PYTHONPATH=. /tmp/ink-venv/bin/python ../../../test-harnesses/albumcheck.py
 PYTHONPATH=. SUPERVISOR_TOKEN=test /tmp/ink-venv/bin/python ../../../test-harnesses/adoptcheck.py
 PYTHONPATH=. SUPERVISOR_TOKEN=test /tmp/ink-venv/bin/python ../../../test-harnesses/timercheck.py
 PYTHONPATH=. /tmp/ink-venv/bin/python ../../../test-harnesses/imagecheck.py
+PYTHONPATH=. /tmp/ink-venv/bin/python ../../../test-harnesses/shotcheck.py
 cd .. && /tmp/ink-venv/bin/python tools/dithercheck.py
 ```
 
@@ -161,6 +162,15 @@ python3 sim/screenshots.py ~/…/frontend/src/widget-shots --panel v1p
 Run all four, or the shape you skipped keeps the renders it had. `canvascheck.mjs`
 compares each render against the box it is drawn in, on all of them, which is the
 check that was missing when every card on the V1 came out 26px too wide.
+
+**A screenshot is always the glass's own shape**, never the shape the panel is
+standing in: the library maps drawing coordinates on the way into the buffer, so
+an Inkplate 5 uploads 960x540 either way up. `reports.native_frame_size()` is
+what the byte count and the decode must use — reading it at the turned shape
+refused a V1 on its side outright (540 is not a multiple of 8, so the expected
+count was 64,320 against 64,800) and would have scrambled a V2 silently, since
+720 and 1280 both divide by 8 and the count matched by luck. `shotcheck.py`
+covers both panels and all four orientations.
 
 **A page keeps an arrangement per shape**, `widgets` and `widgets_portrait`,
 edited independently. The toolbar switches between them; `shapeGrid()` and

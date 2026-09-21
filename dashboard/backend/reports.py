@@ -45,12 +45,40 @@ def log_path(panel_id: str) -> str:
 # own grid now; see grids.py, which reads it from the manifest that panel
 # published.
 def frame_size(panel_id: str) -> tuple[int, int]:
+    """The panel as it is standing: what its *picture* is, once turned."""
     grid = grids.of(panel_id)
     return grid.width, grid.height
 
 
+def native_frame_size(panel_id: str) -> tuple[int, int]:
+    """The glass's own shape, which is what a framebuffer always is.
+
+    A panel stood on its side draws into the same buffer it always had -- the
+    library maps the drawing coordinates on the way in -- so an upload is
+    960x540 whichever way up an Inkplate 5 is. Reading it as 540x960 gets two
+    things wrong at once: the row stride, which garbles the picture, and the
+    byte count, which is not even the same number. 540 is not a multiple of 8,
+    so `540 // 8 * 960` is 64,320 against the 64,800 that actually arrives, and
+    the upload was refused with a 400 rather than merely looking wrong.
+
+    The V2 is worse rather than better: 720 and 1280 are both multiples of 8, so
+    the count matches by luck and the picture comes out scrambled with no error
+    at all.
+    """
+    shapes = grids.shapes_of(panel_id)
+    landscape = shapes.get("landscape")
+    if landscape:
+        return landscape.width, landscape.height
+
+    # Firmware too old to publish both shapes cannot be turned, so the shape it
+    # reports is the glass's. The swap is for the case that cannot arise today
+    # and would be silent if it ever did.
+    grid = grids.of(panel_id)
+    return (grid.height, grid.width) if grid.height > grid.width else (grid.width, grid.height)
+
+
 def frame_bytes(panel_id: str) -> int:
-    width, height = frame_size(panel_id)
+    width, height = native_frame_size(panel_id)
     return width // 8 * height
 
 # The device's framebuffer is 1 bit per pixel, **LSB first within each byte**,
@@ -98,7 +126,8 @@ DEFAULT_ROTATION = 2
 
 def save_screenshot(panel_id: str, raw: bytes, rotation: int = DEFAULT_ROTATION) -> dict[str, Any]:
     """Store the framebuffer as a PNG. Raises ValueError if it is not one."""
-    width, height = frame_size(panel_id)
+    # Native, not the shape it is standing in: see native_frame_size.
+    width, height = native_frame_size(panel_id)
     expected = width // 8 * height
     if len(raw) != expected:
         # Named, because the two panels' sizes are both plausible numbers and
@@ -151,7 +180,8 @@ def screenshot(panel_id: str) -> dict[str, Any] | None:
         meta = {}
     meta.setdefault("taken_at", os.path.getmtime(screenshot_path(panel_id)))
     # Only reached when the sidecar is lost: the panel's own shape is the best
-    # guess at what its picture is.
+    # guess at what its picture is -- the *turned* shape, because that is what
+    # was stored, not the buffer it arrived in.
     width, height = frame_size(panel_id)
     meta.setdefault("width", width)
     meta.setdefault("height", height)
