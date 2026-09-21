@@ -67,6 +67,10 @@ export default function PageBar({
   onZoom,
   chipRow,
   onChipRow,
+  shape,
+  onShape,
+  shapeSwitchable,
+  shapeInherited,
   hasSelection,
   onFront,
   onBack,
@@ -153,6 +157,23 @@ export default function PageBar({
             </button>
           ))}
         </div>
+      )}
+
+      {/* Which of the page's two arrangements is being edited. Only shown when
+          the panel's firmware publishes both shapes -- on anything older there
+          is one arrangement and nothing to choose between.
+
+          A menu like the chip row rather than pills: it changes what is being
+          edited, which is the same class of thing, and the bar already carries
+          two sets of pills. */}
+      {shapeSwitchable && (
+        <label className="bar-menu">
+          <span className="sr-only">Arrangement</span>
+          <select value={shape} onChange={(event) => onShape(event.target.value)}>
+            <option value="landscape">Upright layout</option>
+            <option value="portrait">Sideways layout{shapeInherited ? " (auto)" : ""}</option>
+          </select>
+        </label>
       )}
 
       {/* A menu rather than a third segment: the bar already carries two, and a

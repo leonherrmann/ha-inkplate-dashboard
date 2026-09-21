@@ -44,6 +44,91 @@ export function marginY(grid) {
   return grid.margin_y ?? gapY(grid);
 }
 
+// --- the two shapes a page is laid out in ------------------------------------
+//
+// A panel can stand up or lie on its side, and the two are different grids: a
+// V2 is 5x3 one way and 3x6 the other. A page therefore keeps an arrangement
+// for each -- `widgets` for standing up, `widgets_portrait` for on its side --
+// and the editor works on one at a time.
+//
+// They are independent on purpose. Before this there was one arrangement, so
+// turning the panel re-flowed it and saving afterwards wrote the re-flow back
+// over the arrangement it came from, losing the original.
+
+export const LANDSCAPE = "landscape";
+export const PORTRAIT = "portrait";
+
+export function shapeFromOrientation(orientation) {
+  return orientation === 90 || orientation === 270 ? PORTRAIT : LANDSCAPE;
+}
+
+// Where a shape's arrangement lives on a page. `widgets` keeps its name because
+// every layout ever written uses it and every one of those is a standing-up
+// arrangement.
+export function widgetsKey(shape) {
+  return shape === PORTRAIT ? "widgets_portrait" : "widgets";
+}
+
+// The grid of a shape, from the manifest's `shapes` block. Firmware too old to
+// publish both knows only the shape it is standing in, so that is what it gets
+// -- the editor then draws one shape, which is what it always did.
+export function shapeGrid(manifest, shape) {
+  return manifest?.shapes?.[shape] || manifest?.grid || FALLBACK_GRID;
+}
+
+export function shapePanel(manifest, shape) {
+  const known = manifest?.shapes?.[shape];
+  if (known?.width && known?.height) return { width: known.width, height: known.height };
+  return manifest?.display || { width: FALLBACK_GRID.width || 1280, height: 720 };
+}
+
+// Whether the panel can be edited in both shapes at all.
+export function hasBothShapes(manifest) {
+  return Boolean(manifest?.shapes?.landscape && manifest?.shapes?.portrait);
+}
+
+// What the panel draws for a shape a page has no arrangement for: the other
+// shape's, bent onto this grid. The same rule as LayoutFit.h -- a card keeps the
+// cell it was on and is dropped if that cell does not exist here; a chip keeps
+// its place across the band between the margins.
+//
+// Mirrored here so the editor can *show* what the panel will draw before anyone
+// has laid the page out sideways, rather than showing an empty page or a
+// arrangement at the wrong scale.
+export function fitToShape(widgets, from, to, chipRow, sizeOf) {
+  const out = [];
+  for (const widget of widgets || []) {
+    const size = sizeOf ? sizeOf(widget) : null;
+    const isChip = size?.isChip;
+
+    if (isChip) {
+      // Across the band between the margins, so a chip on one margin lands on
+      // the other's rather than a few pixels inside it.
+      const fromBand = from.width - 2 * marginX(from);
+      const band = to.width - 2 * marginX(to);
+      const x = fromBand > 0
+        ? marginX(to) + Math.round(((widget.x - marginX(from)) * band) / fromBand)
+        : widget.x;
+      out.push({ ...widget, x: clamp(x, marginX(to), to.width - marginX(to)) });
+      continue;
+    }
+
+    const col = Math.round((widget.x - marginX(from)) / (from.unit_w + gapX(from)));
+    const row = Math.round((widget.y - cardBandTop(from, chipRow)) / (from.unit_h + gapY(from)));
+    const cols = size?.cols || 1;
+    const rows = size?.rows || 1;
+    if (col < 0 || row < 0 || col + cols > to.cols || row + rows > to.rows) {
+      continue; // no such cell on this shape
+    }
+    out.push({
+      ...widget,
+      x: marginX(to) + col * (to.unit_w + gapX(to)),
+      y: cardBandTop(to, chipRow) + row * (to.unit_h + gapY(to)),
+    });
+  }
+  return out;
+}
+
 // A page carries a chip row at the top or the bottom, or none at all. This is a
 // *per page* choice: a full-screen clock page wants no row while a dashboard
 // page wants one. It belongs to the layout rather than to the device -- the
@@ -318,12 +403,33 @@ export function widgetVariant(type, widget) {
 // height_off; an older manifest carries only the one height and falls back to
 // it. Null for a self-sizing variant -- a width or height of 0 means the
 // firmware measures its own content, and there is no footprint to compare.
-export function variantFootprint(variant, chipRow = DEFAULT_CHIP_ROW) {
+// A size's box in pixels.
+//
+// The manifest publishes one per size, but those are worked out against the
+// shape the panel is standing in *now* -- and a page is edited in both shapes,
+// including the one the panel is not in. So when a grid is given, the box is
+// derived from the size's cells against that grid, which is the same arithmetic
+// Grid.h does. Without one, the published numbers stand, which is what every
+// caller did before there were two shapes to choose between.
+export function variantFootprint(variant, chipRow = DEFAULT_CHIP_ROW, grid = null) {
+  if (grid && variant?.cols && variant?.rows) {
+    const [width, height] = boxOn(grid, variant.cols, variant.rows, chipRow);
+    return { width, height };
+  }
   if (!variant?.width || !variant?.height) return null;
   return {
     width: variant.width,
     height: hasChipRow(chipRow) ? variant.height : variant.height_off || variant.height,
   };
+}
+
+// cols x rows of a grid, gaps included: gridWidth()/gridHeight() in Grid.h.
+export function boxOn(grid, cols, rows, chipRow = DEFAULT_CHIP_ROW) {
+  const unitH = hasChipRow(chipRow) ? grid.unit_h : grid.unit_h_off || grid.unit_h;
+  return [
+    cols * grid.unit_w + (cols - 1) * gapX(grid),
+    rows * unitH + (rows - 1) * gapY(grid),
+  ];
 }
 
 // The variant closest to a box dragged out on the canvas. Nearest by area

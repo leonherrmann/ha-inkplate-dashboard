@@ -212,7 +212,16 @@ def _every_layout() -> list[tuple[grids.Grid, dict[str, Any]]]:
     and died on -- so nothing was rendered at all, and the first panel to ask for
     a size nobody had rendered yet drew ALBUM IS EMPTY.
     """
-    return [(grids.of(panel["id"]), store.load(panel["id"])) for panel in panels.all()]
+    # Both shapes of every panel, not just the one it is standing in. A page
+    # keeps an arrangement per shape and a photo widget in the sideways one
+    # needs pictures of its own -- rendered before the panel is turned, not
+    # after, or turning it shows ALBUM IS EMPTY until the next refresh.
+    out: list[tuple[grids.Grid, dict[str, Any]]] = []
+    for panel in panels.all():
+        layout = store.load(panel["id"])
+        for grid in grids.shapes_of(panel["id"]).values():
+            out.append((grid, layout))
+    return out
 
 
 async def refresh_albums(layouts: list[dict[str, Any]] | None = None) -> dict[str, Any]:

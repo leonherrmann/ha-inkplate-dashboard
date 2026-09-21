@@ -16,8 +16,12 @@ import {
   DEFAULT_CHIP_ROW,
   DEFAULT_SNAP,
   FALLBACK_GRID,
+  LANDSCAPE,
+  PORTRAIT,
   chipRowTop,
   defaultPosition,
+  fitToShape,
+  hasBothShapes,
   hasChipRow,
   isChipType,
   isReachable,
@@ -28,8 +32,12 @@ import {
   placeWidget,
   regridY,
   reorder,
+  shapeFromOrientation,
+  shapeGrid,
+  shapePanel,
   widgetSize,
   widgetType,
+  widgetsKey,
 } from "./layout.js";
 
 // Only for labelling the shortcut hints. Getting it wrong shows the wrong
@@ -216,13 +224,27 @@ export default function App() {
   const [message, setMessage] = useToast();
 
   const manifest = status?.manifest;
-  const panel = manifest?.display || { width: 1280, height: 720 };
+
+  // Which of the page's two arrangements is being edited. Starts as the shape
+  // the panel is actually standing in, so opening the editor shows what the
+  // panel shows; the toolbar switches it. A panel whose firmware only publishes
+  // one shape stays on that one and never offers the switch.
+  const [editShape, setEditShape] = useState(null);
+  const panelShape = shapeFromOrientation(Number(manifest?.display?.orientation ?? 0));
+  const shape = hasBothShapes(manifest) ? editShape || panelShape : panelShape;
+  useEffect(() => {
+    // Follows the panel when it turns, unless somebody has chosen a shape.
+    if (!editShape) return;
+    if (!hasBothShapes(manifest)) setEditShape(null);
+  }, [manifest, editShape]);
+
+  const panel = shapePanel(manifest, shape);
   // The firmware owns the grid and publishes it; this is only the fallback
   // Merged over the fallback rather than replacing it. The add-on updates
   // independently of the firmware, so between the two releases the manifest is
   // the old one and has no chip_h at all -- and an undefined there puts NaN
   // into the chip band's geometry rather than simply looking wrong.
-  const deviceGrid = { ...FALLBACK_GRID, ...(manifest?.grid || {}) };
+  const deviceGrid = { ...FALLBACK_GRID, ...shapeGrid(manifest, shape) };
 
   const pages = layout?.pages || [];
   const activePage = pages.find((page) => page.id === activePageId) || pages[0] || null;
@@ -235,7 +257,29 @@ export default function App() {
   useEffect(() => {
     if (!activePageId && activePage) setActivePageId(activePage.id);
   }, [activePageId, activePage]);
-  const widgets = activePage?.widgets || [];
+  // The arrangement for the shape being edited. A page that has never been laid
+  // out in this shape has none, and the panel draws the other one bent onto this
+  // grid -- so that is what is shown, and the first edit makes it real. See
+  // updateWidgets.
+  const arrangementKey = widgetsKey(shape);
+  const ownArrangement = activePage?.[arrangementKey];
+  const inherited = !ownArrangement && shape === PORTRAIT;
+  const widgets = ownArrangement
+    || (inherited
+          ? fitToShape(activePage?.widgets || [],
+                       { ...FALLBACK_GRID, ...shapeGrid(manifest, LANDSCAPE) },
+                       { ...FALLBACK_GRID, ...shapeGrid(manifest, PORTRAIT) },
+                       activePage?.chip_row || DEFAULT_CHIP_ROW,
+                       (widget) => {
+                         const type = widgetType(manifest, widget);
+                         const variant = (type?.sizes || []).find((one) => one.id === widget.size);
+                         return {
+                           isChip: isChipType(type),
+                           cols: variant?.cols,
+                           rows: variant?.rows,
+                         };
+                       })
+          : []);
   // Where the chip row sits, or whether the page has one at all, is a layout
   // choice and a *per page* one -- the firmware draws at the pixels it is given
   // and never derives a row. With no row the page's cells are taller, which is
@@ -395,10 +439,14 @@ export default function App() {
       const next = structuredClone(layout);
       const page = next.pages.find((candidate) => candidate.id === activePage?.id);
       if (!page) return;
-      page.widgets = updater(page.widgets || []);
+      // Writes to the arrangement for the shape being edited, and materialises
+      // it on the first edit if the page was inheriting the other shape's --
+      // what was on screen is what gets written, so the edit lands on top of
+      // the arrangement the user could see rather than on an empty page.
+      page[arrangementKey] = updater(page[arrangementKey] || widgets);
       persist(next);
     },
-    [layout, persist, activePage]
+    [layout, persist, activePage, arrangementKey, widgets]
   );
 
   // A widget can end up beyond the panel edge -- an option can grow it, since an
@@ -783,6 +831,10 @@ export default function App() {
 
           <main>
             <PageBar
+              shape={shape}
+              onShape={setEditShape}
+              shapeSwitchable={hasBothShapes(manifest)}
+              shapeInherited={inherited}
               pages={pages}
               activeId={activePage?.id}
               currentPageId={status?.current_page}

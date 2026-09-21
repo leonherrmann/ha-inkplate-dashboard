@@ -58,6 +58,13 @@ class Grid(NamedTuple):
             rows * unit_h + (rows - 1) * self.gap_y,
         )
 
+    @property
+    def orientation_name(self) -> str:
+        """Which of the two shapes this grid is, by its proportions rather than
+        by the orientation it was published with -- a panel turned 270 is the
+        same shape as one turned 90."""
+        return "portrait" if self.height > self.width else "landscape"
+
     def as_laid_out_for(self) -> dict[str, int]:
         """This grid in the shape the firmware reads back out of a layout.
 
@@ -159,6 +166,31 @@ def from_manifest(manifest: dict[str, Any] | None) -> Grid:
         margin_y=number(grid, "margin_y", number(grid, "gap_y", gap_x)),
         orientation=int((display.get("orientation") or 0)),
     )
+
+
+def shapes_of(panel_id: str | None) -> dict[str, Grid]:
+    """Both shapes a panel can stand in, keyed "landscape" and "portrait".
+
+    A page keeps an arrangement per shape, so anything that walks a layout --
+    rendering album pictures, checking what fits -- has to walk both, and each
+    against its own grid.
+
+    Firmware that publishes only the shape it is standing in gets one entry.
+    That is not a gap to paper over: such a panel cannot be turned, so the other
+    arrangement will never be drawn and the pictures for it would never be used.
+    """
+    manifest = manifest_store.load(panel_id) if panel_id else None
+    published = (manifest or {}).get("shapes") or {}
+    if not published:
+        return {from_manifest(manifest).orientation_name: from_manifest(manifest)}
+
+    out: dict[str, Grid] = {}
+    for name in ("landscape", "portrait"):
+        shape = published.get(name)
+        if shape:
+            # The same reader as the live grid, given the shape's own block.
+            out[name] = from_manifest({"grid": shape, "display": shape})
+    return out or {"landscape": from_manifest(manifest)}
 
 
 def of(panel_id: str | None) -> Grid:

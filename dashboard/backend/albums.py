@@ -177,10 +177,23 @@ def variants_in(layout: dict[str, Any], grid: grids.Grid = grids.V2) -> set[Vari
     layout decides, and a widget resized in the editor renders its new shape at
     the next refresh.
     """
+    # Which of a page's two arrangements this grid draws. A page keeps one for
+    # the panel standing up and one for it on its side, and a photo widget in
+    # only the sideways one still needs its pictures rendered -- they are a
+    # different size there, because the grid is.
+    #
+    # A page with no arrangement for this shape falls back to the other one,
+    # which is what the panel draws for it: bent onto this grid, at this grid's
+    # sizes. So the pictures wanted are this grid's either way.
+    key = "widgets_portrait" if grid.orientation_name == "portrait" else "widgets"
+
     wanted: set[Variant] = set()
     for page in layout.get("pages", []):
         chip_row = page.get("chip_row") or "bottom"
-        for widget in page.get("widgets", []):
+        arrangement = page.get(key)
+        if arrangement is None:
+            arrangement = page.get("widgets") or []
+        for widget in arrangement:
             if widget.get("type") != "photo":
                 continue
             options = widget.get("options") or {}
