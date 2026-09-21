@@ -1,5 +1,25 @@
 # Changelog
 
+## 2026.9.62
+
+- **Each page now has an upright layout and a sideways one, edited separately.**
+  Before this a page had a single arrangement, so turning the panel re-flowed it
+  and the next save wrote that re-flow back over the original — laying out
+  sideways cost you the upright layout, and turning back cost you the sideways
+  one. The toolbar switches between the two, and the canvas turns with it, so the
+  sideways layout can be built from an upright panel.
+
+- A page you have never laid out sideways shows the upright one fitted to the
+  narrower grid — exactly what the panel draws for it — marked *(auto)*. The
+  first edit turns that into a real sideways layout, so you start from what was
+  already on the panel rather than from an empty page. Cards with no room on the
+  narrower grid are dropped, as they always were.
+
+- Album photos are rendered for both layouts, so a photo widget that only appears
+  in the sideways one has its pictures ready before you turn the panel.
+
+  Needs firmware v2026.9.55.
+
 ## 2026.9.61
 
 - **The panel can stand on its side.** Orientation offers all four ways up, not
