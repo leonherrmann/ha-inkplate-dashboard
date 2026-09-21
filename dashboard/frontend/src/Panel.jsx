@@ -18,7 +18,7 @@ import {
   nearestVariant,
   otherChips,
   panelModel,
-  panelOrientation,
+  shapeOrientation,
   placeWidget,
   variantFootprint,
   widgetSize,
@@ -246,13 +246,28 @@ export default function Panel({
   zoom,
   mod,
   onDragState,
+  shape,
 }) {
   const [rulerRef, available] = useAvailableWidth();
 
   // Leave room for the offset shadow, which sits outside the scaler's box
   const SHADOW = 6;
+  // Against the panel's *long* side, not its width. Fitting the width is the
+  // same thing while a panel is only ever wider than it is tall, and stopped
+  // being once one could be stood on its side: 720 fits in the width of any
+  // screen this runs on, so the fit came out at 1:1 and a portrait canvas was
+  // drawn at 720x1280 -- the whole window full of the top third of the page,
+  // which reads as the shape being the wrong way round rather than as a canvas
+  // needing scrolled.
+  //
+  // The long side also makes the two shapes the same scale as each other, which
+  // is the truth of this grid: the cell is 210x172 whichever way the panel
+  // stands, so a card is the same size on the screen in both. Landscape is
+  // unchanged, being the side that was already measured.
   const fitScale =
-    available > 0 ? Math.min(1, Math.max(0, available - SHADOW) / panel.width) : 1;
+    available > 0
+      ? Math.min(1, Math.max(0, available - SHADOW) / Math.max(panel.width, panel.height))
+      : 1;
   const scale = zoom === "fit" ? fitScale : zoom;
   const fits = scale <= fitScale;
 
@@ -365,7 +380,7 @@ export default function Panel({
                     uploads={uploads}
                     tall={!hasChipRow(chipRow)}
                     model={panelModel(manifest)}
-                    orientation={panelOrientation(manifest)}
+                    orientation={shapeOrientation(shape)}
                   />
                 ))}
               </div>

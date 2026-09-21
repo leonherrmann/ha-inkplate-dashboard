@@ -159,6 +159,52 @@ export function panelOrientation(manifest) {
   return Number(manifest?.display?.orientation ?? 0) || 0;
 }
 
+// Which way up a *shape* is, for anything that picks renders by orientation.
+//
+// Not the same question as panelOrientation, and using that one where this is
+// meant is what made the editor draw the sideways arrangement out of the
+// landscape set of renders: you can edit either arrangement whichever way the
+// panel happens to be standing, so the shape on the screen and the shape on the
+// wall come apart. Only portrait-or-not is ever read downstream, so one
+// representative of each is enough -- a panel turned 270 picks the same renders
+// as one turned 90, which is right, because it is the same shape.
+export function shapeOrientation(shape) {
+  return shape === PORTRAIT ? 90 : 0;
+}
+
+// The arrangement a shape shows for a page: its own if it has one, otherwise the
+// other shape's bent onto this grid, which is what the panel would draw.
+//
+// Shared so that everything picturing a page agrees about which of the two it is
+// picturing. The canvas did this itself and the Pages tab did not, so a page
+// being edited sideways had a portrait-shaped thumbnail with the *upright*
+// arrangement in it -- landscape pixel positions against a 720-wide box, which
+// put cards off the edge of the thumbnail and read as the two orientations being
+// swapped.
+export function arrangementFor(page, shape, manifest, sizeOf) {
+  const own = page?.[widgetsKey(shape)];
+  if (own) return own;
+  if (shape !== PORTRAIT) return page?.widgets || [];
+  return fitToShape(
+    page?.widgets || [],
+    { ...FALLBACK_GRID, ...shapeGrid(manifest, LANDSCAPE) },
+    { ...FALLBACK_GRID, ...shapeGrid(manifest, PORTRAIT) },
+    page?.chip_row || DEFAULT_CHIP_ROW,
+    sizeOf || sizeOfFrom(manifest)
+  );
+}
+
+// What fitToShape needs to know about a widget: whether it is a chip, and how
+// many cells it takes. Declared here so the canvas and the thumbnails cannot
+// drift into bending a page two different ways.
+export function sizeOfFrom(manifest) {
+  return (widget) => {
+    const type = widgetType(manifest, widget);
+    const variant = (type?.sizes || []).find((one) => one.id === widget.size);
+    return { isChip: isChipType(type), cols: variant?.cols, rows: variant?.rows };
+  };
+}
+
 export function hasChipRow(chipRow) {
   return chipRow !== "off";
 }

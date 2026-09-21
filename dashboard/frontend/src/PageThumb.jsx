@@ -1,5 +1,13 @@
 import WidgetPreview from "./WidgetPreview.jsx";
-import { DEFAULT_CHIP_ROW, hasChipRow, panelModel, panelOrientation, widgetSize } from "./layout.js";
+import {
+  DEFAULT_CHIP_ROW,
+  LANDSCAPE,
+  arrangementFor,
+  hasChipRow,
+  panelModel,
+  shapeOrientation,
+  widgetSize,
+} from "./layout.js";
 
 // A page at thumbnail size, drawn from the same previews the canvas uses.
 //
@@ -11,23 +19,32 @@ import { DEFAULT_CHIP_ROW, hasChipRow, panelModel, panelOrientation, widgetSize 
 // Falls back to the page's name when there is no manifest, since widget
 // footprints come from it and a thumbnail of guessed sizes would be a
 // misleading picture rather than an absent one.
+//
+// It pictures *a shape*, and has to be told which. It used to be given the box
+// of the shape being edited and then draw `page.widgets` into it regardless --
+// so with the sideways arrangement open, every thumbnail was a portrait box
+// holding the upright arrangement, at landscape pixel positions against a
+// 720-wide panel. Cards sat off the right-hand edge and the two orientations
+// looked swapped.
 
-export default function PageThumb({ page, manifest, uploads, panel, width = 120 }) {
-  const scale = width / panel.width;
-  const height = Math.round(panel.height * scale);
-  const widgets = page.widgets || [];
+export default function PageThumb({ page, manifest, uploads, panel, shape = LANDSCAPE, width = 120 }) {
+  // The long side, so a row is the same height whichever shape is being shown
+  // and a portrait thumbnail is not nearly twice the size of a landscape one.
+  const scale = width / Math.max(panel.width, panel.height);
+  const box = { width: Math.round(panel.width * scale), height: Math.round(panel.height * scale) };
+  const widgets = arrangementFor(page, shape, manifest);
   const chipRow = page.chip_row || DEFAULT_CHIP_ROW;
 
   if (!manifest || widgets.length === 0) {
     return (
-      <div className="page-thumb" style={{ width, height }}>
+      <div className="page-thumb" style={box}>
         {page.name || page.id}
       </div>
     );
   }
 
   return (
-    <div className="page-thumb" style={{ width, height }}>
+    <div className="page-thumb" style={box}>
       <div
         className="panel"
         style={{
@@ -51,7 +68,7 @@ export default function PageThumb({ page, manifest, uploads, panel, width = 120 
             >
               <WidgetPreview
                 model={panelModel(manifest)}
-                orientation={panelOrientation(manifest)}
+                orientation={shapeOrientation(shape)}
                 type={widget.type}
                 options={widget.options}
                 size={size}

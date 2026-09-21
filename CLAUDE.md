@@ -103,6 +103,7 @@ PYTHONPATH=. SUPERVISOR_TOKEN=test /tmp/ink-venv/bin/python ../../../test-harnes
 PYTHONPATH=. SUPERVISOR_TOKEN=test /tmp/ink-venv/bin/python ../../../test-harnesses/timercheck.py
 PYTHONPATH=. /tmp/ink-venv/bin/python ../../../test-harnesses/imagecheck.py
 PYTHONPATH=. /tmp/ink-venv/bin/python ../../../test-harnesses/shotcheck.py
+node ../../../test-harnesses/shapecheck.mjs
 cd .. && /tmp/ink-venv/bin/python tools/dithercheck.py
 ```
 
@@ -162,6 +163,22 @@ python3 sim/screenshots.py ~/…/frontend/src/widget-shots --panel v1p
 Run all four, or the shape you skipped keeps the renders it had. `canvascheck.mjs`
 compares each render against the box it is drawn in, on all of them, which is the
 check that was missing when every card on the V1 came out 26px too wide.
+
+**Anything picturing a page has to be told which shape it is picturing.** A page
+keeps an arrangement per shape, so `page.widgets` is no longer "the widgets" --
+it is the upright one. `arrangementFor(page, shape, manifest)` is the only way to
+ask, and the canvas, the page thumbnails and the row counts all go through it.
+Three places did not, and the worst was not cosmetic: the stranded-widget rescue
+measured the *upright* arrangement against the shape being *edited*, so switching
+the toolbar to sideways put every card past x=720 off a 720-wide panel -- and it
+rewrites the layout without asking, in a loop. `shapecheck.mjs` asserts that
+switching shapes writes nothing at all.
+
+The canvas fits the panel's **long side**, not its width. Those are the same
+number only while a panel is wider than it is tall; 720 fits any screen, so a
+portrait canvas came out at 1:1. Fitting the long side also puts both shapes at
+one scale, which is the truth of this grid -- the cell is 210x172 either way up,
+so a card is the same size on the screen in both.
 
 **A screenshot is always the glass's own shape**, never the shape the panel is
 standing in: the library maps drawing coordinates on the way into the buffer, so

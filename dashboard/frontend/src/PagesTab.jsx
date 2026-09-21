@@ -18,7 +18,7 @@ import { CSS } from "@dnd-kit/utilities";
 
 import PageThumb from "./PageThumb.jsx";
 import { EyeIcon, GripIcon, LockIcon, PencilIcon, TrashIcon } from "./Icons.jsx";
-import { DEFAULT_CHIP_ROW } from "./layout.js";
+import { DEFAULT_CHIP_ROW, arrangementFor } from "./layout.js";
 import { effectiveDwell, formatClock, formatDuration } from "./format.js";
 import PanelPicker from "./PanelPicker.jsx";
 
@@ -67,6 +67,7 @@ function Row({
   manifest,
   uploads,
   panel,
+  shape,
   onSet,
   onShow,
   onToggleLock,
@@ -83,7 +84,7 @@ function Row({
 
   const live = page.id === currentPageId;
   const name = page.name || page.id;
-  const widgets = page.widgets?.length || 0;
+  const widgets = arrangementFor(page, shape, manifest).length;
 
   return (
     <li
@@ -104,7 +105,7 @@ function Row({
         <GripIcon />
       </button>
 
-      <PageThumb page={page} manifest={manifest} uploads={uploads} panel={panel} />
+      <PageThumb page={page} manifest={manifest} uploads={uploads} panel={panel} shape={shape} />
 
       <div className="page-row-main">
         <div className="page-row-title">
@@ -281,6 +282,7 @@ export default function PagesTab({
   manifest,
   uploads,
   panel,
+  shape,
   onChange,
   onShowPage,
   onSetPageLock,
@@ -391,6 +393,7 @@ export default function PagesTab({
                   manifest={manifest}
                   uploads={uploads}
                   panel={panel}
+                  shape={shape}
                   onSet={(changes) => setPage(page.id, changes)}
                   onShow={() => onShowPage(page.id)}
                   onToggleLock={() => onSetPageLock(!pageLocked)}

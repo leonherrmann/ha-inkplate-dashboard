@@ -20,7 +20,6 @@ import {
   PORTRAIT,
   chipRowTop,
   defaultPosition,
-  fitToShape,
   hasBothShapes,
   hasChipRow,
   isChipType,
@@ -32,6 +31,7 @@ import {
   placeWidget,
   regridY,
   reorder,
+  arrangementFor,
   shapeFromOrientation,
   shapeGrid,
   shapePanel,
@@ -264,22 +264,7 @@ export default function App() {
   const arrangementKey = widgetsKey(shape);
   const ownArrangement = activePage?.[arrangementKey];
   const inherited = !ownArrangement && shape === PORTRAIT;
-  const widgets = ownArrangement
-    || (inherited
-          ? fitToShape(activePage?.widgets || [],
-                       { ...FALLBACK_GRID, ...shapeGrid(manifest, LANDSCAPE) },
-                       { ...FALLBACK_GRID, ...shapeGrid(manifest, PORTRAIT) },
-                       activePage?.chip_row || DEFAULT_CHIP_ROW,
-                       (widget) => {
-                         const type = widgetType(manifest, widget);
-                         const variant = (type?.sizes || []).find((one) => one.id === widget.size);
-                         return {
-                           isChip: isChipType(type),
-                           cols: variant?.cols,
-                           rows: variant?.rows,
-                         };
-                       })
-          : []);
+  const widgets = arrangementFor(activePage, shape, manifest);
   // Where the chip row sits, or whether the page has one at all, is a layout
   // choice and a *per page* one -- the firmware draws at the pixels it is given
   // and never derives a row. With no row the page's cells are taller, which is
@@ -468,11 +453,39 @@ export default function App() {
     // Each page is measured against its own chip row: the same widget is 34px
     // taller per row on a page that has none.
     const pageChipRow = (page) => page.chip_row || DEFAULT_CHIP_ROW;
+
+    // Each arrangement against the shape it was laid out for, which is the whole
+    // of the care needed here. Measuring them all against the shape being edited
+    // is destructive rather than merely wrong: switch the toolbar to sideways on
+    // a V2 and every upright card past x=720 is off a 720-wide panel, so this
+    // would sweep an entire landscape page into the top left corner -- and it
+    // saves without asking, so the layout would be gone before anyone saw it.
+    //
+    // A shape is only checked when the manifest describes it, since its box is
+    // the thing being measured against; the shape on screen is always checked,
+    // which is what firmware too old to publish both leaves.
+    const checkable = [LANDSCAPE, PORTRAIT].filter(
+      (which) => Boolean(manifest?.shapes?.[which]) || which === shape
+    );
+    const shapeBox = (which) => shapePanel(manifest, which);
+    const shapeDeviceGrid = (which) => ({ ...FALLBACK_GRID, ...shapeGrid(manifest, which) });
+
     const stranded = (page) =>
-      (page.widgets || []).filter(
-        (widget) =>
-          !isReachable(widget, widgetSize(manifest, widget, uploads, pageChipRow(page)), panel)
-      ).length;
+      checkable.reduce((total, which) => {
+        const arrangement = page[widgetsKey(which)];
+        if (!arrangement) return total;
+        return (
+          total
+          + arrangement.filter(
+              (widget) =>
+                !isReachable(
+                  widget,
+                  widgetSize(manifest, widget, uploads, pageChipRow(page)),
+                  shapeBox(which)
+                )
+            ).length
+        );
+      }, 0);
 
     const rescued = (layout.pages || []).reduce((total, page) => total + stranded(page), 0);
     if (rescued === 0) return;
@@ -480,16 +493,21 @@ export default function App() {
     const next = structuredClone(layout);
     for (const page of next.pages || []) {
       const rowSetting = pageChipRow(page);
-      for (const widget of page.widgets || []) {
-        const size = widgetSize(manifest, widget, uploads, rowSetting);
-        if (isReachable(widget, size, panel)) continue;
-        const home = defaultPosition(pageGrid(deviceGrid, rowSetting), {
-          chipRow: rowSetting,
-          isChip: isChipType(widgetType(manifest, widget)),
-          panel,
-        });
-        widget.x = home.x;
-        widget.y = home.y;
+      for (const which of checkable) {
+        const arrangement = page[widgetsKey(which)];
+        if (!arrangement) continue;
+        const box = shapeBox(which);
+        for (const widget of arrangement) {
+          const size = widgetSize(manifest, widget, uploads, rowSetting);
+          if (isReachable(widget, size, box)) continue;
+          const home = defaultPosition(pageGrid(shapeDeviceGrid(which), rowSetting), {
+            chipRow: rowSetting,
+            isChip: isChipType(widgetType(manifest, widget)),
+            panel: box,
+          });
+          widget.x = home.x;
+          widget.y = home.y;
+        }
       }
     }
 
@@ -499,7 +517,7 @@ export default function App() {
         : `${rescued} widgets were off the panel and have been moved back to the top left.`
     );
     persist(next, { record: false });
-  }, [layout, manifest, uploads, panel.width, panel.height, grid.gap, persist]);
+  }, [layout, manifest, uploads, shape, panel.width, panel.height, grid.gap, persist]);
 
   // Undo and redo restore a whole layout, so the selection can be pointing at a
   // widget that no longer exists -- undoing an add, or a chip row turned off.
@@ -509,7 +527,12 @@ export default function App() {
     if (!next) return;
     persist(next, { record: false });
     const page = next.pages?.find((one) => one.id === activePage?.id) || next.pages?.[0];
-    if (!(page?.widgets || []).some((widget) => widget.id === selectedId)) setSelectedId(null);
+    // Either arrangement: undoing while editing sideways restores a layout whose
+    // portrait widgets are the ones the selection can still be pointing at.
+    const present = [LANDSCAPE, PORTRAIT]
+      .flatMap((which) => page?.[widgetsKey(which)] || [])
+      .some((widget) => widget.id === selectedId);
+    if (!present) setSelectedId(null);
     setMessage(label);
   };
 
@@ -567,9 +590,15 @@ export default function App() {
     // seen or selected is one the editor offers no way back to. Undo covers it
     // now, which is what the confirm says; it is still worth asking, since the
     // chips go without being the thing that was clicked.
+    // Both arrangements, because the chip row is a property of the *page* and
+    // one setting governs whichever way the panel is standing. Counting only
+    // the upright one left the sideways arrangement holding chips for a row that
+    // no longer existed, which the panel then drew over the cards.
     const doomed = hasChipRow(next)
       ? []
-      : (page.widgets || []).filter((widget) => isChipType(widgetType(manifest, widget)));
+      : [LANDSCAPE, PORTRAIT]
+          .flatMap((which) => page[widgetsKey(which)] || [])
+          .filter((widget) => isChipType(widgetType(manifest, widget)));
     if (doomed.length > 0) {
       const what =
         doomed.length === 1
@@ -580,20 +609,29 @@ export default function App() {
       }
     }
 
-    const fromGrid = pageGrid(deviceGrid, next);
-    const chipY = chipRowTop(fromGrid, panel, next);
     const moved = structuredClone(layout);
     const target = moved.pages.find((candidate) => candidate.id === pageId);
     if (!target) return;
 
     target.chip_row = next;
-    target.widgets = (target.widgets || [])
-      .filter((widget) => !doomed.some((one) => one.id === widget.id))
-      .map((widget) =>
-        isChipType(widgetType(manifest, widget))
-          ? { ...widget, y: chipY }
-          : { ...widget, y: regridY(widget.y, deviceGrid, from, next) }
-      );
+
+    // Each arrangement against its own grid: the row sits at a different height
+    // on a panel on its side, and the cells are at a different pitch, so reusing
+    // the edited shape's numbers for the other one put every card a row out.
+    const gone = new Set(doomed.map((widget) => widget.id));
+    for (const which of [LANDSCAPE, PORTRAIT]) {
+      const key = widgetsKey(which);
+      if (!target[key]) continue;
+      const shapeDeviceGrid = { ...FALLBACK_GRID, ...shapeGrid(manifest, which) };
+      const chipY = chipRowTop(pageGrid(shapeDeviceGrid, next), shapePanel(manifest, which), next);
+      target[key] = target[key]
+        .filter((widget) => !gone.has(widget.id))
+        .map((widget) =>
+          isChipType(widgetType(manifest, widget))
+            ? { ...widget, y: chipY }
+            : { ...widget, y: regridY(widget.y, shapeDeviceGrid, from, next) }
+        );
+    }
 
     if (doomed.some((one) => one.id === selectedId)) setSelectedId(null);
     persist(moved);
@@ -878,6 +916,7 @@ export default function App() {
               zoom={zoom}
               mod={MOD}
               onDragState={setDragging}
+              shape={shape}
             />
           </main>
 
@@ -926,6 +965,7 @@ export default function App() {
           manifest={manifest}
           uploads={uploads}
           panel={panel}
+          shape={shape}
           onChange={persist}
           onAddPage={addPage}
           onEditPage={(id) => {
