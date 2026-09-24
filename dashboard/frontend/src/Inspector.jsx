@@ -431,6 +431,7 @@ export default function Inspector({
   widget,
   manifest,
   chipRow,
+  grid,
   entities,
   devices,
   areas,
@@ -490,7 +491,7 @@ export default function Inspector({
   const options = type?.options || [];
   // Measured against the page being edited: a card is taller on a page whose
   // chip row is off, and this line is what tells the user its footprint.
-  const size = widgetSize(manifest, widget, undefined, chipRow);
+  const size = widgetSize(manifest, widget, undefined, chipRow, grid);
 
   // How many entities the chosen size actually draws. The firmware publishes it
   // per size, because guessing from the cell count happened to be right for two

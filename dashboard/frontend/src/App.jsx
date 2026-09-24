@@ -24,6 +24,7 @@ import {
   hasChipRow,
   isChipType,
   isReachable,
+  marginX,
   newId,
   otherChips,
   pageGrid,
@@ -480,7 +481,10 @@ export default function App() {
               (widget) =>
                 !isReachable(
                   widget,
-                  widgetSize(manifest, widget, uploads, pageChipRow(page)),
+                  widgetSize(
+                    manifest, widget, uploads, pageChipRow(page),
+                    pageGrid(shapeDeviceGrid(which), pageChipRow(page))
+                  ),
                   shapeBox(which)
                 )
             ).length
@@ -498,7 +502,9 @@ export default function App() {
         if (!arrangement) continue;
         const box = shapeBox(which);
         for (const widget of arrangement) {
-          const size = widgetSize(manifest, widget, uploads, rowSetting);
+          const size = widgetSize(
+            manifest, widget, uploads, rowSetting, pageGrid(shapeDeviceGrid(which), rowSetting)
+          );
           if (isReachable(widget, size, box)) continue;
           const home = defaultPosition(pageGrid(shapeDeviceGrid(which), rowSetting), {
             chipRow: rowSetting,
@@ -558,10 +564,14 @@ export default function App() {
     // A new chip starts at the left of the row and slides clear of whatever is
     // already there, rather than landing on top of it.
     if (isChip) {
+      // From the margin, which is where a chip pushed against the edge stops --
+      // starting it at the gap put a new chip a few pixels off the place the
+      // same chip would land if you dragged it there, on every shape where the
+      // two numbers differ, which is all of them now.
       widget.x = placeChipX(
-        grid.gap,
-        widgetSize(manifest, widget, uploads, chipRow).width,
-        otherChips(widgets, manifest, uploads, widget.id),
+        marginX(grid),
+        widgetSize(manifest, widget, uploads, chipRow, grid).width,
+        otherChips(widgets, manifest, uploads, widget.id, grid),
         grid,
         panel
       );
@@ -658,9 +668,9 @@ export default function App() {
     if (!source) return;
 
     const copy = { ...structuredClone(source), id: newId() };
-    const size = widgetSize(manifest, copy, uploads, chipRow);
+    const size = widgetSize(manifest, copy, uploads, chipRow, grid);
     const isChip = isChipType(widgetType(manifest, copy));
-    const others = otherChips(widgets, manifest, uploads, copy.id);
+    const others = otherChips(widgets, manifest, uploads, copy.id, grid);
 
     // Right, then down, then back the other way. Each is clamped to the panel,
     // so at the far edge the offset is undone and the spot comes back equal to
@@ -715,7 +725,7 @@ export default function App() {
         const resized = { ...widget, size: sizeId };
         return {
           ...resized,
-          ...placeWidget(resized, { x: 0, y: 0 }, snapMode, grid, widgetSize(manifest, resized, uploads, chipRow), panel, {
+          ...placeWidget(resized, { x: 0, y: 0 }, snapMode, grid, widgetSize(manifest, resized, uploads, chipRow, grid), panel, {
             chipRow,
             isChip: isChipType(widgetType(manifest, resized)),
           }),
@@ -924,6 +934,7 @@ export default function App() {
             widget={selected}
             manifest={manifest}
             chipRow={chipRow}
+            grid={grid}
             entities={entities}
             devices={devices}
             areas={areas}

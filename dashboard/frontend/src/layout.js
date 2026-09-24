@@ -360,10 +360,13 @@ export function placeChipX(desired, width, others, grid, panel) {
 }
 
 // The chips a given widget has to keep clear of: every other one on the page.
-export function otherChips(widgets, manifest, uploads, excludeId) {
+export function otherChips(widgets, manifest, uploads, excludeId, grid = null) {
   return (widgets || [])
     .filter((widget) => widget.id !== excludeId && isChipType(widgetType(manifest, widget)))
-    .map((widget) => ({ x: widget.x, width: widgetSize(manifest, widget, uploads).width }));
+    .map((widget) => ({
+      x: widget.x,
+      width: widgetSize(manifest, widget, uploads, DEFAULT_CHIP_ROW, grid).width,
+    }));
 }
 
 // Where a widget ends up after a drag: raw pixel delta, snapped, then kept on
@@ -485,12 +488,12 @@ export function boxOn(grid, cols, rows, chipRow = DEFAULT_CHIP_ROW) {
 // whole point of the gesture.
 //
 // Self-sizing variants are skipped -- they have no footprint to be near.
-export function nearestVariant(type, box, chipRow = DEFAULT_CHIP_ROW) {
+export function nearestVariant(type, box, chipRow = DEFAULT_CHIP_ROW, grid = null) {
   let best = null;
   let bestCost = Infinity;
 
   for (const variant of type?.sizes || []) {
-    const footprint = variantFootprint(variant, chipRow);
+    const footprint = variantFootprint(variant, chipRow, grid);
     if (!footprint) continue;
     const cost =
       Math.abs(footprint.width - box.width) * footprint.height +
@@ -573,7 +576,7 @@ function estimateTextSize(widget) {
 // editor deriving the second one, so the firmware stays the one place a
 // widget's footprint is decided; an older manifest carries only the first, and
 // falls back to it.
-export function widgetSize(manifest, widget, uploads, chipRow = DEFAULT_CHIP_ROW) {
+export function widgetSize(manifest, widget, uploads, chipRow = DEFAULT_CHIP_ROW, grid = null) {
   const type = manifest?.widgets?.find((candidate) => candidate.type === widget.type);
   if (!type) return { width: 160, height: 120 };
 
@@ -582,7 +585,15 @@ export function widgetSize(manifest, widget, uploads, chipRow = DEFAULT_CHIP_ROW
     // A variant of 0 means the widget measures its own content, which only the
     // firmware can do properly. Estimate from the text so there is something of
     // roughly the right shape to drag around.
-    return variantFootprint(variant, chipRow) || estimateTextSize(widget);
+    return variantFootprint(variant, chipRow, grid) || estimateTextSize(widget);
+  }
+
+  // A chip is as tall as the row it sits in, and that is a property of the
+  // shape: 56 upright and 70 on its side on a V2. The published height is the
+  // row of whichever shape the panel was standing in when it sent the manifest,
+  // so taking it for both drew a 56px chip into a 70px row.
+  if (type.chip && grid?.chip_h) {
+    return { width: type.width || 160, height: grid.chip_h };
   }
 
   if (type.size_from) {

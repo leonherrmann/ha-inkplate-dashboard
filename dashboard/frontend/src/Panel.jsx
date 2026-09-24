@@ -147,6 +147,7 @@ function DraggableWidget({
   tall,
   model,
   orientation,
+  grid,
 }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: widget.id,
@@ -158,7 +159,7 @@ function DraggableWidget({
   // Self-sizing variants are filtered out rather than counted, so the text
   // widget's "auto" is not something a drag can land on -- it has no box to be
   // near. Its fixed sizes are draggable; the inspector is the way back to auto.
-  const variants = (type?.sizes || []).filter((variant) => variantFootprint(variant, chipRow));
+  const variants = (type?.sizes || []).filter((variant) => variantFootprint(variant, chipRow, grid));
   const resizable = selected && variants.length > 1;
   const resize = useDraggable({ id: `${RESIZE}${widget.id}`, disabled: !resizable });
 
@@ -175,10 +176,11 @@ function DraggableWidget({
           width: size.width + resize.transform.x / scale,
           height: size.height + resize.transform.y / scale,
         },
-        chipRow
+        chipRow,
+        grid
       )
     : null;
-  const ghost = pending ? variantFootprint(pending, chipRow) : null;
+  const ghost = pending ? variantFootprint(pending, chipRow, grid) : null;
 
   return (
     <div
@@ -281,11 +283,12 @@ export default function Panel({
 
   const handleResizeEnd = (widget, delta) => {
     const type = widgetType(manifest, widget);
-    const size = widgetSize(manifest, widget, uploads, chipRow);
+    const size = widgetSize(manifest, widget, uploads, chipRow, grid);
     const variant = nearestVariant(
       type,
       { width: size.width + delta.x, height: size.height + delta.y },
-      chipRow
+      chipRow,
+      grid
     );
     // A drag that lands back on the size it started from is not an edit. Saying
     // so here rather than in App keeps it off the undo stack as well.
@@ -318,10 +321,10 @@ export default function Panel({
 
     onMove(
       widget.id,
-      placeWidget(widget, delta, snapMode, grid, widgetSize(manifest, widget, uploads, chipRow), panel, {
+      placeWidget(widget, delta, snapMode, grid, widgetSize(manifest, widget, uploads, chipRow, grid), panel, {
         chipRow,
         isChip: isChipType(widgetType(manifest, widget)),
-        others: otherChips(widgets, manifest, uploads, widget.id),
+        others: otherChips(widgets, manifest, uploads, widget.id, grid),
       })
     );
   };
@@ -371,7 +374,8 @@ export default function Panel({
                   <DraggableWidget
                     key={widget.id}
                     widget={widget}
-                    size={widgetSize(manifest, widget, uploads, chipRow)}
+                    size={widgetSize(manifest, widget, uploads, chipRow, grid)}
+                    grid={grid}
                     type={widgetType(manifest, widget)}
                     chipRow={chipRow}
                     selected={widget.id === selectedId}

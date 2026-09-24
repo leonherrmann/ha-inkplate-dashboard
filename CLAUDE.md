@@ -104,6 +104,7 @@ PYTHONPATH=. SUPERVISOR_TOKEN=test /tmp/ink-venv/bin/python ../../../test-harnes
 PYTHONPATH=. /tmp/ink-venv/bin/python ../../../test-harnesses/imagecheck.py
 PYTHONPATH=. /tmp/ink-venv/bin/python ../../../test-harnesses/shotcheck.py
 node ../../../test-harnesses/shapecheck.mjs
+node ../../../test-harnesses/snapcheck.mjs
 cd .. && /tmp/ink-venv/bin/python tools/dithercheck.py
 ```
 
@@ -163,6 +164,23 @@ python3 sim/screenshots.py ~/…/frontend/src/widget-shots --panel v1p
 Run all four, or the shape you skipped keeps the renders it had. `canvascheck.mjs`
 compares each render against the box it is drawn in, on all of them, which is the
 check that was missing when every card on the V1 came out 26px too wide.
+
+**A widget's footprint is derived from the grid, never from the published
+size.** The manifest's `sizes` carry the pixels of the shape the panel was
+*standing in* when it sent the manifest -- a 2x1 is 457 wide upright and 442 on
+its side, and a chip row is 56 tall against 70. The editor works on both
+arrangements whichever way the panel is up, so taking the published number for
+both drew every multi-cell card wide of its own cells: the cards snapped to the
+right origins and then overhung them, which is what "the portrait grid does not
+snap right" looks like from the outside. `widgetSize`, `variantFootprint`,
+`nearestVariant` and `otherChips` all take the page's grid; pass it.
+
+`snapcheck.mjs` is the guard: it drives layout.js from every manifest a panel
+can send and measures every origin, span, snap, clamp and footprint against
+`sim/host/GridDump.cpp`, which prints the firmware's own numbers. Four shapes,
+three chip rows, and every combination of shape-being-edited against
+shape-the-manifest-describes -- the cross cases are the real ones, and are what
+a matching-orientation test misses.
 
 **Anything picturing a page has to be told which shape it is picturing.** A page
 keeps an arrangement per shape, so `page.widgets` is no longer "the widgets" --

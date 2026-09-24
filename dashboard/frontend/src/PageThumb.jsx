@@ -1,8 +1,11 @@
 import WidgetPreview from "./WidgetPreview.jsx";
 import {
   DEFAULT_CHIP_ROW,
+  FALLBACK_GRID,
   LANDSCAPE,
   arrangementFor,
+  pageGrid,
+  shapeGrid,
   hasChipRow,
   panelModel,
   shapeOrientation,
@@ -34,6 +37,10 @@ export default function PageThumb({ page, manifest, uploads, panel, shape = LAND
   const box = { width: Math.round(panel.width * scale), height: Math.round(panel.height * scale) };
   const widgets = arrangementFor(page, shape, manifest);
   const chipRow = page.chip_row || DEFAULT_CHIP_ROW;
+  // This shape's own grid: a card's footprint is derived from the cells it
+  // covers, and the two shapes do not share a gap, so the published sizes are
+  // only right for one of them.
+  const grid = pageGrid({ ...FALLBACK_GRID, ...shapeGrid(manifest, shape) }, chipRow);
 
   if (!manifest || widgets.length === 0) {
     return (
@@ -60,7 +67,7 @@ export default function PageThumb({ page, manifest, uploads, panel, shape = LAND
         aria-hidden="true"
       >
         {widgets.map((widget) => {
-          const size = widgetSize(manifest, widget, uploads, chipRow);
+          const size = widgetSize(manifest, widget, uploads, chipRow, grid);
           return (
             <div
               key={widget.id}
