@@ -72,8 +72,27 @@ export function widgetsKey(shape) {
 // The grid of a shape, from the manifest's `shapes` block. Firmware too old to
 // publish both knows only the shape it is standing in, so that is what it gets
 // -- the editor then draws one shape, which is what it always did.
+//
+// Completed from its *own* numbers before anything else fills it in. Every caller
+// spreads this over FALLBACK_GRID, which is the V2 lying down, so a grid that
+// published one `gap` and no margins -- any firmware before the shared cell --
+// had the V2's 41px margin and 37/30 gaps quietly put under it. On a V1 that is
+// where chips were rescued to: x 41 and a row at y 455, neither of them on the
+// V1's own grid. The panel's size comes along too, because cardBandTop reads it
+// for a page with no chip row and got NaN from a grid without one.
 export function shapeGrid(manifest, shape) {
-  return manifest?.shapes?.[shape] || manifest?.grid || FALLBACK_GRID;
+  const grid = manifest?.shapes?.[shape] || manifest?.grid;
+  if (!grid) return FALLBACK_GRID;
+  const gapXOwn = grid.gap_x ?? grid.gap;
+  const gapYOwn = grid.gap_y ?? gapXOwn;
+  const box = shapePanel(manifest, shape);
+  return {
+    ...grid,
+    ...(gapXOwn != null ? { gap_x: gapXOwn, margin_x: grid.margin_x ?? gapXOwn } : {}),
+    ...(gapYOwn != null ? { gap_y: gapYOwn, margin_y: grid.margin_y ?? gapYOwn } : {}),
+    width: grid.width ?? box.width,
+    height: grid.height ?? box.height,
+  };
 }
 
 export function shapePanel(manifest, shape) {
@@ -357,6 +376,65 @@ export function placeChipX(desired, width, others, grid, panel) {
   return usable.reduce((best, value) =>
     Math.abs(value - wanted) < Math.abs(best - wanted) ? value : best
   );
+}
+
+// Puts every chip of one arrangement where the editor would have put it: on
+// the row's y, and clear of the chips beside it. Returns the arrangement and
+// whether anything moved.
+//
+// Two ways a layout comes to need this. A chip's y is written when it is placed
+// and nothing touched it afterwards, so a layout from before the row shrank to
+// 56 has every chip 17px above it -- drawn over the gap, with the band it snaps
+// to sitting empty underneath. And rescuing stranded widgets sent every chip to
+// the same corner, so a page could hold three chips on one pixel. The panel
+// re-flows its own row, so neither was ever visible there; both were in the
+// editor, which is where the chips are dragged from.
+//
+// In the order the chips already run, so settling never reorders a row. Packed
+// rather than placed one at a time with placeChipX: that rule is for one chip
+// being dragged among others that stay put, and it looks for the nearest free
+// spot anywhere -- so a chip with no room left by the right margin was thrown to
+// the far end of the row, ahead of the chips that had been before it. Here each
+// chip keeps its x unless that would crowd the one before it, and a run pushed
+// against the right margin then backs up leftwards to keep its gaps.
+export function settleChips(arrangement, sizeOf, grid, panel, chipRow) {
+  if (!hasChipRow(chipRow)) return { widgets: arrangement, changed: false };
+  const y = chipRowTop(grid, panel, chipRow);
+  const gap = gapX(grid);
+  const min = marginX(grid);
+  const chips = arrangement
+    .map((widget, index) => ({ widget, index, width: sizeOf(widget)?.width || 0,
+                               isChip: sizeOf(widget)?.isChip }))
+    .filter((entry) => entry.isChip)
+    .sort((a, b) => a.widget.x - b.widget.x || a.index - b.index);
+  if (chips.length === 0) return { widgets: arrangement, changed: false };
+
+  const maxFor = (entry) => Math.max(min, panel.width - marginX(grid) - entry.width);
+  const xs = chips.map((entry) => clamp(Math.round(entry.widget.x), min, maxFor(entry)));
+  // Rightwards: never closer than a gap to the chip before
+  for (let i = 1; i < xs.length; i += 1) {
+    xs[i] = Math.max(xs[i], xs[i - 1] + chips[i - 1].width + gap);
+  }
+  // Leftwards: never past the right margin, and never closer than a gap to the
+  // chip after. A row too full for both ends overlaps at the left margin rather
+  // than running off the panel, which is the one it cannot recover from.
+  for (let i = xs.length - 1; i >= 0; i -= 1) {
+    xs[i] = Math.min(xs[i], maxFor(chips[i]));
+    if (i < xs.length - 1) xs[i] = Math.min(xs[i], xs[i + 1] - gap - chips[i].width);
+    xs[i] = Math.max(xs[i], min);
+  }
+
+  const moved = new Map();
+  chips.forEach((entry, i) => {
+    if (xs[i] !== entry.widget.x || y !== entry.widget.y) {
+      moved.set(entry.index, { ...entry.widget, x: xs[i], y });
+    }
+  });
+  if (moved.size === 0) return { widgets: arrangement, changed: false };
+  return {
+    widgets: arrangement.map((widget, index) => moved.get(index) || widget),
+    changed: true,
+  };
 }
 
 // The chips a given widget has to keep clear of: every other one on the page.

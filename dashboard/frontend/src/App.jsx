@@ -33,6 +33,7 @@ import {
   regridY,
   reorder,
   arrangementFor,
+  settleChips,
   shapeFromOrientation,
   shapeGrid,
   shapePanel,
@@ -492,21 +493,52 @@ export default function App() {
       }, 0);
 
     const rescued = (layout.pages || []).reduce((total, page) => total + stranded(page), 0);
-    if (rescued === 0) return;
+
+    // What settleChips needs to know of a widget: whether it is a chip, and the
+    // width the manifest reserves for it on this shape.
+    const chipSizeOf = (page, which) => (widget) => {
+      if (!isChipType(widgetType(manifest, widget))) return { isChip: false };
+      const rowSetting = pageChipRow(page);
+      const size = widgetSize(
+        manifest, widget, uploads, rowSetting, pageGrid(shapeDeviceGrid(which), rowSetting)
+      );
+      return { isChip: true, width: size.width };
+    };
+
+    // Chips off their row, or on top of one another. Counted on the layout as it
+    // is, without copying it, for the same reason as the stranded count: this
+    // runs on every poll, and settleChips changes nothing in a row that is
+    // already settled, so after the first time a layout costs nothing here.
+    const unsettled = (layout.pages || []).reduce(
+      (total, page) =>
+        total
+        + checkable.filter((which) => {
+          const arrangement = page[widgetsKey(which)];
+          if (!arrangement) return false;
+          const rowSetting = pageChipRow(page);
+          return settleChips(
+            arrangement, chipSizeOf(page, which),
+            pageGrid(shapeDeviceGrid(which), rowSetting), shapeBox(which), rowSetting
+          ).changed;
+        }).length,
+      0
+    );
+
+    if (rescued === 0 && unsettled === 0) return;
 
     const next = structuredClone(layout);
     for (const page of next.pages || []) {
       const rowSetting = pageChipRow(page);
       for (const which of checkable) {
-        const arrangement = page[widgetsKey(which)];
+        const key = widgetsKey(which);
+        const arrangement = page[key];
         if (!arrangement) continue;
         const box = shapeBox(which);
+        const pageShapeGrid = pageGrid(shapeDeviceGrid(which), rowSetting);
         for (const widget of arrangement) {
-          const size = widgetSize(
-            manifest, widget, uploads, rowSetting, pageGrid(shapeDeviceGrid(which), rowSetting)
-          );
+          const size = widgetSize(manifest, widget, uploads, rowSetting, pageShapeGrid);
           if (isReachable(widget, size, box)) continue;
-          const home = defaultPosition(pageGrid(shapeDeviceGrid(which), rowSetting), {
+          const home = defaultPosition(pageShapeGrid, {
             chipRow: rowSetting,
             isChip: isChipType(widgetType(manifest, widget)),
             panel: box,
@@ -514,14 +546,24 @@ export default function App() {
           widget.x = home.x;
           widget.y = home.y;
         }
+        // After the rescue, not instead of it: every stranded chip has just
+        // been sent to the same spot at the start of the row, and this is what
+        // spreads them along it rather than leaving them stacked there.
+        page[key] = settleChips(
+          page[key], chipSizeOf(page, which), pageShapeGrid, box, rowSetting
+        ).widgets;
       }
     }
 
-    setMessage(
-      rescued === 1
-        ? "A widget was off the panel and has been moved back to the top left."
-        : `${rescued} widgets were off the panel and have been moved back to the top left.`
-    );
+    if (rescued > 0) {
+      setMessage(
+        rescued === 1
+          ? "A widget was off the panel and has been moved back to the top left."
+          : `${rescued} widgets were off the panel and have been moved back to the top left.`
+      );
+    } else {
+      setMessage("The chips have been put back into the chip row.");
+    }
     persist(next, { record: false });
   }, [layout, manifest, uploads, shape, panel.width, panel.height, grid.gap, persist]);
 

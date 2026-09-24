@@ -15,6 +15,7 @@ import {
   gridPitch,
   hasChipRow,
   isChipType,
+  marginX,
   nearestVariant,
   otherChips,
   panelModel,
@@ -34,6 +35,12 @@ const RESIZE = "resize:";
 // drawn on the cell boundaries. The old backgroundSize trick could only ever
 // draw lines at the pitch, so the 30px gap the device leaves around every cell
 // was invisible and widgets looked like they should butt up against each other.
+//
+// Measured from the margin, which is where a card snaps and where the panel
+// draws it. It used to be the gap, which was the same number until every shape
+// took one shared cell; since then the cells and the chip band sat 4px left of
+// every widget snapped into them on a V2 lying down, and 5px right of them on a
+// V1, where the margin is the smaller of the two.
 function GridCells({ grid, panel, chipRow }) {
   const cells = [];
   const bandTop = cardBandTop(grid, chipRow);
@@ -45,7 +52,7 @@ function GridCells({ grid, panel, chipRow }) {
           key={`${row}-${col}`}
           className="cell"
           style={{
-            left: grid.gap + col * gridPitch(grid, "x"),
+            left: marginX(grid) + col * gridPitch(grid, "x"),
             top: bandTop + row * gridPitch(grid, "y"),
             width: grid.unit_w,
             height: grid.unit_h,
@@ -65,9 +72,9 @@ function GridCells({ grid, panel, chipRow }) {
         <div
           className="cell chip-band"
           style={{
-            left: grid.gap,
+            left: marginX(grid),
             top: chipRowTop(grid, panel, chipRow),
-            width: panel.width - 2 * grid.gap,
+            width: panel.width - 2 * marginX(grid),
             height: grid.chip_h,
           }}
         />

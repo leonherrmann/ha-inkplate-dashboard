@@ -103,6 +103,7 @@ PYTHONPATH=. SUPERVISOR_TOKEN=test /tmp/ink-venv/bin/python ../../../test-harnes
 PYTHONPATH=. SUPERVISOR_TOKEN=test /tmp/ink-venv/bin/python ../../../test-harnesses/timercheck.py
 PYTHONPATH=. /tmp/ink-venv/bin/python ../../../test-harnesses/imagecheck.py
 PYTHONPATH=. /tmp/ink-venv/bin/python ../../../test-harnesses/shotcheck.py
+PYTHONPATH=. /tmp/ink-venv/bin/python ../../../test-harnesses/gridmigratecheck.py
 node ../../../test-harnesses/shapecheck.mjs
 node ../../../test-harnesses/snapcheck.mjs
 cd .. && /tmp/ink-venv/bin/python tools/dithercheck.py
@@ -145,6 +146,7 @@ cd ../../../test-harnesses && node pickercheck.mjs
 cd ../../../test-harnesses && node devicecheck.mjs   # the Device screen, phone and desktop
 cd ../../../test-harnesses && node iconcheck.mjs     # the icon grid, both shells
 cd ../../../test-harnesses && node canvascheck.mjs   # each panel's own renders
+cd ../../../test-harnesses && node chiprowcheck.mjs  # cells, chip band and renders against the margins
 ```
 
 **The widget renders are per shape — each panel, each way up.** The cell is the
@@ -161,7 +163,15 @@ python3 sim/screenshots.py ~/…/frontend/src/widget-shots --panel v1
 python3 sim/screenshots.py ~/…/frontend/src/widget-shots --panel v1p
 ```
 
-Run all four, or the shape you skipped keeps the renders it had. `canvascheck.mjs`
+Run all four, or the shape you skipped keeps the renders it had. A run rewrites
+every PNG even when no pixel changed; restore the ones whose pixels are
+identical, or a one-line offset fix arrives as a thousand-file diff.
+
+**A render is placed by its `dx`/`dy`, measured from where the preview drew the
+widget** -- the margins for a card, the chip row for a chip. Until 2026.9.65
+they were measured from the gap, so every picture sat 4px right and 8px up of
+its box on a V2 lying down. `chiprowcheck.mjs` measures the drawn canvas against
+the manifest's grid; nothing else compares a picture with anything but itself. `canvascheck.mjs`
 compares each render against the box it is drawn in, on all of them, which is the
 check that was missing when every card on the V1 came out 26px too wide.
 
