@@ -32,6 +32,7 @@ MODULES = [
     "icloud",
     "albums",
     "weather",
+    "calendar_bridge",
     "firmware",
     "mqtt",
     "ha_bridge",

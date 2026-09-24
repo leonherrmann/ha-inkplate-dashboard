@@ -27,6 +27,7 @@ from mqtt import link
 import timezone
 from registry import registry
 from weather import weather
+from calendar_bridge import calendars
 from settings import (
     DEVICE_PORT,
     FIRMWARE_REPO,
@@ -339,6 +340,7 @@ async def lifespan(app: FastAPI):
     link.start()
     bridge.start()
     weather.start()
+    calendars.start()
     # Follow whatever the stored layout already references, so a restart of the
     # add-on keeps feeding the device without waiting for a push.
     # Every panel's entities, not one panel's: the state topics are shared, and
@@ -346,6 +348,7 @@ async def lifespan(app: FastAPI):
     entities = store.every_entity_id()
     bridge.follow(entities)
     weather.follow(entities)
+    calendars.follow(entities)
     # The device may have booted while the add-on was down, so re-advertise what
     # is available rather than waiting for the next upload.
     await publish_images()
@@ -368,6 +371,7 @@ async def lifespan(app: FastAPI):
     await firmware.store.stop()
     await ha_timer.mirror.stop()
     await weather.stop()
+    await calendars.stop()
     await bridge.stop()
     link.stop()
 
@@ -583,6 +587,7 @@ async def push_layout(panel: str | None = None) -> dict[str, Any]:
     entities = store.every_entity_id()
     bridge.follow(entities)
     weather.follow(entities)
+    calendars.follow(entities)
 
     return {"ok": sent, "version": layout["version"]}
 

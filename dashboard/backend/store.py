@@ -513,10 +513,15 @@ def entity_ids(layout: dict[str, Any]) -> set[str]:
     Lists count too. The device widget stores its resolved entities as an array
     under `entities`, and a device card whose entities were never followed draws
     a full set of dashes -- which looks like a firmware fault and is not one.
+
+    Both arrangements, upright and sideways: a widget placed only in a page's
+    sideways arrangement is still one a panel draws, and reading `widgets`
+    alone left its entities unfollowed.
     """
     found: set[str] = set()
     for page in layout.get("pages", []):
-        for widget in page.get("widgets", []):
+        widgets = (page.get("widgets") or []) + (page.get("widgets_portrait") or [])
+        for widget in widgets:
             for value in (widget.get("options") or {}).values():
                 if isinstance(value, list):
                     found.update(one for one in value if _looks_like_entity(one))
