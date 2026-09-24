@@ -1,5 +1,42 @@
 # Changelog
 
+## 2026.9.64
+
+- **Widgets are the right size in the sideways layout.** A card's size was taken
+  from the numbers the panel published, and those describe whichever way the
+  panel is standing — so with the panel upright, every multi-cell card in the
+  sideways layout was drawn 15px wider than its own cells, overhanging the gap
+  and its neighbour, and chips were 14px short of the chip row they sit in. Cards
+  now take their size from the grid of the layout you are editing, so both
+  layouts snap and line up whichever way the panel happens to be standing.
+
+- A new chip starts at the margin rather than a few pixels inside it, which is
+  where a chip dragged to the edge stops.
+
+- **Screenshots work on a panel standing on its side.** An Inkplate 5 in portrait
+  refused every screenshot with a 400, and an Inkplate 5 V2 would have returned a
+  scrambled one without an error. A panel always sends its picture in the shape
+  of its glass, whichever way up it is standing, and the add-on was reading it as
+  the shape the panel was standing in.
+
+- **The Pages tab shows the layout you are editing.** With the sideways layout
+  open, every page thumbnail was a sideways box holding the *upright* layout, at
+  upright positions — cards out through the right-hand edge, and a widget count
+  that disagreed with the picture beside it.
+
+- **Switching to the sideways layout no longer moves your upright one.** The
+  check that rescues widgets stranded off the panel was measuring the upright
+  layout against the sideways panel, so switching swept every card past the
+  halfway point into the top-left corner — and saved it, repeatedly, without
+  asking. If a page looks wrong after turning the panel, this was why.
+
+- The canvas fits the panel's long side, so a sideways page is drawn whole
+  instead of at full size with only its top third on screen. Both layouts are now
+  shown at the same scale as each other.
+
+- Turning a page's chip row off clears the chips from **both** layouts, not just
+  the upright one, and re-spaces each against its own grid.
+
 ## 2026.9.62
 
 - **Each page now has an upright layout and a sideways one, edited separately.**
