@@ -1,5 +1,33 @@
 # Changelog
 
+## 2026.9.65
+
+Pairs with firmware **v2026.9.65** — update both.
+
+- **Widgets sit exactly on their cells.** Every widget picture in the editor was
+  drawn a few pixels beside its own box — 4px right and 8px up on an Inkplate 5
+  V2, 5px left and 12px down on an Inkplate 5 — so a card snapped onto a cell
+  looked as though it had missed it. The pictures are placed where the panel
+  draws them now.
+
+- **The chip row lines up.** The grid behind the canvas and the chip band were
+  drawn a few pixels off the margin that widgets actually snap to. Chips left
+  above the row by an older layout are put back into it, and chips piled on top
+  of one another are spread along the row in their order. The layout is saved
+  when this happens, so the panel gets the same row.
+
+- **The battery chip is where the editor shows it.** The editor reserved the
+  Inkplate 5 V2's chip widths on both panels. The Inkplate 5 draws its battery
+  49px narrower, so a battery pushed against the right margin landed well away
+  from it. Chips are now as wide in the editor as on the panel (needs firmware
+  v2026.9.65).
+
+- **An old layout is moved onto the current grid.** A layout last edited before
+  every panel shared one cell size was still on the old grid. The panel quietly
+  corrected it, but the next push would have stopped that and put the chips
+  17px above their row. It is moved once when it is loaded: cards keep their
+  cells, and chips keep the margin they were against.
+
 ## 2026.9.64
 
 - **Widgets are the right size in the sideways layout.** A card's size was taken
