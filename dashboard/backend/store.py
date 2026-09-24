@@ -132,7 +132,7 @@ EMPTY_LAYOUT: dict[str, Any] = {
     "rotation": dict(DEFAULT_ROTATION),
     "refresh": dict(DEFAULT_REFRESH),
     "orientation": DEFAULT_ORIENTATION,
-    "grid_generation": 2,
+    "grid_generation": 3,
     # chip_row is per page: top, bottom or off. The firmware draws widgets at
     # the pixels it is given and never derives a row, but it does read this to
     # know how tall a cell on the page is -- with no row the three card rows
@@ -155,7 +155,7 @@ def load(panel_id: str) -> dict[str, Any]:
     _adopt_legacy(panel_id)
     try:
         with open(layout_path(panel_id), "r", encoding="utf-8") as handle:
-            return _migrate(json.load(handle))
+            return _migrate(json.load(handle), panel_id)
     except FileNotFoundError:
         return json.loads(json.dumps(EMPTY_LAYOUT))
     except (json.JSONDecodeError, OSError) as error:
@@ -163,7 +163,7 @@ def load(panel_id: str) -> dict[str, Any]:
         return json.loads(json.dumps(EMPTY_LAYOUT))
 
 
-def _migrate(layout: dict[str, Any]) -> dict[str, Any]:
+def _migrate(layout: dict[str, Any], panel_id: str | None = None) -> dict[str, Any]:
     """Bring an older layout up to date: stable ids, and pixel positions.
 
     Widgets used to be identified by their array index, which is why deleting one
@@ -201,6 +201,7 @@ def _migrate(layout: dict[str, Any]) -> dict[str, Any]:
     layout.setdefault("refresh", dict(DEFAULT_REFRESH))
     layout.setdefault("orientation", DEFAULT_ORIENTATION)
     _migrate_to_chip_row_grid(layout)
+    _migrate_to_shared_cell(layout, panel_id)
     return layout
 
 
@@ -245,6 +246,195 @@ def _migrate_to_chip_row_grid(layout: dict[str, Any]) -> None:
             widget["y"] = max(0, GRID_GAP + row * new_pitch + offset)
 
     layout["grid_generation"] = 2
+
+
+# Every chip type, for recognising the chip row of a layout on the old grid.
+# The same list the manifest marks with "chip"; it is written out rather than
+# read from one because a layout is migrated when it is read off disk, which can
+# be before any panel has said what it draws.
+_ALL_CHIP_TYPES = frozenset({"battery", "wifi", "mqtt", "update", "entity_chip"})
+
+# What the editor reserved for each chip on the old grid: the manifest's figures
+# then, which were one set for every panel. A chip is placed by its left edge,
+# so a row pushed against the right margin can only be told apart by these.
+_OLD_CHIP_WIDTHS = {"battery": 175, "wifi": 80, "mqtt": 80, "update": 210, "entity_chip": 220}
+
+# The grid every layout was placed on before the panels shared one cell: 220x166
+# cells with one 30px gap that was also the margin, and a 72px chip row. A
+# layout that was never pushed with `laid_out_for` is one the firmware still
+# reads on this grid, and re-fits.
+_OLD = {"margin": 30, "unit_w": 220, "unit_h": 166, "unit_h_off": 200, "chip_h": 72}
+
+
+def _card_span(widget: dict[str, Any]) -> tuple[int, int] | None:
+    """Columns and rows of a card sized like "2x1", or None for anything else."""
+    size = str(widget.get("size") or "")
+    cols, _, rows = size.partition("x")
+    if cols.isdigit() and rows.isdigit():
+        return int(cols), int(rows)
+    return None
+
+
+def _old_band_top(chip_row: str) -> int:
+    old = _OLD
+    return old["margin"] + old["chip_h"] + old["margin"] if chip_row == "top" else old["margin"]
+
+
+def _old_pitch_y(chip_row: str) -> int:
+    old = _OLD
+    return (old["unit_h_off"] if chip_row == "off" else old["unit_h"]) + old["margin"]
+
+
+def _on_old_grid(layout: dict[str, Any]) -> bool:
+    """Whether a layout's upright widgets sit on the old grid rather than a new one.
+
+    Decided by where they are, because nothing in a layout of generation 2 says:
+    that generation spans the 220px grid and the first months of the shared cell.
+    Cards are the evidence -- each is exactly on a cell of one grid or the other,
+    and 30 + 250k is on no shape's grid now. A layout with chips and no cards
+    falls back to the chip row, which was at 618 or 30 and is at neither now.
+    """
+    cards = 0
+    chips = 0
+    for page in layout.get("pages", []):
+        chip_row = page.get("chip_row") or DEFAULT_CHIP_ROW
+        for widget in page.get("widgets", []):
+            x, y = widget.get("x"), widget.get("y")
+            if not isinstance(x, int) or not isinstance(y, int):
+                continue
+            if widget.get("type") in _ALL_CHIP_TYPES:
+                row_y = 30 if chip_row == "top" else 720 - 30 - 72
+                if y != row_y:
+                    return False
+                chips += 1
+                continue
+            if _card_span(widget) is None:
+                continue
+            pitch_x = _OLD["unit_w"] + _OLD["margin"]
+            if (x - _OLD["margin"]) % pitch_x or (y - _old_band_top(chip_row)) % _old_pitch_y(chip_row):
+                return False
+            cards += 1
+    return cards > 0 or chips > 0
+
+
+def _pack_chips(chips: list[dict[str, Any]], width_of, margin: int, gap: int, panel_width: int) -> None:
+    """Space one row of chips as the editor would: in their order, a gap apart,
+    inside the margins. The editor's settleChips, so a migrated row is one the
+    editor has nothing to say about."""
+    row = sorted(chips, key=lambda widget: widget["x"])
+    widths = [width_of(widget.get("type")) for widget in row]
+    limit = [max(margin, panel_width - margin - width) for width in widths]
+    xs = [min(max(widget["x"], margin), limit[i]) for i, widget in enumerate(row)]
+    for i in range(1, len(xs)):
+        xs[i] = max(xs[i], xs[i - 1] + widths[i - 1] + gap)
+    for i in range(len(xs) - 1, -1, -1):
+        xs[i] = min(xs[i], limit[i])
+        if i < len(xs) - 1:
+            xs[i] = min(xs[i], xs[i + 1] - gap - widths[i])
+        xs[i] = max(xs[i], margin)
+    for widget, x in zip(row, xs):
+        widget["x"] = x
+
+
+def _migrate_to_shared_cell(layout: dict[str, Any], panel_id: str | None) -> None:
+    """Move a layout off the 220x166 grid onto the panel's own.
+
+    Every shape now shares one 210x172 cell, with its own gaps and margins. A
+    layout placed before that was never moved: the panel was unaffected, because
+    a layout pushed without `laid_out_for` is re-fitted on arrival -- but the
+    editor drew it as it stood, every card a few pixels off its cell and every
+    chip 17px above the row, and the next push would have stamped it as drawn on
+    the new grid, at which point the panel would have stopped re-fitting it and
+    drawn it that way too.
+
+    The same mapping the firmware's LayoutFit makes: a card keeps its cell, a
+    chip keeps its place across the band between the margins and goes onto the
+    row, and anything else scales by the pitch. A card whose cell this panel
+    does not have is left where it maps to, for the editor's rescue to deal with,
+    rather than dropped from somebody's layout by a migration.
+
+    Only the upright arrangement: sideways ones did not exist on the old grid.
+    """
+    if layout.get("grid_generation", 0) >= 3:
+        return
+    if not _on_old_grid(layout):
+        layout["grid_generation"] = 3
+        return
+
+    # Here rather than at the top: only this reads a panel's manifest
+    import grids
+    import manifest_store
+
+    shapes = grids.shapes_of(panel_id)
+    new = shapes.get("landscape") or grids.of(panel_id)
+    old = _OLD
+    old_pitch_x = old["unit_w"] + old["margin"]
+    new_pitch_x = new.unit_w + new.gap_x
+    new_pitch_y = new.unit_h + new.gap_y
+    old_band = 1280 - 2 * old["margin"]
+    new_band = new.width - 2 * new.margin_x
+
+    def band_top(chip_row: str) -> int:
+        if chip_row == "off":
+            band = new.rows * new.unit_h + (new.rows - 1) * new.gap_y
+            return max(new.margin_y, round((new.height - band) / 2))
+        if chip_row == "top":
+            return new.margin_y + new.chip_h + new.gap_y
+        return new.margin_y
+
+    def chip_top(chip_row: str) -> int:
+        return new.margin_y if chip_row == "top" else new.height - new.margin_y - new.chip_h
+
+    # What this panel reserves for each chip now, which is what it draws them at
+    manifest = manifest_store.load(panel_id) if panel_id else None
+    new_widths = {
+        entry.get("type"): int(entry.get("width") or 0)
+        for entry in (manifest or {}).get("widgets") or []
+        if entry.get("chip")
+    }
+
+    def chip_width(kind: str) -> int:
+        return new_widths.get(kind) or _OLD_CHIP_WIDTHS.get(kind, 160)
+
+    def scale(value: int) -> int:
+        return new.margin_x + round((value - old["margin"]) * new_band / old_band)
+
+    for page in layout.get("pages", []):
+        chip_row = page.get("chip_row") or DEFAULT_CHIP_ROW
+        chips = []
+        for widget in page.get("widgets", []):
+            x = int(widget.get("x", old["margin"]))
+            y = int(widget.get("y", old["margin"]))
+            if widget.get("type") in _ALL_CHIP_TYPES:
+                # By the edge the panel anchors it on: the left for a chip in the
+                # left half, the right for one in the right, which is what keeps
+                # a row pushed against either margin against it.
+                kind = widget.get("type")
+                was = _OLD_CHIP_WIDTHS.get(kind, 160)
+                if x + was / 2 < 1280 / 2:
+                    widget["x"] = scale(x)
+                else:
+                    widget["x"] = scale(x + was) - chip_width(kind)
+                widget["y"] = chip_top(chip_row)
+                chips.append(widget)
+                continue
+            col = max(0, round((x - old["margin"]) / old_pitch_x))
+            row = max(0, round((y - _old_band_top(chip_row)) / _old_pitch_y(chip_row)))
+            if _card_span(widget) is not None:
+                widget["x"] = new.margin_x + col * new_pitch_x
+                widget["y"] = band_top(chip_row) + row * new_pitch_y
+                continue
+            # Placed freely, so kept at the same fraction of the way across a cell
+            widget["x"] = new.margin_x + round((x - old["margin"]) * new_pitch_x / old_pitch_x)
+            widget["y"] = band_top(chip_row) + round(
+                (y - _old_band_top(chip_row)) * new_pitch_y / _old_pitch_y(chip_row)
+            )
+
+        _pack_chips(chips, chip_width, new.margin_x, new.gap_x, new.width)
+
+    log.info("Moved the layout for %s onto its panel's grid of %dx%d cells",
+             panel_id, new.unit_w, new.unit_h)
+    layout["grid_generation"] = 3
 
 
 def save(panel_id: str, layout: dict[str, Any]) -> None:
