@@ -3,7 +3,7 @@ import { BatteryIcon } from "./Icons.jsx";
 // When the panel counts its battery as low, and what it does about it.
 //
 // The percentage is the panel's own, read off its measured discharge curve
-// (firmware v2026.9.71 on), so a level here is charge left rather than a
+// (firmware with the battery-alert work), so a level here is charge left rather than a
 // voltage. Below it the battery chip swaps its fill for an exclamation mark;
 // with the full-screen warning on, the panel also stops showing the
 // dashboard and says to charge it, until it is charging or a button is
