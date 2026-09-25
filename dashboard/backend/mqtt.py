@@ -251,10 +251,17 @@ class DeviceLink:
                 known = (previous.get("images") or {}).get("have")
                 if isinstance(images, dict) and "have" not in images and known is not None:
                     images["have"] = known
-                # Order matters: the trend is judged against what was already
-                # known, before this reading joins the history. The other way
-                # round, a lone sample gets compared against itself.
-                state.charging = history.charging(panel_id, state.stats.get("voltage"))
+                # The panel judges charging itself from firmware v2026.9.70 on,
+                # from a reading every 30 s -- it sees the step the cable makes
+                # and the 4.2 V plateau of a full cell on the charger, which a
+                # quarter-hourly trend here cannot. Its answer wins; the trend
+                # is only for firmware too old to say.
+                # Order still matters for the trend: it is judged against what
+                # was already known, before this reading joins the history. The
+                # other way round, a lone sample gets compared against itself.
+                device_charging = state.stats.get("charging")
+                trend = history.charging(panel_id, state.stats.get("voltage"))
+                state.charging = device_charging if isinstance(device_charging, bool) else trend
                 history.record(panel_id, state.stats, state.online)
                 self.publish_charging(panel_id, state.charging)
                 # The running version arrives here and nowhere else, so this is

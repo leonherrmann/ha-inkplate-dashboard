@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026.9.70
+
+Pairs with firmware **v2026.9.70**. Update the add-on first, then the panels.
+
+- **The battery chip shows a bolt while the panel is charging**, and the
+  panel works that out itself -- no add-on needed. It watches for the step
+  the voltage makes when the cable goes in or out, and for the 4.2 V a full
+  cell only reaches on the charger, so a full panel left on its cable still
+  reads as plugged in.
+
+- **Home Assistant's Charging sensor now takes the panel's answer.** It used
+  to be guessed here from a quarter-hourly voltage trend, which called a
+  panel on its cable "not charging" as soon as the voltage levelled off.
+  Older firmware still gets the guess.
+
 ## 2026.9.69
 
 Pairs with firmware **v2026.9.69**. Update the add-on first, then the panels.
