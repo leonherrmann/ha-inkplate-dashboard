@@ -41,6 +41,7 @@ const LAYOUT = {
   orientation: 180,
   sleep: { enabled: true, start: "23:00", end: "06:00", wake_minutes: 30 },
   refresh: { ghost_percent: 25 },
+  battery: { low_percent: 10, low_screen: true },
   timer_tick_ms: 2500,
   pomodoro_auto_start: false,
   pages: [{ id: "p1", name: "Main", chip_row: "bottom", queued: true, widgets: [] }],
@@ -137,6 +138,41 @@ await page.waitForTimeout(400);
 check((await page.locator(".setting-row").count()) >= 5, "back returns the list");
 check(/6\s*%/.test(await rowText("Screen refresh")), "showing what was just chosen");
 
+// The battery warning: a level and whether it takes the whole panel, both read
+// back from the layout and both changeable from its own screen.
+check(
+  /Below 10%.*full screen/.test(await rowText("Low battery")),
+  "the battery row says the level and that it goes full screen"
+);
+await page.locator(".setting-row", { hasText: "Low battery" }).click();
+await page.waitForTimeout(400);
+check((await page.locator(".screen-head h2").innerText()) === "Low battery", "it opens its own card");
+await page.getByRole("button", { name: "20 %" }).click();
+await page.waitForTimeout(300);
+check(
+  (await page.getByRole("button", { name: "20 %" }).getAttribute("aria-pressed")) === "true",
+  "a level can be picked"
+);
+await page.locator(".settings-grid .card .switch").click();
+await page.waitForTimeout(300);
+check(
+  !(await page.locator(".settings-grid .card .switch input").isChecked()),
+  "and the full-screen warning turned off"
+);
+await page.screenshot({ path: "/tmp/device-battery-phone.png" });
+await page.getByRole("button", { name: "Off" }).click();
+await page.waitForTimeout(300);
+check(
+  (await page.locator(".settings-grid .card .switch").count()) === 0,
+  "with the warning off there is no full-screen switch to set"
+);
+await page.getByRole("button", { name: "20 %" }).click();
+await page.waitForTimeout(200);
+await page.getByRole("button", { name: /Back to Device/ }).click();
+await page.waitForTimeout(400);
+check(/Below 20%/.test(await rowText("Low battery")), "and the row shows the new level");
+check(!/full screen/.test(await rowText("Low battery")), "without the full screen");
+
 // Commands are actions rather than a setting, and they are behind a row too --
 // three buttons that each do something the moment they are pressed are not
 // something to keep on a screen you scroll past.
@@ -155,8 +191,8 @@ await page.setViewportSize(DESKTOP);
 await page.waitForTimeout(500);
 check((await page.locator(".setting-row").count()) === 0, "a wide window has no rows");
 check(
-  (await page.locator(".settings-grid .card").count()) === 4,
-  "it has the four cards side by side, which is what the width is for"
+  (await page.locator(".settings-grid .card").count()) === 5,
+  "it has the five cards side by side, which is what the width is for"
 );
 await page.screenshot({ path: "/tmp/device-desktop.png" });
 

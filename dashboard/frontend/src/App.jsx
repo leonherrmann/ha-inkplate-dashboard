@@ -1077,6 +1077,8 @@ export default function App() {
           lastSeenAge={lastSeenAge}
           sleep={layout.sleep}
           onSleepChange={(next) => persist({ ...layout, sleep: next })}
+          battery={layout.battery}
+          onBatteryChange={(next) => persist({ ...layout, battery: next })}
           refresh={layout.refresh}
           onRefreshChange={(next) => persist({ ...layout, refresh: next })}
           orientation={layout.orientation}

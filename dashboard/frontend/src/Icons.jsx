@@ -249,6 +249,13 @@ export const MoonIcon = (props) => (
   </Svg>
 );
 
+export const BatteryIcon = (props) => (
+  <Svg width={2} {...props}>
+    <rect x="2" y="7" width="17" height="10" rx="2" />
+    <path d="M22 11v2M10.5 9.5v3M10.5 14.5v.01" />
+  </Svg>
+);
+
 export const TimerIcon = (props) => (
   <Svg width={2} {...props}>
     <circle cx="12" cy="13" r="8" />

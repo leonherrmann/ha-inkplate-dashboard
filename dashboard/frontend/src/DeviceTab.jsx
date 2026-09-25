@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import SleepSettings from "./SleepSettings.jsx";
+import BatterySettings, { DEFAULT_LOW_PERCENT } from "./BatterySettings.jsx";
 import RefreshSettings from "./RefreshSettings.jsx";
 import OrientationSettings from "./OrientationSettings.jsx";
 import TimerSettings from "./TimerSettings.jsx";
@@ -149,6 +150,8 @@ export default function DeviceTab({
   lastSeenAge,
   sleep,
   onSleepChange,
+  battery,
+  onBatteryChange,
   refresh,
   onRefreshChange,
   orientation,
@@ -268,6 +271,9 @@ export default function DeviceTab({
   const refreshPercent = refresh?.ghost_percent ?? REFRESH_DEFAULT;
   const refreshLevel = REFRESH_LEVELS.find((one) => one.percent === Number(refreshPercent));
   const sleepLabel = sleep?.enabled ? `${sleep.start} – ${sleep.end}` : "Off";
+  const lowPercent = Number(battery?.low_percent ?? DEFAULT_LOW_PERCENT);
+  const batteryLabel =
+    lowPercent === 0 ? "Off" : `Below ${lowPercent}%${battery?.low_screen ? " · full screen" : ""}`;
   const timerLabel = TIMER_TICKS.find((one) => one.ms === Number(timerTickMs ?? 5000))?.label ||
     "Every 5 seconds";
 
@@ -286,6 +292,10 @@ export default function DeviceTab({
     sleep: {
       title: "Night sleep",
       card: <SleepSettings sleep={sleep} onChange={onSleepChange} />,
+    },
+    battery: {
+      title: "Low battery",
+      card: <BatterySettings battery={battery} onChange={onBatteryChange} />,
     },
     timers: {
       title: "Timers",
@@ -536,6 +546,11 @@ export default function DeviceTab({
                 onOpen={() => setView("sleep")}
               />
               <SettingRow
+                label="Low battery"
+                value={batteryLabel}
+                onOpen={() => setView("battery")}
+              />
+              <SettingRow
                 label="Timers"
                 value={`${timerLabel.replace("Every ", "")}${
                   pomodoroAutoStart === false ? " · auto-start off" : ""
@@ -560,6 +575,7 @@ export default function DeviceTab({
               <OrientationSettings orientation={orientation} onChange={onOrientationChange} />
               <RefreshSettings refresh={refresh} onChange={onRefreshChange} />
               <SleepSettings sleep={sleep} onChange={onSleepChange} />
+              <BatterySettings battery={battery} onChange={onBatteryChange} />
               <TimerSettings
                 tickMs={timerTickMs}
                 onChange={onTimerTickChange}

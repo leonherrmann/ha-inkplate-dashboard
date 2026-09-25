@@ -116,6 +116,15 @@ DEFAULT_REFRESH: dict[str, Any] = {
     "ghost_percent": 12,
 }
 
+# When the panel counts its battery as low, as a percentage of charge left off
+# its own measured curve, and whether that takes the whole panel. 15 is the
+# firmware's default for a layout with no battery block, and the two are the
+# same number for the reason ghost_percent's are. 0 turns the warning off.
+DEFAULT_BATTERY: dict[str, Any] = {
+    "low_percent": 15,
+    "low_screen": False,
+}
+
 # Which way up the panel is hung, in degrees: 0 as it comes, 180 turned over.
 # Not the same thing as "rotation" above, which is the slideshow through the
 # pages -- the two words are unavoidably close, so the key is deliberately not
@@ -131,6 +140,7 @@ EMPTY_LAYOUT: dict[str, Any] = {
     "sleep": dict(DEFAULT_SLEEP),
     "rotation": dict(DEFAULT_ROTATION),
     "refresh": dict(DEFAULT_REFRESH),
+    "battery": dict(DEFAULT_BATTERY),
     "orientation": DEFAULT_ORIENTATION,
     "grid_generation": 3,
     # chip_row is per page: top, bottom or off. The firmware draws widgets at
@@ -199,6 +209,7 @@ def _migrate(layout: dict[str, Any], panel_id: str | None = None) -> dict[str, A
     layout.setdefault("sleep", dict(DEFAULT_SLEEP))
     layout.setdefault("rotation", dict(DEFAULT_ROTATION))
     layout.setdefault("refresh", dict(DEFAULT_REFRESH))
+    layout.setdefault("battery", dict(DEFAULT_BATTERY))
     layout.setdefault("orientation", DEFAULT_ORIENTATION)
     _migrate_to_chip_row_grid(layout)
     _migrate_to_shared_cell(layout, panel_id)
