@@ -97,15 +97,15 @@ None`). That error means the wrong interpreter, not a broken edit.
 
 cd dashboard/backend
 /tmp/ink-venv/bin/python importcheck.py            # every module imports
-PYTHONPATH=. /tmp/ink-venv/bin/python ../../../test-harnesses/manifestpostcheck.py
-PYTHONPATH=. /tmp/ink-venv/bin/python ../../../test-harnesses/albumcheck.py
-PYTHONPATH=. SUPERVISOR_TOKEN=test /tmp/ink-venv/bin/python ../../../test-harnesses/adoptcheck.py
-PYTHONPATH=. SUPERVISOR_TOKEN=test /tmp/ink-venv/bin/python ../../../test-harnesses/timercheck.py
-PYTHONPATH=. /tmp/ink-venv/bin/python ../../../test-harnesses/imagecheck.py
-PYTHONPATH=. /tmp/ink-venv/bin/python ../../../test-harnesses/shotcheck.py
-PYTHONPATH=. /tmp/ink-venv/bin/python ../../../test-harnesses/gridmigratecheck.py
-node ../../../test-harnesses/shapecheck.mjs
-node ../../../test-harnesses/snapcheck.mjs
+for h in manifestpostcheck albumcheck imagecheck shotcheck gridmigratecheck \
+         calendarcheck firmwarecheck panelscheck; do
+  PYTHONPATH=. /tmp/ink-venv/bin/python ../../test-harnesses/$h.py
+done
+for h in adoptcheck timercheck; do
+  PYTHONPATH=. SUPERVISOR_TOKEN=test /tmp/ink-venv/bin/python ../../test-harnesses/$h.py
+done
+node ../../test-harnesses/shapecheck.mjs
+node ../../test-harnesses/snapcheck.mjs
 cd .. && /tmp/ink-venv/bin/python tools/dithercheck.py
 ```
 
@@ -117,8 +117,12 @@ of a conversion turned out to be work nobody needed. `dithercheck.py` is the
 other half of the same contract, against the browser.
 
 Pillow is deliberately absent from `requirements.txt` (the Dockerfile installs
-it via apk). The harnesses live in the sibling `test-harnesses/` directory and
-are not committed anywhere.
+it via apk). The harnesses are in `test-harnesses/` at the root of this repo
+(committed 2026-09-25; before that they lived outside both repos and were
+rebuilt from scratch more than once). `npm install` there for Playwright. A
+check that answers the editor's API has to match `/status(\?|$)`, not
+`/status$`: since several panels the editor asks with `?panel=`, and a fake
+that only matched the bare path served nothing and timed out.
 
 **`importcheck.py` before any release** — 2026.9.29 shipped an add-on that could
 not start at all because one import was wrong.
@@ -141,12 +145,16 @@ specificity bugs of that shape, all invisible in a static desktop render.
 
 ```sh
 cd dashboard/frontend && npx serve dist -l 8127     # in one shell
-cd ../../../test-harnesses && node sheetcheck.mjs   # 40 checks, mobile sheet
-cd ../../../test-harnesses && node pickercheck.mjs
-cd ../../../test-harnesses && node devicecheck.mjs   # the Device screen, phone and desktop
-cd ../../../test-harnesses && node iconcheck.mjs     # the icon grid, both shells
-cd ../../../test-harnesses && node canvascheck.mjs   # each panel's own renders
-cd ../../../test-harnesses && node chiprowcheck.mjs  # cells, chip band and renders against the margins
+cd ../../test-harnesses        # from dashboard/frontend, in another shell
+node sheetcheck.mjs            # the mobile options sheet
+node pickercheck.mjs
+node devicecheck.mjs           # the Device screen, phone and desktop
+node device-overrides.mjs      # the note when the panel's buttons changed a setting
+node refreshfloorcheck.mjs     # the refresh card's repaint limit
+node iconcheck.mjs             # the icon grid, both shells
+node manifestcheck.mjs         # shared value lists read the same as inline ones
+node canvascheck.mjs           # each panel's own renders
+node chiprowcheck.mjs          # cells, chip band and renders against the margins
 ```
 
 **The widget renders are per shape — each panel, each way up.** The cell is the

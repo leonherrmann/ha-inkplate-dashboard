@@ -1,0 +1,1375 @@
+{
+  "device": {
+    "id": "inkplate-a864a0",
+    "model": "inkplate5v2"
+  },
+  "display": {
+    "width": 1280,
+    "height": 720,
+    "orientation": 0,
+    "model": "inkplate5v2"
+  },
+  "grid": {
+    "gap": 37,
+    "gap_x": 37,
+    "gap_y": 30,
+    "margin_x": 41,
+    "margin_y": 29,
+    "unit_w": 210,
+    "unit_h": 172,
+    "cols": 5,
+    "rows": 3,
+    "unit_h_off": 172,
+    "chip_h": 56
+  },
+  "shapes": {
+    "landscape": {
+      "width": 1280,
+      "height": 720,
+      "cols": 5,
+      "rows": 3,
+      "gap": 37,
+      "gap_x": 37,
+      "gap_y": 30,
+      "margin_x": 41,
+      "margin_y": 29,
+      "unit_w": 210,
+      "unit_h": 172,
+      "unit_h_off": 172,
+      "chip_h": 56
+    },
+    "portrait": {
+      "width": 720,
+      "height": 1280,
+      "cols": 3,
+      "rows": 6,
+      "gap": 22,
+      "gap_x": 22,
+      "gap_y": 22,
+      "margin_x": 23,
+      "margin_y": 23,
+      "unit_w": 210,
+      "unit_h": 172,
+      "unit_h_off": 172,
+      "chip_h": 70
+    }
+  },
+  "categories": [
+    {
+      "id": "home",
+      "label": "Home"
+    },
+    {
+      "id": "panel",
+      "label": "Panel"
+    },
+    {
+      "id": "chip",
+      "label": "Chips"
+    }
+  ],
+  "values": {
+    "v0": [
+      "rooms_bed",
+      "rooms_chair",
+      "rooms_checkroom",
+      "rooms_couch",
+      "rooms_desk",
+      "rooms_hallway",
+      "rooms_hanger",
+      "rooms_kitchen",
+      "rooms_local_laundry_service",
+      "rooms_shower"
+    ],
+    "v1": [
+      "",
+      "1m",
+      "5m",
+      "10m",
+      "15m",
+      "30m",
+      "1h",
+      "3h",
+      "6h"
+    ],
+    "v2": [
+      "entity_ac_unit",
+      "entity_air",
+      "entity_aq_indoor",
+      "entity_battery_alert",
+      "entity_battery_full",
+      "entity_blinds",
+      "entity_blinds_closed",
+      "entity_bolt",
+      "entity_check_circle",
+      "entity_cleaning_services",
+      "entity_co2",
+      "entity_curtains",
+      "entity_curtains_closed",
+      "entity_dark_mode",
+      "entity_detector_co",
+      "entity_detector_smoke",
+      "entity_directions_walk",
+      "entity_door_front",
+      "entity_door_open",
+      "entity_eco",
+      "entity_event",
+      "entity_garage",
+      "entity_garage_door",
+      "entity_gas_meter",
+      "entity_home",
+      "entity_humidity_percentage",
+      "entity_light",
+      "entity_light_mode",
+      "entity_lightbulb",
+      "entity_lightbulb_on",
+      "entity_list_alt",
+      "entity_local_fire_department",
+      "entity_lock",
+      "entity_lock_open",
+      "entity_mode_cool",
+      "entity_mode_fan",
+      "entity_mode_heat",
+      "entity_mode_heat_cool",
+      "entity_mop",
+      "entity_motion_sensor_active",
+      "entity_music_note",
+      "entity_pause",
+      "entity_person",
+      "entity_play_arrow",
+      "entity_power",
+      "entity_roller_shades",
+      "entity_roller_shades_closed",
+      "entity_sensor_window",
+      "entity_sensors",
+      "entity_shield",
+      "entity_shield_lock",
+      "entity_smoke_free",
+      "entity_speaker",
+      "entity_speed",
+      "entity_system_update",
+      "entity_thermostat",
+      "entity_timer",
+      "entity_toggle_off",
+      "entity_toggle_on",
+      "entity_tune",
+      "entity_tv",
+      "entity_valve",
+      "entity_volume_up",
+      "entity_warning",
+      "entity_water",
+      "entity_water_drop",
+      "entity_water_heater",
+      "entity_wb_sunny",
+      "entity_window",
+      "entity_window_closed",
+      "entity_window_open"
+    ]
+  },
+  "widgets": [
+    {
+      "type": "climate",
+      "label": "Climate",
+      "category": "home",
+      "sizes": [
+        {
+          "id": "1x1",
+          "label": "Small",
+          "cols": 1,
+          "rows": 1,
+          "width": 210,
+          "height": 172,
+          "height_off": 172
+        },
+        {
+          "id": "2x1",
+          "label": "Wide",
+          "cols": 2,
+          "rows": 1,
+          "width": 457,
+          "height": 172,
+          "height_off": 172
+        },
+        {
+          "id": "2x2",
+          "label": "Large",
+          "cols": 2,
+          "rows": 2,
+          "width": 457,
+          "height": 374,
+          "height_off": 374
+        }
+      ],
+      "width": 210,
+      "height": 172,
+      "options": [
+        {
+          "key": "icon",
+          "label": "Room icon",
+          "type": "icon",
+          "filter": "rooms_",
+          "values_ref": "v0"
+        },
+        {
+          "key": "temperature",
+          "label": "Temperature",
+          "type": "entity",
+          "filter": "sensor"
+        },
+        {
+          "key": "humidity",
+          "label": "Humidity",
+          "type": "entity",
+          "filter": "sensor"
+        },
+        {
+          "key": "climate",
+          "label": "Radiator",
+          "type": "entity",
+          "filter": "climate"
+        },
+        {
+          "key": "update_interval",
+          "label": "Update no more often than",
+          "type": "choice",
+          "values_ref": "v1"
+        }
+      ]
+    },
+    {
+      "type": "clock",
+      "label": "Clock",
+      "category": "panel",
+      "sizes": [
+        {
+          "id": "2x1",
+          "label": "Wide",
+          "cols": 2,
+          "rows": 1,
+          "width": 457,
+          "height": 172,
+          "height_off": 172
+        },
+        {
+          "id": "2x2",
+          "label": "Big",
+          "cols": 2,
+          "rows": 2,
+          "width": 457,
+          "height": 374,
+          "height_off": 374
+        },
+        {
+          "id": "3x3",
+          "label": "Half screen",
+          "cols": 3,
+          "rows": 3,
+          "width": 704,
+          "height": 576,
+          "height_off": 576
+        },
+        {
+          "id": "5x3",
+          "label": "Full screen",
+          "cols": 5,
+          "rows": 3,
+          "width": 1198,
+          "height": 576,
+          "height_off": 576
+        }
+      ],
+      "width": 457,
+      "height": 172,
+      "options": [
+        {
+          "key": "update_interval",
+          "label": "Update no more often than",
+          "type": "choice",
+          "values_ref": "v1"
+        }
+      ]
+    },
+    {
+      "type": "weather",
+      "label": "Weather",
+      "category": "home",
+      "sizes": [
+        {
+          "id": "2x1",
+          "label": "Five days",
+          "cols": 2,
+          "rows": 1,
+          "width": 457,
+          "height": 172,
+          "height_off": 172
+        },
+        {
+          "id": "2x2",
+          "label": "Now above five days",
+          "cols": 2,
+          "rows": 2,
+          "width": 457,
+          "height": 374,
+          "height_off": 374
+        },
+        {
+          "id": "3x2",
+          "label": "Now and five days",
+          "cols": 3,
+          "rows": 2,
+          "width": 704,
+          "height": 374,
+          "height_off": 374
+        }
+      ],
+      "width": 457,
+      "height": 172,
+      "options": [
+        {
+          "key": "weather",
+          "label": "Weather entity",
+          "type": "entity",
+          "filter": "weather"
+        },
+        {
+          "key": "update_interval",
+          "label": "Update no more often than",
+          "type": "choice",
+          "values_ref": "v1"
+        }
+      ]
+    },
+    {
+      "type": "entity",
+      "label": "Entity",
+      "category": "home",
+      "sizes": [
+        {
+          "id": "1x1",
+          "label": "Small",
+          "cols": 1,
+          "rows": 1,
+          "width": 210,
+          "height": 172,
+          "height_off": 172
+        },
+        {
+          "id": "2x1",
+          "label": "Wide",
+          "cols": 2,
+          "rows": 1,
+          "width": 457,
+          "height": 172,
+          "height_off": 172
+        },
+        {
+          "id": "2x2",
+          "label": "Large",
+          "cols": 2,
+          "rows": 2,
+          "width": 457,
+          "height": 374,
+          "height_off": 374
+        }
+      ],
+      "width": 210,
+      "height": 172,
+      "options": [
+        {
+          "key": "entity",
+          "label": "Entity",
+          "type": "entity"
+        },
+        {
+          "key": "icon",
+          "label": "Icon override",
+          "type": "icon",
+          "filter": "entity_",
+          "values_ref": "v2"
+        },
+        {
+          "key": "name",
+          "label": "Name",
+          "type": "text",
+          "filter": "Leave empty for the entity's own name"
+        },
+        {
+          "key": "unit",
+          "label": "Unit",
+          "type": "text",
+          "filter": "Leave empty for the entity's own unit"
+        },
+        {
+          "key": "update_interval",
+          "label": "Update no more often than",
+          "type": "choice",
+          "values_ref": "v1"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "label": "Device",
+      "category": "home",
+      "sizes": [
+        {
+          "id": "2x2",
+          "label": "Medium",
+          "cols": 2,
+          "rows": 2,
+          "capacity": 6,
+          "width": 457,
+          "height": 374,
+          "height_off": 374
+        },
+        {
+          "id": "3x2",
+          "label": "Wide",
+          "cols": 3,
+          "rows": 2,
+          "capacity": 6,
+          "width": 704,
+          "height": 374,
+          "height_off": 374
+        },
+        {
+          "id": "2x3",
+          "label": "Tall",
+          "cols": 2,
+          "rows": 3,
+          "capacity": 6,
+          "width": 457,
+          "height": 576,
+          "height_off": 576
+        }
+      ],
+      "width": 457,
+      "height": 374,
+      "options": [
+        {
+          "key": "device",
+          "label": "Device",
+          "type": "device"
+        },
+        {
+          "key": "name",
+          "label": "Name",
+          "type": "text",
+          "filter": "Leave empty for the device's own name"
+        },
+        {
+          "key": "update_interval",
+          "label": "Update no more often than",
+          "type": "choice",
+          "values_ref": "v1"
+        }
+      ]
+    },
+    {
+      "type": "light",
+      "label": "Light",
+      "category": "home",
+      "sizes": [
+        {
+          "id": "1x1",
+          "label": "Small",
+          "cols": 1,
+          "rows": 1,
+          "width": 210,
+          "height": 172,
+          "height_off": 172
+        },
+        {
+          "id": "2x1",
+          "label": "Wide",
+          "cols": 2,
+          "rows": 1,
+          "width": 457,
+          "height": 172,
+          "height_off": 172
+        },
+        {
+          "id": "2x2",
+          "label": "Large",
+          "cols": 2,
+          "rows": 2,
+          "width": 457,
+          "height": 374,
+          "height_off": 374
+        },
+        {
+          "id": "2x3",
+          "label": "Tall",
+          "cols": 2,
+          "rows": 3,
+          "width": 457,
+          "height": 576,
+          "height_off": 576
+        },
+        {
+          "id": "3x2",
+          "label": "Wide large",
+          "cols": 3,
+          "rows": 2,
+          "width": 704,
+          "height": 374,
+          "height_off": 374
+        }
+      ],
+      "width": 210,
+      "height": 172,
+      "options": [
+        {
+          "key": "light",
+          "label": "Light",
+          "type": "entity",
+          "filter": "light"
+        },
+        {
+          "key": "name",
+          "label": "Name",
+          "type": "text",
+          "filter": "Leave empty for the light's own name"
+        },
+        {
+          "key": "update_interval",
+          "label": "Update no more often than",
+          "type": "choice",
+          "values_ref": "v1"
+        }
+      ]
+    },
+    {
+      "type": "opening",
+      "label": "Door / window",
+      "category": "home",
+      "sizes": [
+        {
+          "id": "1x1",
+          "label": "Small",
+          "cols": 1,
+          "rows": 1,
+          "width": 210,
+          "height": 172,
+          "height_off": 172
+        },
+        {
+          "id": "2x1",
+          "label": "Wide",
+          "cols": 2,
+          "rows": 1,
+          "width": 457,
+          "height": 172,
+          "height_off": 172
+        },
+        {
+          "id": "2x2",
+          "label": "Large",
+          "cols": 2,
+          "rows": 2,
+          "width": 457,
+          "height": 374,
+          "height_off": 374
+        },
+        {
+          "id": "2x3",
+          "label": "Tall",
+          "cols": 2,
+          "rows": 3,
+          "width": 457,
+          "height": 576,
+          "height_off": 576
+        },
+        {
+          "id": "3x2",
+          "label": "Wide large",
+          "cols": 3,
+          "rows": 2,
+          "width": 704,
+          "height": 374,
+          "height_off": 374
+        }
+      ],
+      "width": 210,
+      "height": 172,
+      "options": [
+        {
+          "key": "contact",
+          "label": "Sensor",
+          "type": "entity",
+          "filter": "binary_sensor"
+        },
+        {
+          "key": "name",
+          "label": "Name",
+          "type": "text",
+          "filter": "Leave empty for the sensor's own name"
+        },
+        {
+          "key": "kind",
+          "label": "Looks like",
+          "type": "choice",
+          "values": [
+            "auto",
+            "door",
+            "window",
+            "garage"
+          ]
+        },
+        {
+          "key": "update_interval",
+          "label": "Update no more often than",
+          "type": "choice",
+          "values_ref": "v1"
+        }
+      ]
+    },
+    {
+      "type": "air",
+      "label": "Air quality",
+      "category": "home",
+      "sizes": [
+        {
+          "id": "1x1",
+          "label": "Small",
+          "cols": 1,
+          "rows": 1,
+          "width": 210,
+          "height": 172,
+          "height_off": 172
+        },
+        {
+          "id": "2x1",
+          "label": "Wide",
+          "cols": 2,
+          "rows": 1,
+          "width": 457,
+          "height": 172,
+          "height_off": 172
+        },
+        {
+          "id": "2x2",
+          "label": "Large",
+          "cols": 2,
+          "rows": 2,
+          "width": 457,
+          "height": 374,
+          "height_off": 374
+        },
+        {
+          "id": "2x3",
+          "label": "Tall",
+          "cols": 2,
+          "rows": 3,
+          "width": 457,
+          "height": 576,
+          "height_off": 576
+        },
+        {
+          "id": "3x2",
+          "label": "Wide large",
+          "cols": 3,
+          "rows": 2,
+          "width": 704,
+          "height": 374,
+          "height_off": 374
+        }
+      ],
+      "width": 210,
+      "height": 172,
+      "options": [
+        {
+          "key": "pm25",
+          "label": "PM2.5",
+          "type": "entity",
+          "filter": "sensor"
+        },
+        {
+          "key": "co2",
+          "label": "CO2",
+          "type": "entity",
+          "filter": "sensor"
+        },
+        {
+          "key": "voc",
+          "label": "VOC index",
+          "type": "entity",
+          "filter": "sensor"
+        },
+        {
+          "key": "temperature",
+          "label": "Temperature",
+          "type": "entity",
+          "filter": "sensor"
+        },
+        {
+          "key": "humidity",
+          "label": "Humidity",
+          "type": "entity",
+          "filter": "sensor"
+        },
+        {
+          "key": "name",
+          "label": "Name",
+          "type": "text",
+          "filter": "Leave empty for the sensor's own name"
+        },
+        {
+          "key": "update_interval",
+          "label": "Update no more often than",
+          "type": "choice",
+          "values_ref": "v1"
+        }
+      ]
+    },
+    {
+      "type": "media",
+      "label": "Media",
+      "category": "home",
+      "sizes": [
+        {
+          "id": "1x1",
+          "label": "Small",
+          "cols": 1,
+          "rows": 1,
+          "width": 210,
+          "height": 172,
+          "height_off": 172
+        },
+        {
+          "id": "2x1",
+          "label": "Wide",
+          "cols": 2,
+          "rows": 1,
+          "width": 457,
+          "height": 172,
+          "height_off": 172
+        },
+        {
+          "id": "2x2",
+          "label": "Large",
+          "cols": 2,
+          "rows": 2,
+          "width": 457,
+          "height": 374,
+          "height_off": 374
+        },
+        {
+          "id": "2x3",
+          "label": "Tall",
+          "cols": 2,
+          "rows": 3,
+          "width": 457,
+          "height": 576,
+          "height_off": 576
+        },
+        {
+          "id": "3x2",
+          "label": "Wide large",
+          "cols": 3,
+          "rows": 2,
+          "width": 704,
+          "height": 374,
+          "height_off": 374
+        }
+      ],
+      "width": 210,
+      "height": 172,
+      "options": [
+        {
+          "key": "player",
+          "label": "Player",
+          "type": "entity",
+          "filter": "media_player"
+        },
+        {
+          "key": "name",
+          "label": "Name",
+          "type": "text",
+          "filter": "Leave empty for the player's own name"
+        },
+        {
+          "key": "update_interval",
+          "label": "Update no more often than",
+          "type": "choice",
+          "values_ref": "v1"
+        }
+      ]
+    },
+    {
+      "type": "room",
+      "label": "Room",
+      "category": "home",
+      "sizes": [
+        {
+          "id": "1x1",
+          "label": "Small",
+          "cols": 1,
+          "rows": 1,
+          "capacity": 12,
+          "width": 210,
+          "height": 172,
+          "height_off": 172
+        },
+        {
+          "id": "2x1",
+          "label": "Wide",
+          "cols": 2,
+          "rows": 1,
+          "capacity": 12,
+          "width": 457,
+          "height": 172,
+          "height_off": 172
+        },
+        {
+          "id": "2x2",
+          "label": "Large",
+          "cols": 2,
+          "rows": 2,
+          "capacity": 12,
+          "width": 457,
+          "height": 374,
+          "height_off": 374
+        },
+        {
+          "id": "2x3",
+          "label": "Tall",
+          "cols": 2,
+          "rows": 3,
+          "capacity": 12,
+          "width": 457,
+          "height": 576,
+          "height_off": 576
+        },
+        {
+          "id": "3x2",
+          "label": "Wide large",
+          "cols": 3,
+          "rows": 2,
+          "capacity": 12,
+          "width": 704,
+          "height": 374,
+          "height_off": 374
+        }
+      ],
+      "width": 210,
+      "height": 172,
+      "options": [
+        {
+          "key": "area",
+          "label": "Room",
+          "type": "area"
+        },
+        {
+          "key": "temperature",
+          "label": "Temperature",
+          "type": "entity"
+        },
+        {
+          "key": "humidity",
+          "label": "Humidity",
+          "type": "entity"
+        },
+        {
+          "key": "pm25",
+          "label": "Air quality (PM2.5)",
+          "type": "entity"
+        },
+        {
+          "key": "co2",
+          "label": "Air quality (CO2)",
+          "type": "entity"
+        },
+        {
+          "key": "climate",
+          "label": "Heating / AC",
+          "type": "entity",
+          "filter": "climate"
+        },
+        {
+          "key": "name",
+          "label": "Name",
+          "type": "text",
+          "filter": "Leave empty for the room's own name"
+        },
+        {
+          "key": "icon",
+          "label": "Icon",
+          "type": "icon",
+          "filter": "rooms_",
+          "values_ref": "v0"
+        },
+        {
+          "key": "update_interval",
+          "label": "Update no more often than",
+          "type": "choice",
+          "values_ref": "v1"
+        }
+      ]
+    },
+    {
+      "type": "calendar",
+      "label": "Calendar",
+      "category": "home",
+      "sizes": [
+        {
+          "id": "1x1",
+          "label": "Next item",
+          "cols": 1,
+          "rows": 1,
+          "width": 210,
+          "height": 172,
+          "height_off": 172
+        },
+        {
+          "id": "2x1",
+          "label": "Wide",
+          "cols": 2,
+          "rows": 1,
+          "width": 457,
+          "height": 172,
+          "height_off": 172
+        },
+        {
+          "id": "2x2",
+          "label": "List",
+          "cols": 2,
+          "rows": 2,
+          "width": 457,
+          "height": 374,
+          "height_off": 374
+        },
+        {
+          "id": "2x3",
+          "label": "Tall list",
+          "cols": 2,
+          "rows": 3,
+          "width": 457,
+          "height": 576,
+          "height_off": 576
+        },
+        {
+          "id": "3x2",
+          "label": "Month and list",
+          "cols": 3,
+          "rows": 2,
+          "width": 704,
+          "height": 374,
+          "height_off": 374
+        },
+        {
+          "id": "3x3",
+          "label": "Month and tall list",
+          "cols": 3,
+          "rows": 3,
+          "width": 704,
+          "height": 576,
+          "height_off": 576
+        },
+        {
+          "id": "5x3",
+          "label": "Full screen",
+          "cols": 5,
+          "rows": 3,
+          "width": 1198,
+          "height": 576,
+          "height_off": 576
+        }
+      ],
+      "width": 210,
+      "height": 172,
+      "options": [
+        {
+          "key": "calendar",
+          "label": "Calendar",
+          "type": "entity",
+          "filter": "calendar"
+        },
+        {
+          "key": "calendar_2",
+          "label": "Second calendar",
+          "type": "entity",
+          "filter": "calendar"
+        },
+        {
+          "key": "calendar_3",
+          "label": "Third calendar",
+          "type": "entity",
+          "filter": "calendar"
+        },
+        {
+          "key": "calendar_4",
+          "label": "Fourth calendar",
+          "type": "entity",
+          "filter": "calendar"
+        },
+        {
+          "key": "scope",
+          "label": "Shows",
+          "type": "choice",
+          "values": [
+            "upcoming",
+            "today"
+          ]
+        },
+        {
+          "key": "update_interval",
+          "label": "Update no more often than",
+          "type": "choice",
+          "values_ref": "v1"
+        }
+      ]
+    },
+    {
+      "type": "battery",
+      "label": "Battery",
+      "category": "chip",
+      "width": 169,
+      "height": 56,
+      "chip": true,
+      "options": [
+        {
+          "key": "update_interval",
+          "label": "Update no more often than",
+          "type": "choice",
+          "values_ref": "v1"
+        }
+      ]
+    },
+    {
+      "type": "wifi",
+      "label": "Wifi",
+      "category": "chip",
+      "width": 80,
+      "height": 56,
+      "chip": true,
+      "options": [
+        {
+          "key": "update_interval",
+          "label": "Update no more often than",
+          "type": "choice",
+          "values_ref": "v1"
+        }
+      ]
+    },
+    {
+      "type": "mqtt",
+      "label": "MQTT",
+      "category": "chip",
+      "width": 80,
+      "height": 56,
+      "chip": true,
+      "options": [
+        {
+          "key": "update_interval",
+          "label": "Update no more often than",
+          "type": "choice",
+          "values_ref": "v1"
+        }
+      ]
+    },
+    {
+      "type": "update",
+      "label": "Update available",
+      "category": "chip",
+      "width": 274,
+      "height": 56,
+      "chip": true,
+      "options": [
+        {
+          "key": "update_interval",
+          "label": "Update no more often than",
+          "type": "choice",
+          "values_ref": "v1"
+        }
+      ]
+    },
+    {
+      "type": "entity_chip",
+      "label": "Entity chip",
+      "category": "chip",
+      "width": 220,
+      "height": 56,
+      "chip": true,
+      "options": [
+        {
+          "key": "entity",
+          "label": "Entity",
+          "type": "entity"
+        },
+        {
+          "key": "icon",
+          "label": "Icon override",
+          "type": "icon",
+          "filter": "entity_",
+          "values_ref": "v2"
+        },
+        {
+          "key": "name",
+          "label": "Name",
+          "type": "text",
+          "filter": "Leave empty to show the reading alone"
+        },
+        {
+          "key": "unit",
+          "label": "Unit",
+          "type": "text",
+          "filter": "Leave empty for the entity's own unit"
+        },
+        {
+          "key": "update_interval",
+          "label": "Update no more often than",
+          "type": "choice",
+          "values_ref": "v1"
+        }
+      ]
+    },
+    {
+      "type": "image",
+      "label": "Image",
+      "category": "panel",
+      "width": 0,
+      "height": 0,
+      "size_from": "image",
+      "options": [
+        {
+          "key": "image",
+          "label": "Image",
+          "type": "image",
+          "filter": "photos_",
+          "values": []
+        },
+        {
+          "key": "update_interval",
+          "label": "Update no more often than",
+          "type": "choice",
+          "values_ref": "v1"
+        }
+      ]
+    },
+    {
+      "type": "photo",
+      "label": "Photo album",
+      "category": "panel",
+      "sizes": [
+        {
+          "id": "1x2",
+          "label": "Tall",
+          "cols": 1,
+          "rows": 2,
+          "width": 210,
+          "height": 374,
+          "height_off": 374
+        },
+        {
+          "id": "3x2",
+          "label": "Landscape",
+          "cols": 3,
+          "rows": 2,
+          "width": 704,
+          "height": 374,
+          "height_off": 374
+        },
+        {
+          "id": "2x3",
+          "label": "Portrait",
+          "cols": 2,
+          "rows": 3,
+          "width": 457,
+          "height": 576,
+          "height_off": 576
+        },
+        {
+          "id": "3x3",
+          "label": "Large",
+          "cols": 3,
+          "rows": 3,
+          "width": 704,
+          "height": 576,
+          "height_off": 576
+        },
+        {
+          "id": "4x2",
+          "label": "Wide",
+          "cols": 4,
+          "rows": 2,
+          "width": 951,
+          "height": 374,
+          "height_off": 374
+        },
+        {
+          "id": "5x3",
+          "label": "Full screen",
+          "cols": 5,
+          "rows": 3,
+          "width": 1198,
+          "height": 576,
+          "height_off": 576
+        }
+      ],
+      "width": 210,
+      "height": 374,
+      "options": [
+        {
+          "key": "album",
+          "label": "Album",
+          "type": "album"
+        },
+        {
+          "key": "rotate",
+          "label": "Change every",
+          "type": "choice",
+          "values": [
+            "1m",
+            "5m",
+            "15m",
+            "30m",
+            "1h",
+            "3h",
+            "6h",
+            "12h",
+            "24h"
+          ]
+        },
+        {
+          "key": "crop",
+          "label": "Crop",
+          "type": "choice",
+          "values": [
+            "fill",
+            "fit"
+          ]
+        },
+        {
+          "key": "border",
+          "label": "Border",
+          "type": "choice",
+          "values": [
+            "on",
+            "off"
+          ]
+        },
+        {
+          "key": "update_interval",
+          "label": "Update no more often than",
+          "type": "choice",
+          "values_ref": "v1"
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "label": "Text",
+      "category": "panel",
+      "sizes": [
+        {
+          "id": "auto",
+          "label": "Fits the text",
+          "cols": 0,
+          "rows": 0,
+          "width": 0,
+          "height": 0,
+          "height_off": 0
+        },
+        {
+          "id": "1x1",
+          "label": "Small",
+          "cols": 1,
+          "rows": 1,
+          "width": 210,
+          "height": 172,
+          "height_off": 172
+        },
+        {
+          "id": "2x1",
+          "label": "Wide",
+          "cols": 2,
+          "rows": 1,
+          "width": 457,
+          "height": 172,
+          "height_off": 172
+        },
+        {
+          "id": "3x1",
+          "label": "Wider",
+          "cols": 3,
+          "rows": 1,
+          "width": 704,
+          "height": 172,
+          "height_off": 172
+        },
+        {
+          "id": "5x1",
+          "label": "Full width",
+          "cols": 5,
+          "rows": 1,
+          "width": 1198,
+          "height": 172,
+          "height_off": 172
+        },
+        {
+          "id": "2x2",
+          "label": "Block",
+          "cols": 2,
+          "rows": 2,
+          "width": 457,
+          "height": 374,
+          "height_off": 374
+        },
+        {
+          "id": "3x2",
+          "label": "Large block",
+          "cols": 3,
+          "rows": 2,
+          "width": 704,
+          "height": 374,
+          "height_off": 374
+        }
+      ],
+      "width": 0,
+      "height": 0,
+      "options": [
+        {
+          "key": "text",
+          "label": "Text",
+          "type": "text",
+          "filter": "Newlines start a new line",
+          "multiline": true
+        },
+        {
+          "key": "font",
+          "label": "Font",
+          "type": "choice",
+          "values": [
+            "nunito_bold_12",
+            "nunito_bold_16",
+            "nunito_bold_20",
+            "nunito_bold_24",
+            "nunito_bold_40",
+            "nunito_bold_60",
+            "nunito_extrabold_16",
+            "nunito_extrabold_20",
+            "nunito_extrabold_24",
+            "freesans_bold_24"
+          ]
+        },
+        {
+          "key": "align",
+          "label": "Alignment",
+          "type": "choice",
+          "values": [
+            "left",
+            "centre",
+            "right"
+          ]
+        },
+        {
+          "key": "update_interval",
+          "label": "Update no more often than",
+          "type": "choice",
+          "values_ref": "v1"
+        }
+      ]
+    }
+  ]
+}
