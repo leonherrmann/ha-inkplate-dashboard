@@ -1,5 +1,36 @@
 # Changelog
 
+## 2026.9.66
+
+Pairs with firmware **v2026.9.66**. Update the add-on first, then the panels.
+
+- **The calendar card shows your calendar.** Every size used to show only the
+  next event, because that is all Home Assistant puts on the calendar entity.
+  The add-on now reads each calendar in your layout every fifteen minutes, and
+  straight after a layout change, and sends the panel up to twelve upcoming
+  events per calendar in Home Assistant's time zone. All-day and multi-day
+  events included.
+
+- **Choose how often a changing reading may repaint the panel.** The Screen
+  refresh card has a new setting: every change, 30 seconds (the default), 1, 5
+  or 15 minutes. A sensor that publishes every few seconds no longer repaints
+  the whole panel each time, and nothing goes stale on a page with a clock.
+
+- **"The panel disagrees" shows again.** When a setting was changed with the
+  panel's own buttons, the Device screen was meant to say so, and had not
+  since the redesign.
+
+- A full-screen photo without a frame on a page with a chip row is rendered
+  at its card size rather than the whole panel, matching the firmware, which
+  no longer runs it under the chips.
+
+- The panel sends the list of pictures on its card only when it changes, and
+  the add-on remembers the last one — so the Images tab keeps working with
+  firmware v2026.9.66, which sends far less over WiFi.
+
+- Widgets that exist only in a page's sideways layout now have their
+  Home Assistant entities followed.
+
 ## 2026.9.65
 
 Pairs with firmware **v2026.9.65** — update both.
