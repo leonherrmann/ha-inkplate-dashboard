@@ -223,7 +223,11 @@ def variants_in(layout: dict[str, Any], grid: grids.Grid = grids.V2) -> set[Vari
                     border=(options.get("border") or "on") != "off",
                     panel_width=grid.width,
                     panel_height=grid.height,
-                    full_screen=(width, height) == grid.full_screen_box,
+                    # A page with a chip row keeps its inset box even at the
+                    # full-screen size, as PhotoCard does: bleeding there would
+                    # run the picture under the chips. The box alone cannot say
+                    # which, since a page keeps the same cells either way.
+                    full_screen=(width, height) == grid.full_screen_box and chip_row == "off",
                 )
             )
     return wanted
