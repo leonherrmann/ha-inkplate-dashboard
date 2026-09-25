@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026.9.69
+
+Pairs with firmware **v2026.9.69**. Update the add-on first, then the panels.
+
+- **Full screen for a photo album, on every panel either way up.** A new
+  size, Full screen, that is the whole glass edge to edge -- on the V2 and
+  the V1, upright or on its side -- from one choice rather than a number of
+  cells per shape. It sits in the corner and cannot be dragged off it, is
+  never framed (the Border option goes away for it), and covers the page's
+  chip row; turn the row off for a picture with nothing on it.
+
+- 5x3, 2x4 and 3x6 are still offered as large cards.
+
 ## 2026.9.68
 
 Pairs with firmware **v2026.9.68**. Update the add-on first, then the panels.
