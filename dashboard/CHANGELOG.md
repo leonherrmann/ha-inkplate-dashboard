@@ -1,5 +1,24 @@
 # Changelog
 
+## 2026.9.71
+
+Pairs with firmware **v2026.9.71**. Update the add-on first, then the panels.
+
+- **A battery percentage that means charge left.** It used to be a straight
+  line from 3.0 V to 4.0 V, which showed 100% with two-thirds of the
+  runtime still to go and 50% with an hour and a half left. The panel now
+  reads it off a curve measured from its own full discharges, and holds it
+  steady: on battery it only goes down, on the charger only up. **Every
+  battery reading will drop** -- 3.90 V was 90% and is now 50% -- because
+  the old number was wrong, not because the battery changed.
+
+- **A low-battery warning.** New Low battery card under Device: warn below
+  5-30% (15% by default, or Off). Below it, the battery chip shows an
+  exclamation mark. Turn on **Full-screen warning** and the panel shows a
+  charging reminder instead of the dashboard; on the V2 a button press
+  brings the dashboard back until another 5% is used. Both stop the moment
+  the panel is charging.
+
 ## 2026.9.70
 
 Pairs with firmware **v2026.9.70**. Update the add-on first, then the panels.
