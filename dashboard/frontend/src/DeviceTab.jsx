@@ -583,7 +583,10 @@ export default function DeviceTab({
               five states call for five different responses. */}
           <SyncCard sync={sync} lastSeenAge={lastSeenAge} onPush={onPush} />
 
-          <DeviceOverrides overrides={status?.overrides} onAdopt={onPush} onPush={onPush} />
+          {/* device_overrides is what /api/status sends. This read `overrides`
+              from the redesign on, so a setting changed with the panel's own
+              buttons never raised this note. */}
+          <DeviceOverrides overrides={status?.device_overrides} onAdopt={onPush} onPush={onPush} />
 
           {(status?.current_page || pageLocked) && (
             <section className="card">
