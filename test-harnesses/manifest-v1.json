@@ -413,6 +413,16 @@
           "width": 682,
           "height": 376,
           "height_off": 376
+        },
+        {
+          "id": "2x3",
+          "label": "Tall",
+          "cols": 2,
+          "rows": 3,
+          "capacity": 6,
+          "width": 446,
+          "height": 580,
+          "height_off": 580
         }
       ],
       "width": 446,
@@ -468,6 +478,15 @@
           "width": 446,
           "height": 376,
           "height_off": 376
+        },
+        {
+          "id": "2x3",
+          "label": "Tall",
+          "cols": 2,
+          "rows": 3,
+          "width": 446,
+          "height": 580,
+          "height_off": 580
         },
         {
           "id": "3x2",
@@ -533,6 +552,15 @@
           "width": 446,
           "height": 376,
           "height_off": 376
+        },
+        {
+          "id": "2x3",
+          "label": "Tall",
+          "cols": 2,
+          "rows": 3,
+          "width": 446,
+          "height": 580,
+          "height_off": 580
         },
         {
           "id": "3x2",
@@ -609,6 +637,15 @@
           "width": 446,
           "height": 376,
           "height_off": 376
+        },
+        {
+          "id": "2x3",
+          "label": "Tall",
+          "cols": 2,
+          "rows": 3,
+          "width": 446,
+          "height": 580,
+          "height_off": 580
         },
         {
           "id": "3x2",
@@ -700,6 +737,15 @@
           "height_off": 376
         },
         {
+          "id": "2x3",
+          "label": "Tall",
+          "cols": 2,
+          "rows": 3,
+          "width": 446,
+          "height": 580,
+          "height_off": 580
+        },
+        {
           "id": "3x2",
           "label": "Wide large",
           "cols": 3,
@@ -766,6 +812,16 @@
           "width": 446,
           "height": 376,
           "height_off": 376
+        },
+        {
+          "id": "2x3",
+          "label": "Tall",
+          "cols": 2,
+          "rows": 3,
+          "capacity": 12,
+          "width": 446,
+          "height": 580,
+          "height_off": 580
         },
         {
           "id": "3x2",
@@ -864,6 +920,15 @@
           "width": 446,
           "height": 376,
           "height_off": 376
+        },
+        {
+          "id": "2x3",
+          "label": "Tall list",
+          "cols": 2,
+          "rows": 3,
+          "width": 446,
+          "height": 580,
+          "height_off": 580
         },
         {
           "id": "3x2",
@@ -1070,6 +1135,15 @@
           "height_off": 376
         },
         {
+          "id": "2x3",
+          "label": "Portrait",
+          "cols": 2,
+          "rows": 3,
+          "width": 446,
+          "height": 580,
+          "height_off": 580
+        },
+        {
           "id": "4x2",
           "label": "Wide",
           "cols": 4,
@@ -1077,6 +1151,15 @@
           "width": 918,
           "height": 376,
           "height_off": 376
+        },
+        {
+          "id": "2x4",
+          "label": "Full height",
+          "cols": 2,
+          "rows": 4,
+          "width": 446,
+          "height": 784,
+          "height_off": 784
         }
       ],
       "width": 210,

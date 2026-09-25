@@ -37,6 +37,7 @@ import {
   shapeFromOrientation,
   shapeGrid,
   shapePanel,
+  sizesOn,
   widgetSize,
   widgetType,
   widgetsKey,
@@ -600,7 +601,9 @@ export default function App() {
       type: type.type,
       ...defaultPosition(grid, { chipRow, isChip, panel }),
       options: {},
-      ...(type.sizes?.length ? { size: type.sizes[0].id } : {}),
+      // The first size this shape has room for: the firmware publishes the
+      // sizes of both shapes, and its first is not always one of this one's.
+      ...(type.sizes?.length ? { size: (sizesOn(type, grid)[0] || type.sizes[0]).id } : {}),
     };
 
     // A new chip starts at the left of the row and slides clear of whatever is

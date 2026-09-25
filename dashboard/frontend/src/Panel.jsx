@@ -21,6 +21,7 @@ import {
   panelModel,
   shapeOrientation,
   placeWidget,
+  sizesOn,
   variantFootprint,
   widgetSize,
   widgetType,
@@ -166,7 +167,7 @@ function DraggableWidget({
   // Self-sizing variants are filtered out rather than counted, so the text
   // widget's "auto" is not something a drag can land on -- it has no box to be
   // near. Its fixed sizes are draggable; the inspector is the way back to auto.
-  const variants = (type?.sizes || []).filter((variant) => variantFootprint(variant, chipRow, grid));
+  const variants = sizesOn(type, grid).filter((variant) => variantFootprint(variant, chipRow, grid));
   const resizable = selected && variants.length > 1;
   const resize = useDraggable({ id: `${RESIZE}${widget.id}`, disabled: !resizable });
 

@@ -7,7 +7,7 @@ import DeviceEntities from "./DeviceEntities.jsx";
 import { IconField, IconGlyph, IconGrid } from "./IconGrid.jsx";
 import Sheet, { SheetBody, SheetFoot, useNarrow, HALF, PEEK } from "./Sheet.jsx";
 import { imagePreviewUrl } from "./api.js";
-import { LAYER_MOVES, widgetSize, widgetType } from "./layout.js";
+import { LAYER_MOVES, sizesOn, widgetSize, widgetType } from "./layout.js";
 import { categoryLabel, categoryTone, optionValues } from "./format.js";
 import {
   ChevronLeft,
@@ -595,6 +595,10 @@ export default function Inspector({
     </div>
   );
 
+  // Only the sizes the shape being edited has room for. The manifest carries
+  // both shapes' -- a 3x6 photo fits a panel on its side and nothing else.
+  const offeredSizes = sizesOn(type, grid);
+
   const fields = (
     <>
       <div className="hint">
@@ -606,11 +610,11 @@ export default function Inspector({
           wrapping several buttons hands every one of them the *others'* text as
           its accessible name, so "Small" announces as the row's other sizes.
           Caught by a WebKit pass, where getByRole could not find any of them. */}
-      {type?.sizes?.length > 1 && (
+      {offeredSizes.length > 1 && (
         <div className="field-block">
           <span>Size</span>
           <div className="size-picker">
-            {type.sizes.map((option) => (
+            {offeredSizes.map((option) => (
               <button
                 key={option.id}
                 className={

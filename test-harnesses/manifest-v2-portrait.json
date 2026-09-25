@@ -267,6 +267,15 @@
           "width": 674,
           "height": 560,
           "height_off": 560
+        },
+        {
+          "id": "5x3",
+          "label": "Full screen",
+          "cols": 5,
+          "rows": 3,
+          "width": 1138,
+          "height": 560,
+          "height_off": 560
         }
       ],
       "width": 442,
@@ -956,6 +965,15 @@
           "width": 674,
           "height": 560,
           "height_off": 560
+        },
+        {
+          "id": "5x3",
+          "label": "Full screen",
+          "cols": 5,
+          "rows": 3,
+          "width": 1138,
+          "height": 560,
+          "height_off": 560
         }
       ],
       "width": 210,
@@ -1169,6 +1187,42 @@
           "width": 674,
           "height": 560,
           "height_off": 560
+        },
+        {
+          "id": "4x2",
+          "label": "Wide",
+          "cols": 4,
+          "rows": 2,
+          "width": 906,
+          "height": 366,
+          "height_off": 366
+        },
+        {
+          "id": "5x3",
+          "label": "Full screen",
+          "cols": 5,
+          "rows": 3,
+          "width": 1138,
+          "height": 560,
+          "height_off": 560
+        },
+        {
+          "id": "2x4",
+          "label": "Full height",
+          "cols": 2,
+          "rows": 4,
+          "width": 442,
+          "height": 754,
+          "height_off": 754
+        },
+        {
+          "id": "3x6",
+          "label": "Full screen",
+          "cols": 3,
+          "rows": 6,
+          "width": 674,
+          "height": 1142,
+          "height_off": 1142
         }
       ],
       "width": 210,
@@ -1259,6 +1313,15 @@
           "cols": 3,
           "rows": 1,
           "width": 674,
+          "height": 172,
+          "height_off": 172
+        },
+        {
+          "id": "5x1",
+          "label": "Full width",
+          "cols": 5,
+          "rows": 1,
+          "width": 1138,
           "height": 172,
           "height_off": 172
         },

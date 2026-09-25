@@ -177,6 +177,28 @@ check(
     "a page with no sideways arrangement still wants sideways pictures",
 )
 
+# The two sizes that exist only for a panel on its side. 3x6 is the whole of a
+# V2 standing up, so with no frame and no chip row it bleeds to the glass the
+# way 5x3 does lying down; 2x4 is a tall card. Both names are files in the
+# firmware's sim/sdcard, drawn by its portrait-photo goldens.
+full = albums.variants_in(
+    {"pages": [{"id": "p", "chip_row": "off",
+                "widgets_portrait": [photo("3x6", border="off")]}]}, PORTRAIT)
+check(
+    {v.name(0) for v in full} == {"demo_674x1142_fn_000"},
+    f"a sideways 3x6 is named for its grid box ({[v.name(0) for v in full]})",
+)
+check(
+    [(v.full_screen, v.photo_size) for v in full] == [(True, (720, 1280))],
+    f"and is the full screen, rendered at the glass ({[(v.full_screen, v.photo_size) for v in full]})",
+)
+tall = albums.variants_in(
+    {"pages": [{"id": "p", "chip_row": "bottom", "widgets_portrait": [photo("2x4")]}]}, PORTRAIT)
+check(
+    {v.name(0) for v in tall} == {"demo_442x754_fb_000"},
+    f"a sideways 2x4 is a framed card like any other ({[v.name(0) for v in tall]})",
+)
+
 print("--- the chip row no longer changes the height ---")
 # It used to: a page with no chip row gave its rows the height the row would
 # have taken, 200 rather than 166, which made the same widget a different

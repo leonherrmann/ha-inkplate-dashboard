@@ -1205,6 +1205,24 @@
           "width": 1198,
           "height": 576,
           "height_off": 576
+        },
+        {
+          "id": "2x4",
+          "label": "Full height",
+          "cols": 2,
+          "rows": 4,
+          "width": 457,
+          "height": 778,
+          "height_off": 778
+        },
+        {
+          "id": "3x6",
+          "label": "Full screen",
+          "cols": 3,
+          "rows": 6,
+          "width": 704,
+          "height": 1182,
+          "height_off": 1182
         }
       ],
       "width": 210,

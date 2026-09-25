@@ -516,6 +516,20 @@ export function isChipType(type) {
   return Boolean(type?.chip);
 }
 
+// The sizes worth offering on this grid. The firmware publishes every size that
+// fits either of the panel's shapes -- a 3x6 photo is only any use on its side,
+// and a panel standing up would otherwise never publish it -- so the list is
+// trimmed here to the shape being edited. A self-sizing variant (0 cells) is
+// kept: it has no footprint to not fit. With no grid, or a grid that does not
+// say how many cells it has, the list stands as published.
+export function sizesOn(type, grid) {
+  const sizes = type?.sizes || [];
+  if (!grid?.cols || !grid?.rows) return sizes;
+  return sizes.filter(
+    (size) => !(size.cols > 0 && size.rows > 0) || (size.cols <= grid.cols && size.rows <= grid.rows)
+  );
+}
+
 // A widget's drawn size comes from the manifest, since the firmware owns it.
 // Some types size themselves from an option instead -- an image widget is as
 // big as the picture chosen -- which the manifest flags with size_from.
@@ -570,7 +584,7 @@ export function nearestVariant(type, box, chipRow = DEFAULT_CHIP_ROW, grid = nul
   let best = null;
   let bestCost = Infinity;
 
-  for (const variant of type?.sizes || []) {
+  for (const variant of sizesOn(type, grid)) {
     const footprint = variantFootprint(variant, chipRow, grid);
     if (!footprint) continue;
     const cost =

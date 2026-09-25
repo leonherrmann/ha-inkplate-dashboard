@@ -153,6 +153,7 @@ node device-overrides.mjs      # the note when the panel's buttons changed a set
 node refreshfloorcheck.mjs     # the refresh card's repaint limit
 node iconcheck.mjs             # the icon grid, both shells
 node manifestcheck.mjs         # shared value lists read the same as inline ones
+node photosizecheck.mjs        # sizes offered are the edited shape's, not both shapes'
 node canvascheck.mjs           # each panel's own renders
 node chiprowcheck.mjs          # cells, chip band and renders against the margins
 ```
