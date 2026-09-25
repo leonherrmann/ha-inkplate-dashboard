@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026.9.68
+
+Pairs with firmware **v2026.9.68**. Update the add-on first, then the panels.
+
+- **A photo album can fill a panel on its side.** Two new sizes for the
+  sideways layout: 3x6, the whole of the panel, and 2x4, a tall card beside a
+  column of others. With no frame and no chip row, 3x6 runs to the edges of
+  the glass the way 5x3 does lying down.
+
+- The size buttons only offer sizes that fit the layout being edited. The
+  panel now sends the sizes for both ways up, so an upright page is never
+  offered 3x6.
+
 ## 2026.9.66
 
 Pairs with firmware **v2026.9.66**. Update the add-on first, then the panels.
