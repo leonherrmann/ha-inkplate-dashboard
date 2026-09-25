@@ -88,26 +88,18 @@ that drives *main's* function.
 
 ## Running the checks
 
-`python3` on PATH is miniconda 3.8 and **cannot parse this backend** (`str |
-None`). That error means the wrong interpreter, not a broken edit.
-
 ```sh
-/opt/homebrew/bin/python3.13 -m venv /tmp/ink-venv
-/tmp/ink-venv/bin/pip install -r dashboard/backend/requirements.txt pillow
-
-cd dashboard/backend
-/tmp/ink-venv/bin/python importcheck.py            # every module imports
-for h in manifestpostcheck albumcheck imagecheck shotcheck gridmigratecheck \
-         calendarcheck firmwarecheck panelscheck; do
-  PYTHONPATH=. /tmp/ink-venv/bin/python ../../test-harnesses/$h.py
-done
-for h in adoptcheck timercheck; do
-  PYTHONPATH=. SUPERVISOR_TOKEN=test /tmp/ink-venv/bin/python ../../test-harnesses/$h.py
-done
-node ../../test-harnesses/shapecheck.mjs
-node ../../test-harnesses/snapcheck.mjs
-cd .. && /tmp/ink-venv/bin/python tools/dithercheck.py
+test-harnesses/run.sh          # backend + pure checks, about a minute
+test-harnesses/run.sh --ui     # also every WebKit check against the committed dist
+test-harnesses/run.sh timer    # only checks whose name contains "timer"
 ```
+
+It sets up what they need on first use and keeps it: a Python 3.13 venv in
+`.venv` (the `python3` on PATH is miniconda 3.8 and **cannot parse this
+backend** -- `str | None` failing means the wrong interpreter, not a broken
+edit), Pillow and httpx, and Playwright's WebKit. It runs everything even after
+a failure and ends with the list of what failed. **A new harness goes into
+`run.sh`**, or nobody runs it.
 
 `imagecheck.py` holds the picture pipeline to an **independent implementation**
 rather than to a recorded answer: the obvious pixel-by-pixel loop is written out
@@ -124,7 +116,7 @@ check that answers the editor's API has to match `/status(\?|$)`, not
 `/status$`: since several panels the editor asks with `?panel=`, and a fake
 that only matched the bare path served nothing and timed out.
 
-**`importcheck.py` before any release** — 2026.9.29 shipped an add-on that could
+**`run.sh` (it starts with `importcheck.py`) before any release** — 2026.9.29 shipped an add-on that could
 not start at all because one import was wrong.
 
 ## Frontend
@@ -143,20 +135,8 @@ Playwright's webkit against the built `dist` with `**/api/**` stubbed. Assert
 that **nothing is wider than its window** — this stylesheet has shipped four
 specificity bugs of that shape, all invisible in a static desktop render.
 
-```sh
-cd dashboard/frontend && npx serve dist -l 8127     # in one shell
-cd ../../test-harnesses        # from dashboard/frontend, in another shell
-node sheetcheck.mjs            # the mobile options sheet
-node pickercheck.mjs
-node devicecheck.mjs           # the Device screen, phone and desktop
-node device-overrides.mjs      # the note when the panel's buttons changed a setting
-node refreshfloorcheck.mjs     # the refresh card's repaint limit
-node iconcheck.mjs             # the icon grid, both shells
-node manifestcheck.mjs         # shared value lists read the same as inline ones
-node photosizecheck.mjs        # sizes offered are the edited shape's, not both shapes'
-node canvascheck.mjs           # each panel's own renders
-node chiprowcheck.mjs          # cells, chip band and renders against the margins
-```
+`run.sh --ui` serves `dist` on 8127 and runs every browser check; to run one
+by hand, serve `dist` there yourself and `node test-harnesses/<x>.mjs`.
 
 **The widget renders are per shape — each panel, each way up.** The cell is the
 same 210x172 everywhere, but a card is not the same picture on a grid three
