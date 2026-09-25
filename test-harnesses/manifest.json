@@ -1199,7 +1199,7 @@
         },
         {
           "id": "5x3",
-          "label": "Full screen",
+          "label": "Wide",
           "cols": 5,
           "rows": 3,
           "width": 1198,
@@ -1208,7 +1208,7 @@
         },
         {
           "id": "2x4",
-          "label": "Full height",
+          "label": "Large portrait",
           "cols": 2,
           "rows": 4,
           "width": 457,
@@ -1217,12 +1217,22 @@
         },
         {
           "id": "3x6",
-          "label": "Full screen",
+          "label": "Extra large portrait",
           "cols": 3,
           "rows": 6,
           "width": 704,
           "height": 1182,
           "height_off": 1182
+        },
+        {
+          "id": "full",
+          "label": "Full screen",
+          "cols": 0,
+          "rows": 0,
+          "full": true,
+          "width": 1280,
+          "height": 720,
+          "height_off": 720
         }
       ],
       "width": 210,

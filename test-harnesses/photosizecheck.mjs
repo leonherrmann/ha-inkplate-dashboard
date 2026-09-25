@@ -8,6 +8,11 @@
 // the manifest's live grid is whichever one it is standing in and neither may
 // leak into the other shape's list.
 //
+// Then Full screen, which is no count of cells: choosing it puts the photo at
+// 0,0 at the size of the shape being edited -- 1280x720 one way, 720x1280 the
+// other -- whatever the panel is standing in, and a drag cannot move it off
+// the corner. Its Border option goes, because the panel ignores it there.
+//
 //   cd ha-inkplate-dashboard/dashboard/frontend && npx vite build && npx serve dist -l 8127
 //   cd ../../test-harnesses && node photosizecheck.mjs      (PORT=... to use another)
 import { readFileSync } from "node:fs";
@@ -22,8 +27,8 @@ const MANIFESTS = {
 };
 
 const WANT = {
-  landscape: ["1x2", "3x2", "2x3", "3x3", "4x2", "5x3"],
-  portrait: ["1x2", "3x2", "2x3", "3x3", "2x4", "3x6"],
+  landscape: ["1x2", "3x2", "2x3", "3x3", "4x2", "5x3", "Full screen"],
+  portrait: ["1x2", "3x2", "2x3", "3x3", "2x4", "3x6", "Full screen"],
 };
 
 let passes = 0;
@@ -125,6 +130,33 @@ for (const [standing, manifest] of Object.entries(MANIFESTS)) {
       active === (which === "portrait" ? "3x6" : "5x3"),
       `${which}: with this arrangement's own size chosen (${active})`
     );
+
+    // Full screen: the corner, the whole shape, and no Border to set.
+    await page.locator(".size-picker button", { hasText: "Full screen" }).click();
+    await page.waitForTimeout(250);
+    const box = await page.locator(".panel .widget").first().evaluate((node) => ({
+      x: parseFloat(node.style.left),
+      y: parseFloat(node.style.top),
+      w: parseFloat(node.style.width),
+      h: parseFloat(node.style.height),
+    }));
+    const want = which === "portrait" ? [720, 1280] : [1280, 720];
+    check(
+      box.x === 0 && box.y === 0 && box.w === want[0] && box.h === want[1],
+      `${which}: Full screen is ${box.w}x${box.h} at ${box.x},${box.y}`
+    );
+    const fields = await page.locator(".inspector").innerText();
+    check(!/\bBorder\b/.test(fields), `${which}: and offers no Border`);
+    const widget = page.locator(".panel .widget").first();
+    const at = await widget.boundingBox();
+    await page.mouse.move(at.x + at.width / 2, at.y + at.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(at.x + at.width / 2 + 120, at.y + at.height / 2 + 90, { steps: 8 });
+    await page.mouse.up();
+    await page.waitForTimeout(250);
+    const moved = await widget.evaluate((node) => [node.style.left, node.style.top].join(","));
+    check(moved === "0px,0px", `${which}: and a drag leaves it in the corner (${moved})`);
+
     await page.keyboard.press("Escape");
   }
   await page.close();

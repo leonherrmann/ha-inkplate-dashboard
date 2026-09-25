@@ -192,6 +192,18 @@ check(
     [(v.full_screen, v.photo_size) for v in full] == [(True, (720, 1280))],
     f"and is the full screen, rendered at the glass ({[(v.full_screen, v.photo_size) for v in full]})",
 )
+# Full screen, which is no count of cells: the whole glass on whichever grid,
+# named for the panel's own pixels, never framed however the option is set, and
+# the same with a chip row as without.
+for grid, name in ((grids.V2, "demo_1280x720_fn_000"), (PORTRAIT, "demo_720x1280_fn_000")):
+    for row in ("bottom", "off"):
+        got = albums.variants_in(
+            {"pages": [{"id": "p", "chip_row": row, "widgets": [photo("full", border="on")]}]}, grid)
+        check(
+            [(v.name(0), v.photo_size) for v in got] == [(name, (grid.width, grid.height))],
+            f"full screen on {grid.width}x{grid.height}, chip row {row}: {[(v.name(0), v.photo_size) for v in got]}",
+        )
+
 tall = albums.variants_in(
     {"pages": [{"id": "p", "chip_row": "bottom", "widgets_portrait": [photo("2x4")]}]}, PORTRAIT)
 check(

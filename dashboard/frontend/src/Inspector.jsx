@@ -488,7 +488,12 @@ export default function Inspector({
   }
 
   const type = widgetType(manifest, widget);
-  const options = type?.options || [];
+  // Full screen is never framed -- the firmware ignores a border there -- so
+  // offering the choice would be a control that does nothing.
+  const fullScreen = Boolean(type?.sizes?.find((one) => one.id === widget.size)?.full);
+  const options = (type?.options || []).filter(
+    (option) => !(fullScreen && option.key === "border")
+  );
   // Measured against the page being edited: a card is taller on a page whose
   // chip row is off, and this line is what tells the user its footprint.
   const size = widgetSize(manifest, widget, undefined, chipRow, grid);

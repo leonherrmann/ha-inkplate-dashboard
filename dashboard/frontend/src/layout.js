@@ -132,6 +132,12 @@ export function fitToShape(widgets, from, to, chipRow, sizeOf) {
       continue;
     }
 
+    // The whole panel on either shape, as the firmware builds it.
+    if (size?.full) {
+      out.push({ ...widget, x: 0, y: 0 });
+      continue;
+    }
+
     const col = Math.round((widget.x - marginX(from)) / (from.unit_w + gapX(from)));
     const row = Math.round((widget.y - cardBandTop(from, chipRow)) / (from.unit_h + gapY(from)));
     const cols = size?.cols || 1;
@@ -220,7 +226,12 @@ export function sizeOfFrom(manifest) {
   return (widget) => {
     const type = widgetType(manifest, widget);
     const variant = (type?.sizes || []).find((one) => one.id === widget.size);
-    return { isChip: isChipType(type), cols: variant?.cols, rows: variant?.rows };
+    return {
+      isChip: isChipType(type),
+      cols: variant?.cols,
+      rows: variant?.rows,
+      full: Boolean(variant?.full),
+    };
   };
 }
 
@@ -459,6 +470,10 @@ export function otherChips(widgets, manifest, uploads, excludeId, grid = null) {
 export function placeWidget(widget, delta, mode, grid, size, panel, options = {}) {
   const { chipRow = DEFAULT_CHIP_ROW, isChip = false, others = [] } = options;
 
+  // Full screen has one place to be, the corner, on every shape: the panel
+  // builds it at 0,0 whatever the layout says, so the editor keeps it there.
+  if (size?.full) return { x: 0, y: 0 };
+
   if (isChip) {
     return {
       x: placeChipX(widget.x + delta.x, size.width, others, grid, panel),
@@ -553,6 +568,14 @@ export function widgetVariant(type, widget) {
 // Grid.h does. Without one, the published numbers stand, which is what every
 // caller did before there were two shapes to choose between.
 export function variantFootprint(variant, chipRow = DEFAULT_CHIP_ROW, grid = null) {
+  // The whole panel, of the shape being edited. The published box is the shape
+  // the panel was standing in when it sent the manifest, which is only right
+  // half the time; `full` marks it so the edited shape can be used instead.
+  if (variant?.full) {
+    const width = grid?.width || variant.width;
+    const height = grid?.height || variant.height;
+    return width && height ? { width, height, full: true } : null;
+  }
   if (grid && variant?.cols && variant?.rows) {
     const [width, height] = boxOn(grid, variant.cols, variant.rows, chipRow);
     return { width, height };

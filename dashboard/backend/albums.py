@@ -201,10 +201,28 @@ def variants_in(layout: dict[str, Any], grid: grids.Grid = grids.V2) -> set[Vari
             if not album:
                 continue
 
+            # "full" is the whole glass on every panel either way up, never
+            # framed and indifferent to the chip row -- PhotoCard's FullScreen.
+            # Named for the panel's own pixels, so there is nothing to derive.
+            size = str(widget.get("size") or "3x2")
+            if size == "full":
+                wanted.add(
+                    Variant(
+                        album=album,
+                        width=grid.width,
+                        height=grid.height,
+                        fill=(options.get("crop") or "fill") != "fit",
+                        border=False,
+                        panel_width=grid.width,
+                        panel_height=grid.height,
+                        full_screen=True,
+                    )
+                )
+                continue
+
             # "3x2". The firmware's own size id, so there is nothing to agree
             # about -- but a layout can hold anything, so a malformed one is
             # skipped rather than crashing a background refresh.
-            size = str(widget.get("size") or "3x2")
             try:
                 cols, rows = (int(part) for part in size.split("x", 1))
             except (TypeError, ValueError):

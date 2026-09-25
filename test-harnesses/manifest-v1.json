@@ -1154,12 +1154,22 @@
         },
         {
           "id": "2x4",
-          "label": "Full height",
+          "label": "Large portrait",
           "cols": 2,
           "rows": 4,
           "width": 446,
           "height": 784,
           "height_off": 784
+        },
+        {
+          "id": "full",
+          "label": "Full screen",
+          "cols": 0,
+          "rows": 0,
+          "full": true,
+          "width": 960,
+          "height": 540,
+          "height_off": 540
         }
       ],
       "width": 210,
