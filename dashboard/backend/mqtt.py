@@ -240,8 +240,17 @@ class DeviceLink:
             state.overrides = self._parse(payload, "device settings") or {}
             self._adopt_overrides(panel_id, state.overrides)
         elif leaf == "stats":
+            previous = state.stats or {}
             state.stats = self._parse(payload, "stats")
             if state.stats:
+                # The panel names the images on its card only when that list has
+                # changed (firmware v2026.9.66 on) -- it was 3.8KB of every
+                # minute's stats. No list means "as before", so the last one is
+                # carried forward rather than read as an empty card.
+                images = state.stats.get("images")
+                known = (previous.get("images") or {}).get("have")
+                if isinstance(images, dict) and "have" not in images and known is not None:
+                    images["have"] = known
                 # Order matters: the trend is judged against what was already
                 # known, before this reading joins the history. The other way
                 # round, a lone sample gets compared against itself.
