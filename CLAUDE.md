@@ -297,7 +297,11 @@ to hide what is under it.
   reserves the inset around a custom panel, covering the frame's last 34px
   with its background (hass_ingress PR #110 describes the same). The lift is
   therefore right; the bar takes the strip's colour whenever there is an
-  inset at all. Settings > This
+  inset at all. **Then found exactly, by `probeHost()` on the phone: Home
+  Assistant pads the frame element itself** (`iframe.loaded … pad 34`), so
+  its inside stops 34px short. `unpadFrame()` cancels that one padding with
+  an inline `!important` and restores it on `pagehide`; measurements use the
+  frame's inner edge. `editcheck` reproduces it with a shadow-root stylesheet. Settings > This
   editor > Screen fit shows the numbers, so a screenshot from the phone says
   what the editor saw. `editcheck` covers the geometry in a mock frame; only a
   phone can cover the inset.

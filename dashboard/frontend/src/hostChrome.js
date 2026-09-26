@@ -62,9 +62,15 @@ export function measureHost() {
     result.frameInset = insetIn(document);
     if (!result.framed || !window.frameElement) return result;
     const frame = window.frameElement.getBoundingClientRect();
+    // The inner edge, not the outer: Home Assistant pads the frame element
+    // itself, and the padding is not ours to draw in.
+    const frameStyle = window.parent.getComputedStyle(window.frameElement);
+    result.framePad = Math.round(
+      (parseFloat(frameStyle.paddingBottom) || 0) + (parseFloat(frameStyle.borderBottomWidth) || 0)
+    );
     result.hostInset = insetIn(window.parent.document);
     result.hostHeight = window.parent.innerHeight;
-    result.gap = Math.round(result.hostHeight - frame.bottom);
+    result.gap = Math.round(result.hostHeight - (frame.bottom - result.framePad));
     result.screenHeight = window.screen.height;
     result.topHeight = window.top.innerHeight;
     result.reachesBottom = result.screenHeight - result.topHeight < result.hostInset / 2;
@@ -155,10 +161,45 @@ export function probeHost() {
 // does. Only when the colour suits the theme the editor is in -- a dark bar
 // under light-theme labels would be unreadable. Re-measured when anything that
 // moves the frame can have changed.
+// Home Assistant 2026.8 pads an add-on's frame element by the home-indicator
+// inset, so the frame's inside stops 34px above the bottom of the screen and
+// the padding shows as a strip of Home Assistant's background under the tab
+// bar. Found by probeHost() on an iPhone: "iframe.loaded ends 874 pad 34".
+// Only that one declaration is overridden, only while it is there, and the
+// frame's own inline value is put back when the add-on is left -- the tab bar
+// then reaches the bottom edge and keeps the inset clear under its labels
+// itself, as an app's own tab bar does.
+function unpadFrame() {
+  const frame = window.frameElement;
+  if (!frame) return;
+  const pad = parseFloat(window.parent.getComputedStyle(frame).paddingBottom) || 0;
+  if (pad <= 0) return;
+  const before = frame.style.getPropertyValue("padding-bottom");
+  const priority = frame.style.getPropertyPriority("padding-bottom");
+  frame.style.setProperty("padding-bottom", "0px", "important");
+  window.addEventListener(
+    "pagehide",
+    () => {
+      try {
+        if (before) frame.style.setProperty("padding-bottom", before, priority);
+        else frame.style.removeProperty("padding-bottom");
+      } catch {
+        // The page above went first
+      }
+    },
+    { once: true }
+  );
+}
+
 export function fitToHost() {
   if (window.parent === window) return;
   const root = document.documentElement;
   const apply = () => {
+    try {
+      unpadFrame();
+    } catch {
+      // Cross-origin, or no frame element: leave the page above alone
+    }
     const found = measureHost();
     if (found.clearance === undefined) return;
     root.style.setProperty("--safe-bottom", `${found.clearance}px`);
@@ -170,7 +211,7 @@ export function fitToHost() {
     // indicator, or -- since Home Assistant 2026.8, which reserves the inset
     // around a custom panel itself -- by Home Assistant over the last 34px of
     // this frame. Measured on an iPhone: page 874 of 874, strip #111.
-    const strip = found.hostInset > 0;
+    const strip = found.gap > 0;
     if (strip && suits) root.style.setProperty("--tabbar", found.band);
     else root.style.removeProperty("--tabbar");
     found.banded = strip && suits;

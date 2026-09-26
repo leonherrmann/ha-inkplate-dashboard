@@ -385,6 +385,36 @@ for (const [what, height, want] of [
   await context.close();
 }
 
+// Home Assistant 2026.8 on an iPhone, as probeHost() found it: the frame
+// element itself carries padding-bottom equal to the inset, from a stylesheet
+// inside a shadow root, so its inside stops short and the padding shows as a
+// strip under the tab bar. The editor cancels that one padding.
+{
+  console.log("--- a frame padded by the page above (Home Assistant 2026.8) ---");
+  const outer = await browser.newPage({ viewport: PHONE, hasTouch: true, isMobile: true });
+  await outer.route("**/api/**", answer);
+  await outer.goto(`${BASE}/index.html`, { waitUntil: "domcontentloaded" });
+  await outer.evaluate((src) => {
+    document.body.innerHTML = "";
+    const host = document.createElement("ha-panel");
+    host.style.cssText = "display:block;position:fixed;inset:0";
+    document.body.appendChild(host);
+    host.attachShadow({ mode: "open" }).innerHTML =
+      `<style>iframe{display:block;box-sizing:border-box;width:100%;height:100%;border:0;padding-bottom:34px;background:#111}</style>` +
+      `<iframe class="loaded" src="${src}"></iframe>`;
+  }, `${BASE}/index.html`);
+  await outer.waitForTimeout(2500);
+  const frame = outer.frames()[1];
+  await frame.waitForSelector(".tabbar", { timeout: 8000 }).catch(() => {});
+  await frame.waitForTimeout(400);
+  const pad = await outer.evaluate(() =>
+    getComputedStyle(document.querySelector("ha-panel").shadowRoot.querySelector("iframe")).paddingBottom);
+  check(pad === "0px", `the frame's padding is cancelled (${pad})`);
+  const bar = await frame.evaluate(() => document.querySelector(".tabbar").getBoundingClientRect().bottom);
+  check(Math.abs(bar - PHONE.height) < 1, `so the tab bar reaches the bottom of the screen (${Math.round(bar)})`);
+  await outer.close();
+}
+
 console.log(`\n${passes + failures} checks, ${failures ? `${failures} FAILED` : "all edit checks passed"}`);
 await browser.close();
 process.exit(failures ? 1 : 0);
