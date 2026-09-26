@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026.9.80
+
+Add-on only. Works with firmware **v2026.9.77**; nothing to flash.
+
+- **Device is now Settings**, and it is the rightmost tab.
+- **Renaming and forgetting a panel moved to Settings > Panels.** The panel
+  name in the top left only switches between panels now; with a single panel
+  it is just its name.
+- **The tab bar in the Home Assistant iOS app is placed from measurement.**
+  The previous fix assumed how the app frames the editor and did not help.
+  The editor now measures where its frame ends on the screen and how much
+  room the phone keeps for its home indicator, and places the bar from that.
+  **Settings > This editor > Screen fit** shows those numbers -- if the bar is
+  still off, a screenshot of that line says why.
+
 ## 2026.9.79
 
 Add-on only. Works with firmware **v2026.9.77**; nothing to flash.
