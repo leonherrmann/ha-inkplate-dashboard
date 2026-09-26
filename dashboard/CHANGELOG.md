@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026.9.82
+
+Add-on only. Works with firmware **v2026.9.77**; nothing to flash.
+
+- **The tab bar and the strip under it are one colour in the Home Assistant
+  iOS app.** Since Home Assistant 2026.8 the app runs edge to edge and Home
+  Assistant keeps the home-indicator area under an add-on in its own
+  background colour. The tab bar now takes that colour, so it no longer looks
+  like it floats above a darker band.
+
 ## 2026.9.81
 
 Add-on only. Works with firmware **v2026.9.77**; nothing to flash.
