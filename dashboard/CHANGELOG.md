@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026.9.84
+
+Add-on only. Works with firmware **v2026.9.77**; nothing to flash.
+
+- **The tab bar reaches the bottom of the screen in the Home Assistant iOS
+  app.** Home Assistant 2026.8 leaves a strip of padding under add-ons for
+  the home indicator; the editor now removes that padding while it is open
+  and keeps the space clear under the tab bar's labels itself, the way an
+  app's own tab bar does. Nothing changes outside the editor.
+
 ## 2026.9.83
 
 Add-on only. Works with firmware **v2026.9.77**; nothing to flash.
