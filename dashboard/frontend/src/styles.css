@@ -84,9 +84,9 @@
      inside the frame as well -- so adding it again put the tab bar's labels
      40pt above the frame's edge. hostChrome.js marks the frame. */
   --safe-bottom: env(safe-area-inset-bottom, 0px);
-  /* How tall the tab bar is: 8 top + a 57px item (5 + 28 glyph + 4 gap + 14
-     label + 6) + 6 bottom. Kept in step with the .tabbar rule by hand. */
-  --tabbar-h: calc(71px + var(--safe-bottom));
+  /* How tall the tab bar is: 6 top + a 50px item (3 + 26 glyph + 3 gap + 14
+     label + 4) + 6 bottom. Kept in step with the .tabbar rule by hand. */
+  --tabbar-h: calc(62px + var(--safe-bottom));
 
   /* Which of the two the band outside the frame should take. The stylesheet
      owns the decision so the breakpoint lives in one place; hostChrome.js only
@@ -3686,7 +3686,7 @@ input[type="range"]::-moz-range-thumb {
     /* 6 at the foot, plus the home indicator's clearance only when this page
        owns the viewport. Framed, Home Assistant's band below us already is
        that clearance -- see --safe-bottom. */
-    padding: 8px 6px calc(6px + var(--safe-bottom));
+    padding: 6px 6px calc(6px + var(--safe-bottom));
   }
 
   .tabbar-item {
@@ -3704,7 +3704,7 @@ input[type="range"]::-moz-range-thumb {
   }
 
   .tabbar-item .tabbar-glyph {
-    height: 28px;
+    height: 26px;
     display: grid;
     place-items: center;
     color: var(--ink-40);
@@ -3714,12 +3714,14 @@ input[type="range"]::-moz-range-thumb {
      than a pill round the icon with the name hanging under it. */
   .tabbar-item {
     justify-self: center;
-    padding: 5px 0 6px;
-    width: calc(100% - 10px);
-    /* Elliptical corners, so the top and bottom edges ease into the ends
-       rather than running flat between two semicircles -- the soft capsule
-       of an iOS tab bar's selection. A full 50% reads as an egg. */
-    border-radius: 34% / 46%;
+    padding: 3px 0 4px;
+    width: calc(100% - 4px);
+    /* The iOS tab bar's selection: a stadium with fully round ends, about
+       1.8 times as wide as it is tall and as tall as the bar allows. The
+       proportion is what makes it soft -- a narrower one with the same round
+       ends read as a box. */
+    border-radius: 999px;
+    gap: 3px;
   }
 
   .tabbar-item.active,
