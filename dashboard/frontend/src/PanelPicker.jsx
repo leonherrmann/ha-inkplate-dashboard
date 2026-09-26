@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 
-import { Picker } from "./Picker.jsx";
-import { MonitorIcon } from "./Icons.jsx";
+import { Popover } from "./Popover.jsx";
+import { CheckIcon, MonitorIcon, PencilIcon } from "./Icons.jsx";
 
 // Which panel is being edited.
 //
@@ -10,10 +10,6 @@ import { MonitorIcon } from "./Icons.jsx";
 // sits where the identity already was rather than being a fifth thing in the
 // header. With one panel it reads as the label it replaced; the chevron and the
 // list only mean anything when there is something to choose between.
-//
-// The same Picker shell the entity, device and widget lists use, for the
-// reasons given there: they were four hand-rolled modals that had drifted apart
-// in ways that read as meaning.
 
 export const MODEL_LABELS = {
   inkplate5v1: "Inkplate 5",
@@ -25,15 +21,12 @@ export function panelLabel(panel) {
   return panel.name || MODEL_LABELS[panel.model] || "Panel";
 }
 
-export function panelSpec(panel) {
-  if (!panel) return "";
-  const size = panel.width && panel.height ? `${panel.width} × ${panel.height}` : "";
-  const model = MODEL_LABELS[panel.model];
-  return [model, size, "1-bit"].filter(Boolean).join(" · ");
-}
-
 // Which panel the whole editor is about, from the top bar. Every screen below
 // it -- the layout, the pages, the settings -- is this panel's alone.
+//
+// A menu that drops from the button rather than a dialog in the middle of the
+// window: it was opened from the top-left corner and made you cross the whole
+// screen to choose, for a list that is usually two names long.
 export default function PanelPicker({
   panels,
   selected,
@@ -41,6 +34,7 @@ export default function PanelPicker({
   onRename,
   onForget,
 }) {
+  const anchor = useRef(null);
   const [open, setOpen] = useState(false);
   const [renaming, setRenaming] = useState(null);
   const [draft, setDraft] = useState("");
@@ -50,8 +44,13 @@ export default function PanelPicker({
   // where renaming lives, but it does not advertise a decision nobody has.
   const several = panels.length > 1;
 
-  const choose = (id) => {
+  const close = () => {
     setOpen(false);
+    setRenaming(null);
+  };
+
+  const choose = (id) => {
+    close();
     if (id !== selected) onSelect(id);
   };
 
@@ -66,10 +65,12 @@ export default function PanelPicker({
   // is renamed, so it is worth opening with only one panel.
   const trigger = (
     <button
+      ref={anchor}
       className="topbar-panel"
-      onClick={() => setOpen(true)}
+      onClick={() => (open ? close() : setOpen(true))}
       title={several ? "Choose which panel to edit" : "Rename this panel"}
-      aria-haspopup="dialog"
+      aria-haspopup="menu"
+      aria-expanded={open}
     >
       <span className="topbar-mark">
         <MonitorIcon size={14} />
@@ -84,7 +85,7 @@ export default function PanelPicker({
       {trigger}
 
       {open && (
-        <Picker title="Panels" onClose={() => setOpen(false)}>
+        <Popover anchor={anchor} onClose={close} align="start" className="panel-menu" role="dialog" label="Panels">
           <div className="panel-list">
             {panels.map((panel) => (
               <div
@@ -106,7 +107,7 @@ export default function PanelPicker({
                       placeholder={panelLabel(panel)}
                       maxLength={48}
                     />
-                    <button type="submit" className="button small">
+                    <button type="submit" className="primary">
                       Save
                     </button>
                   </form>
@@ -117,19 +118,23 @@ export default function PanelPicker({
                       <span className="panel-text">
                         <span className="panel-name">{panelLabel(panel)}</span>
                         <span className="panel-spec">
-                          {panelSpec(panel)}
+                          {MODEL_LABELS[panel.model] || "Panel"}
+                          {panel.online ? "" : " · offline"}
                           {!panel.has_manifest && " · not heard from yet"}
                         </span>
                       </span>
+                      {panel.id === selected && <CheckIcon size={15} width={2.2} />}
                     </button>
                     <button
-                      className="button ghost small"
+                      className="icon-button plain"
+                      aria-label={`Rename ${panelLabel(panel)}`}
+                      title="Rename"
                       onClick={() => {
                         setRenaming(panel.id);
                         setDraft(panel.name || "");
                       }}
                     >
-                      Rename
+                      <PencilIcon size={14} />
                     </button>
                     {/* Only offered for a panel that is not here. A panel that
                         is online is one you can see working, and forgetting it
@@ -137,7 +142,7 @@ export default function PanelPicker({
                         Its dashboard is kept either way; see panels.py. */}
                     {!panel.online && (
                       <button
-                        className="button ghost small"
+                        className="panel-forget"
                         onClick={() => {
                           if (
                             window.confirm(
@@ -145,6 +150,7 @@ export default function PanelPicker({
                                 "and it will come back by itself if it is switched on again."
                             )
                           ) {
+                            close();
                             onForget(panel.id);
                           }
                         }}
@@ -162,10 +168,7 @@ export default function PanelPicker({
               </p>
             )}
           </div>
-          <p className="picker-note">
-            Each panel keeps its own pages and settings.
-          </p>
-        </Picker>
+        </Popover>
       )}
     </>
   );

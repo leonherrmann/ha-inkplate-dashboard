@@ -292,6 +292,23 @@ check(
   const moved = await box(bar);
   check(Math.abs(moved.y - b.y) > 20 || Math.abs(moved.x - b.x) > 20, "it follows the selection to another widget");
 }
+// The panel chooser drops from its own button, rather than opening in the
+// middle of the window -- it is in the top-left corner, and a dialog in the
+// centre made every choice a trip across the screen.
+{
+  const trigger = page.locator(".topbar-panel");
+  await trigger.click();
+  await page.waitForTimeout(250);
+  const t = await box(trigger);
+  const m = await box(page.locator(".panel-menu"));
+  check(Math.abs(m.x - t.x) < 2 && m.y >= t.y + t.height && m.y - (t.y + t.height) < 12,
+    `the panel list opens right under its button (${Math.round(m.x)},${Math.round(m.y)})`);
+  check((await page.locator(".picker-backdrop").count()) === 0, "as a menu, not a dialog over the page");
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(200);
+  check((await page.locator(".panel-menu").count()) === 0, "and Escape puts it away");
+}
+
 // The columns start level with each other
 {
   const [pages, tools, options] = await Promise.all([

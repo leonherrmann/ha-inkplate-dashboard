@@ -10,7 +10,7 @@ import { ChevronDown } from "./Icons.jsx";
 // reason the pickers are: cards clip, the canvas well clips, and a popover
 // that opened inside one was cut off at its edge. Placed below the anchor, or
 // above it when the window runs out, and never past either side.
-export function Popover({ anchor, onClose, className = "", role, id, label, children }) {
+export function Popover({ anchor, onClose, className = "", role, id, label, align = "center", children }) {
   const box = useRef(null);
   const [place, setPlace] = useState(null);
 
@@ -25,8 +25,10 @@ export function Popover({ anchor, onClose, className = "", role, id, label, chil
         below + own.height > window.innerHeight - room && at.top - 6 - own.height > room
           ? at.top - 6 - own.height
           : below;
-      const centred = at.left + at.width / 2 - own.width / 2;
-      const left = Math.min(Math.max(room, centred), window.innerWidth - own.width - room);
+      // Centred under a small button like the ⓘ; a menu opened from a wider
+      // one starts at its left edge, the way a dropdown does.
+      const wanted = align === "start" ? at.left : at.left + at.width / 2 - own.width / 2;
+      const left = Math.min(Math.max(room, wanted), window.innerWidth - own.width - room);
       setPlace({ top, left });
     };
     measure();
@@ -36,7 +38,7 @@ export function Popover({ anchor, onClose, className = "", role, id, label, chil
       window.removeEventListener("resize", measure);
       window.removeEventListener("scroll", measure, true);
     };
-  }, [anchor]);
+  }, [anchor, align]);
 
   useEffect(() => {
     const onPointer = (event) => {
