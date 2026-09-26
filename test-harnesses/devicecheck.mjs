@@ -191,8 +191,8 @@ await page.setViewportSize(DESKTOP);
 await page.waitForTimeout(500);
 check((await page.locator(".setting-row").count()) === 0, "a wide window has no rows");
 check(
-  (await page.locator(".settings-grid .card").count()) === 5,
-  "it has the five cards side by side, which is what the width is for"
+  (await page.locator(".settings-grid .card").count()) === 6,
+  "it has the six cards side by side, which is what the width is for"
 );
 await page.screenshot({ path: "/tmp/device-desktop.png" });
 

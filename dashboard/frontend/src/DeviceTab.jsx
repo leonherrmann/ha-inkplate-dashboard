@@ -5,6 +5,7 @@ import BatterySettings, { DEFAULT_LOW_PERCENT } from "./BatterySettings.jsx";
 import RefreshSettings from "./RefreshSettings.jsx";
 import OrientationSettings from "./OrientationSettings.jsx";
 import TimerSettings from "./TimerSettings.jsx";
+import AppearanceSettings, { THEME_LABELS, useThemeChoice } from "./AppearanceSettings.jsx";
 import DeviceReports from "./DeviceReports.jsx";
 import SyncCard from "./SyncCard.jsx";
 import PanelPicker, { MODEL_LABELS } from "./PanelPicker.jsx";
@@ -274,6 +275,7 @@ export default function DeviceTab({
   const lowPercent = Number(battery?.low_percent ?? DEFAULT_LOW_PERCENT);
   const batteryLabel =
     lowPercent === 0 ? "Off" : `Below ${lowPercent}%${battery?.low_screen ? " · full screen" : ""}`;
+  const { choice: themeChoice } = useThemeChoice();
   const timerLabel = TIMER_TICKS.find((one) => one.ms === Number(timerTickMs ?? 5000))?.label ||
     "Every 5 seconds";
 
@@ -309,6 +311,7 @@ export default function DeviceTab({
       ),
     },
     commands: { title: "Commands", card: commandsCard },
+    appearance: { title: "Appearance", card: <AppearanceSettings /> },
   };
 
   // One setting, on its own screen. The head matches the Diagnostics screen's,
@@ -563,6 +566,11 @@ export default function DeviceTab({
                 onOpen={() => setView("commands")}
               />
               <SettingRow
+                label="Appearance"
+                value={THEME_LABELS[themeChoice]}
+                onOpen={() => setView("appearance")}
+              />
+              <SettingRow
                 label="Diagnostics & firmware"
                 value={canUpdate ? "Update ready" : firmware?.device?.running || ""}
                 onOpen={() => setView("diagnostics")}
@@ -582,6 +590,7 @@ export default function DeviceTab({
                 autoStart={pomodoroAutoStart}
                 onAutoStartChange={onPomodoroAutoStartChange}
               />
+              <AppearanceSettings />
 
               <button className="action-row" onClick={() => setView("diagnostics")}>
                 <InfoIcon size={15} />

@@ -274,7 +274,16 @@ a surface that covers a whole page cannot rely on a blur to hide it.
   lift the canvas clear of the sheet. `Inspector.jsx` renders the same head and
   fields into either shell.
 - The UI is built to a Claude Design project ("glass"): floating panels,
-  Bauhaus colour, light only. **The canvas is exempt** — `.panel` resets its own
+  Bauhaus colour, **light and dark**. `theme.js` sets `<html data-theme>` --
+  following Home Assistant's own `hass.themes.darkMode` off the ingress parent,
+  else the OS, unless the Appearance card on the Device screen overrides it per
+  browser -- and the dark theme is one block of token overrides in
+  `styles.css`. **A literal colour in a rule is a dark-mode bug**: use
+  `--ink-rgb` (text, hairlines), `--shade-rgb` (blurred shadows, scrims, always
+  dark), `--paper-rgb`/`--surface` (surfaces), `--picture` (anything holding a
+  picture of the panel, white in both). White on the gradient stays literal.
+  `test-harnesses/themecheck.mjs` audits every screen in both themes for white
+  boxes and unreadable text. **The canvas is exempt** — `.panel` resets its own
   tokens to black-on-white so the e-ink preview never follows the interface.
 
 ## Conventions that bite

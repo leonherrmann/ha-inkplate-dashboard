@@ -58,9 +58,13 @@ export function blendHostBackground() {
     const narrow = window.matchMedia("(max-width: 820px)");
     narrow.addEventListener("change", paint);
 
+    // And so does the theme: the band is ground or tab bar, and both flip.
+    window.addEventListener("inkplate-theme", paint);
+
     restore = () => {
       try {
         narrow.removeEventListener("change", paint);
+        window.removeEventListener("inkplate-theme", paint);
         targets.forEach((el, i) => {
           el.style.backgroundColor = previous[i];
         });

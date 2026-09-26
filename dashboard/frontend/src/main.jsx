@@ -2,8 +2,12 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.jsx";
 import { blendHostBackground } from "./hostChrome.js";
+import { initTheme } from "./theme.js";
 import "./styles.css";
 
+// Before the first render, so the editor never paints light and then flips --
+// and before the band, which takes its colour from the theme.
+initTheme();
 // After the stylesheet, so --host-band is resolvable rather than an empty string
 blendHostBackground();
 

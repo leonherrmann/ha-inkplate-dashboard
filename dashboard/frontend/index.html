@@ -5,9 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Inkplate Dashboard</title>
     <!--
-      The ground colour, before the stylesheet has loaded. One line rather than
-      the theme bootstrap that used to live here: the editor is light only now,
-      so there is no stored choice to read and nothing to resolve before paint.
+      The ground colour, before the stylesheet and the bundle have loaded, in
+      whichever theme theme.js is going to choose -- the same three questions in
+      the same order, so a dark Home Assistant does not get a white flash while
+      the editor starts. theme.js makes the real decision a moment later.
 
       viewport-fit=cover on the meta above is what makes env(safe-area-inset-bottom)
       report a real number, which the mobile tab bar pads itself by.
@@ -17,7 +18,29 @@
       body {
         background: #efece6;
       }
+      html[data-theme="dark"],
+      html[data-theme="dark"] body {
+        background: #131217;
+      }
     </style>
+    <script>
+      (function () {
+        var dark;
+        try {
+          var stored = localStorage.getItem("inkplate-theme");
+          if (stored === "light" || stored === "dark") dark = stored === "dark";
+        } catch (e) {}
+        try {
+          if (dark === undefined && window.parent !== window) {
+            var ha = window.parent.document.querySelector("home-assistant");
+            var mode = ha && ha.hass && ha.hass.themes && ha.hass.themes.darkMode;
+            if (typeof mode === "boolean") dark = mode;
+          }
+        } catch (e) {}
+        if (dark === undefined) dark = !!(window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches);
+        document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
