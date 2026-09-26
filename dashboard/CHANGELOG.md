@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026.9.87
+
+Add-on only. Works with firmware **v2026.9.77**; nothing to flash.
+
+- **The tab bar on phones is iOS-sized**: a slimmer bar, smaller icons and
+  labels, matching the iPhone's own tab bars.
+- **Dark mode is less blue.** The greys are closer to neutral and the violet
+  glow at the top of the page is fainter.
+
 ## 2026.9.86
 
 Add-on only. Works with firmware **v2026.9.77**; nothing to flash.
