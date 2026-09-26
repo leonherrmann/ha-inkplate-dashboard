@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026.9.75
+
+Add-on only. Works with firmware **v2026.9.74**; nothing to flash.
+
+- **Dark mode.** The editor follows Home Assistant: dark when Home
+  Assistant is dark, light when it is light, and it switches when you
+  change it there. Opened outside Home Assistant it follows the device.
+  A new **Appearance** card under Device sets it to Light or Dark instead,
+  for this browser only. The canvas and every picture of the panel stay
+  black on white, because that is what the panel draws.
+
+- **A chosen page that is not in the rotation is readable again.** Its tab
+  showed white text on a white background in the page list.
+
+- The layer count in the widget options and the counts in the widget
+  picker's categories are a little darker, to be readable.
+
 ## 2026.9.71
 
 Pairs with firmware **v2026.9.71**. Update the add-on first, then the panels.
