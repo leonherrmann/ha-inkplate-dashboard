@@ -3716,7 +3716,10 @@ input[type="range"]::-moz-range-thumb {
     justify-self: center;
     padding: 5px 0 6px;
     width: calc(100% - 10px);
-    border-radius: 999px;
+    /* Elliptical corners, so the top and bottom edges ease into the ends
+       rather than running flat between two semicircles -- the soft capsule
+       of an iOS tab bar's selection. A full 50% reads as an egg. */
+    border-radius: 34% / 46%;
   }
 
   .tabbar-item.active,
