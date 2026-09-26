@@ -101,60 +101,6 @@ function lightness(colour) {
   return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
 }
 
-// Which of Home Assistant's elements keeps this frame off the bottom of the
-// screen. Walks up from the frame through the page above -- across shadow roots,
-// which is how Home Assistant is built -- and notes every element that ends
-// above the frame's foot, pads its own foot, or clips, plus whatever is drawn
-// on top at the strip itself. Read-only: it describes, and changes nothing.
-// Shown in Settings > This editor so a screenshot from the phone can say which
-// element to change.
-export function probeHost() {
-  const lines = [];
-  try {
-    const frame = window.frameElement;
-    if (!frame) return ["not framed"];
-    const foot = frame.getBoundingClientRect().bottom;
-    const name = (el) =>
-      el.tagName.toLowerCase() + (el.id ? `#${el.id}` : "") +
-      (el.classList?.length ? `.${[...el.classList].slice(0, 2).join(".")}` : "");
-    let el = frame;
-    let depth = 0;
-    while (el && depth < 40) {
-      const style = window.parent.getComputedStyle(el);
-      const box = el.getBoundingClientRect();
-      const pad = parseFloat(style.paddingBottom) || 0;
-      const margin = parseFloat(style.marginBottom) || 0;
-      const clips = style.overflow !== "visible" || style.overflowY !== "visible";
-      const short = Math.round(foot - box.bottom);
-      if (short > 0 || pad > 0 || margin > 0 || (clips && box.bottom < foot + 1)) {
-        lines.push(
-          `${name(el)} ends ${Math.round(box.bottom)}` +
-            (pad ? ` pad ${Math.round(pad)}` : "") +
-            (margin ? ` margin ${Math.round(margin)}` : "") +
-            (clips ? ` clips(${style.overflowY})` : "") +
-            ` h ${style.height}`
-        );
-      }
-      el = el.parentElement || el.getRootNode?.().host || null;
-      depth += 1;
-    }
-    // What is on top in the middle of the strip
-    const x = frame.getBoundingClientRect().left + 20;
-    const y = foot - 10;
-    let root = window.parent.document;
-    let top = root.elementFromPoint(x, y);
-    while (top?.shadowRoot) {
-      const inner = top.shadowRoot.elementFromPoint(x, y);
-      if (!inner || inner === top) break;
-      top = inner;
-    }
-    lines.push(`on top at the strip: ${top ? name(top) : "nothing"} (frame foot ${Math.round(foot)})`);
-  } catch (problem) {
-    lines.push(`cannot read the page: ${problem.message}`);
-  }
-  return lines;
-}
-
 // Keeps --safe-bottom at the measured clearance, and gives the tab bar the
 // strip's colour when there is a strip under it: the bar and the strip then
 // read as one surface to the bottom of the screen, as an app's own tab bar
@@ -164,7 +110,8 @@ export function probeHost() {
 // Home Assistant 2026.8 pads an add-on's frame element by the home-indicator
 // inset, so the frame's inside stops 34px above the bottom of the screen and
 // the padding shows as a strip of Home Assistant's background under the tab
-// bar. Found by probeHost() on an iPhone: "iframe.loaded ends 874 pad 34".
+// bar. Found on an iPhone by walking up from the frame (2026-09-26): the frame
+// element itself ends at the screen's foot with padding-bottom 34.
 // Only that one declaration is overridden, only while it is there, and the
 // frame's own inline value is put back when the add-on is left -- the tab bar
 // then reaches the bottom edge and keeps the inset clear under its labels
@@ -215,7 +162,6 @@ export function fitToHost() {
     if (strip && suits) root.style.setProperty("--tabbar", found.band);
     else root.style.removeProperty("--tabbar");
     found.banded = strip && suits;
-    window.dispatchEvent(new CustomEvent("inkplate-host-fit", { detail: found }));
   };
   apply();
   [300, 1000, 3000].forEach((ms) => setTimeout(apply, ms));

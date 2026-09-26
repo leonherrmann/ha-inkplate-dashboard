@@ -5,7 +5,7 @@ import BatterySettings, { DEFAULT_LOW_PERCENT } from "./BatterySettings.jsx";
 import RefreshSettings from "./RefreshSettings.jsx";
 import OrientationSettings from "./OrientationSettings.jsx";
 import TimerSettings from "./TimerSettings.jsx";
-import AppearanceSettings, { ScreenFit, THEME_LABELS, useThemeChoice } from "./AppearanceSettings.jsx";
+import AppearanceSettings, { THEME_LABELS, useThemeChoice } from "./AppearanceSettings.jsx";
 import DeviceReports from "./DeviceReports.jsx";
 import { MODEL_LABELS, panelLabel } from "./PanelPicker.jsx";
 import Sparkline from "./Sparkline.jsx";
@@ -516,7 +516,6 @@ export default function DeviceTab({
     editor: (
       <SettingsCard>
         <AppearanceSettings />
-        <ScreenFit />
       </SettingsCard>
     ),
   };

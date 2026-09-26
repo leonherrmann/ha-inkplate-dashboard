@@ -286,7 +286,8 @@ to hide what is under it.
   Two guesses about Home Assistant's iOS frame were both wrong on the phone.
   `fitToHost()` in `hostChrome.js` reads, off the same-origin page above,
   where the frame ends and how tall the home-indicator inset is there, and sets
-  `--safe-bottom` to how much of that area the frame overlaps. **Measured on
+  `--safe-bottom` to how much of that area the frame overlaps. Confirmed right
+  on the iPhone app 2026-09-26 (add-on 2026.9.84). **Measured on
   the iPhone app (2026-09-26): the page reports a 34px inset but stops above
   the home indicator**, and the strip under it is the app's own, painted in
   Home Assistant's `--primary-background-color` -- so the inset only counts
@@ -297,13 +298,13 @@ to hide what is under it.
   reserves the inset around a custom panel, covering the frame's last 34px
   with its background (hass_ingress PR #110 describes the same). The lift is
   therefore right; the bar takes the strip's colour whenever there is an
-  inset at all. **Then found exactly, by `probeHost()` on the phone: Home
+  inset at all. **Then found exactly, by a probe run on the phone: Home
   Assistant pads the frame element itself** (`iframe.loaded … pad 34`), so
   its inside stops 34px short. `unpadFrame()` cancels that one padding with
   an inline `!important` and restores it on `pagehide`; measurements use the
-  frame's inner edge. `editcheck` reproduces it with a shadow-root stylesheet. Settings > This
-  editor > Screen fit shows the numbers, so a screenshot from the phone says
-  what the editor saw. `editcheck` covers the geometry in a mock frame; only a
+  frame's inner edge. `editcheck` reproduces it with a shadow-root stylesheet.  A temporary
+  Screen fit readout in Settings showed the numbers while this was worked
+  out; it is gone, and git has it if the bar ever needs diagnosing again. `editcheck` covers the geometry in a mock frame; only a
   phone can cover the inset.
 - **Settings is the last tab** and the Device screen is called Settings. The
   panel switcher in the top bar only chooses; naming and forgetting a panel are

@@ -3714,7 +3714,8 @@ input[type="range"]::-moz-range-thumb {
      than a pill round the icon with the name hanging under it. */
   .tabbar-item {
     justify-self: center;
-    padding: 5px 20px 6px;
+    padding: 5px 0 6px;
+    width: calc(100% - 10px);
     border-radius: 999px;
   }
 
@@ -5000,17 +5001,4 @@ input.panel-name-field {
   font: inherit;
   font-size: 13px;
   color: var(--ink);
-}
-
-/* The page-above readout on Settings > This editor, while the tab bar's place
-   on iPhones is being worked out */
-.screen-fit-probe {
-  margin: 0;
-  width: 100%;
-  white-space: pre-wrap;
-  word-break: break-all;
-  font-family: var(--mono);
-  font-size: 10.5px;
-  line-height: 1.5;
-  color: var(--ink-60);
 }
