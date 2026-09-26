@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026.9.83
+
+Add-on only. Works with firmware **v2026.9.77**; nothing to flash.
+
+- **Screen fit lists what holds the editor off the bottom of the screen** in
+  the Home Assistant iOS app. It only reads Home Assistant's page and changes
+  nothing; a screenshot of it says what the next release has to adjust to
+  bring the tab bar down to the bottom edge.
+
 ## 2026.9.82
 
 Add-on only. Works with firmware **v2026.9.77**; nothing to flash.
