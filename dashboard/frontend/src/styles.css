@@ -84,9 +84,9 @@
      inside the frame as well -- so adding it again put the tab bar's labels
      40pt above the frame's edge. hostChrome.js marks the frame. */
   --safe-bottom: env(safe-area-inset-bottom, 0px);
-  /* How tall the tab bar is: 8 top + 30 glyph + 4 gap + 13 label + 6 bottom.
-     Kept in step with the .tabbar rule by hand, since CSS cannot ask. */
-  --tabbar-h: calc(61px + var(--safe-bottom));
+  /* How tall the tab bar is: 8 top + a 50px item (4 + 24 glyph + 4 gap + 13
+     label + 5) + 6 bottom. Kept in step with the .tabbar rule by hand. */
+  --tabbar-h: calc(64px + var(--safe-bottom));
 
   /* Which of the two the band outside the frame should take. The stylesheet
      owns the decision so the breakpoint lives in one place; hostChrome.js only
@@ -3704,23 +3704,30 @@ input[type="range"]::-moz-range-thumb {
   }
 
   .tabbar-item .tabbar-glyph {
-    height: 30px;
+    height: 24px;
     display: grid;
     place-items: center;
     color: var(--ink-40);
   }
 
-  .tabbar-item.active .tabbar-glyph {
-    width: 46px;
+  /* The chosen tab is one pill round its icon and its name together, rather
+     than a pill round the icon with the name hanging under it. */
+  .tabbar-item {
+    justify-self: center;
+    padding: 4px 18px 5px;
     border-radius: 999px;
+  }
+
+  .tabbar-item.active,
+  .tabbar-item.active:hover:not(:disabled) {
     background: var(--grad);
     box-shadow: 0 10px 18px -10px rgba(47, 91, 216, 0.95);
     color: #fff;
+    font-weight: 600;
   }
 
-  .tabbar-item.active {
-    color: var(--blue);
-    font-weight: 600;
+  .tabbar-item.active .tabbar-glyph {
+    color: #fff;
   }
 
   .workspace {
