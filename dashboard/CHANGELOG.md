@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026.9.85
+
+Add-on only. Works with firmware **v2026.9.77**; nothing to flash.
+
+- **A new tab bar on phones.** The chosen tab is one pill round its icon and
+  its name, shaped like the iOS tab bar's selection, and the icons are
+  bigger.
+- The temporary Screen fit readout under Settings > This editor is gone now
+  that the tab bar reaches the bottom of the screen.
+
 ## 2026.9.84
 
 Add-on only. Works with firmware **v2026.9.77**; nothing to flash.
