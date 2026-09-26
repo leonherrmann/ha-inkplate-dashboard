@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026.9.81
+
+Add-on only. Works with firmware **v2026.9.77**; nothing to flash.
+
+- **The tab bar sits on the bottom strip in the Home Assistant iOS app.**
+  2026.9.80 lifted it by the home indicator's height, but the app already
+  keeps that strip itself, below the page. The bar now sits directly on it,
+  and takes Home Assistant's background colour so the two read as one.
+  **Settings > This editor > Screen fit** shows what was measured.
+
 ## 2026.9.80
 
 Add-on only. Works with firmware **v2026.9.77**; nothing to flash.
