@@ -111,9 +111,15 @@ export function fitToHost() {
     const light = found.band ? lightness(found.band) : null;
     const dark = root.dataset.theme === "dark";
     const suits = light !== null && (dark ? light < 0.35 : light > 0.8);
-    if (!found.reachesBottom && suits) root.style.setProperty("--tabbar", found.band);
+    // A strip of Home Assistant's background sits under the bar whenever there
+    // is an inset at all: drawn by the app below a page that stops short of the
+    // indicator, or -- since Home Assistant 2026.8, which reserves the inset
+    // around a custom panel itself -- by Home Assistant over the last 34px of
+    // this frame. Measured on an iPhone: page 874 of 874, strip #111.
+    const strip = found.hostInset > 0;
+    if (strip && suits) root.style.setProperty("--tabbar", found.band);
     else root.style.removeProperty("--tabbar");
-    found.banded = !found.reachesBottom && suits;
+    found.banded = strip && suits;
     window.dispatchEvent(new CustomEvent("inkplate-host-fit", { detail: found }));
   };
   apply();

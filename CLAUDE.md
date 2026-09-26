@@ -291,7 +291,13 @@ to hide what is under it.
   the home indicator**, and the strip under it is the app's own, painted in
   Home Assistant's `--primary-background-color` -- so the inset only counts
   when the top page reaches the screen's foot, and the tab bar takes that
-  colour (when it suits the editor's theme) so bar and strip read as one. Settings > This
+  colour (when it suits the editor's theme) so bar and strip read as one.
+  **Corrected the same day with a second reading: page 874 of 874**, i.e. the
+  app is edge-to-edge (Home Assistant >= 2026.8), and Home Assistant itself
+  reserves the inset around a custom panel, covering the frame's last 34px
+  with its background (hass_ingress PR #110 describes the same). The lift is
+  therefore right; the bar takes the strip's colour whenever there is an
+  inset at all. Settings > This
   editor > Screen fit shows the numbers, so a screenshot from the phone says
   what the editor saw. `editcheck` covers the geometry in a mock frame; only a
   phone can cover the inset.

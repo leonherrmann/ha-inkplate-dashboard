@@ -381,7 +381,7 @@ for (const [what, height, want] of [
     return { pad: style.paddingBottom, colour: style.backgroundColor };
   });
   check(bar.pad === "6px", `the bar is not lifted (${bar.pad})`);
-  check(bar.colour === "rgb(17, 17, 17)", `and takes the strip's colour (${bar.colour})`);
+  check(bar.colour !== "rgb(17, 17, 17)", `with no inset there is no strip, so the bar keeps its own colour (${bar.colour})`);
   await context.close();
 }
 
