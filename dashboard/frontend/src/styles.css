@@ -3717,7 +3717,15 @@ input[type="range"]::-moz-range-thumb {
     height: 26px;
     display: grid;
     place-items: center;
-    color: var(--ink-40);
+    color: var(--ink);
+  }
+
+  /* Faded as a whole rather than stroked in a translucent colour: each stroke
+     of a translucent icon is composited on its own, so wherever two overlap
+     -- the corners of a frame, the crossing of the layers -- it came out
+     darker. Opacity on the svg fades it once, after it is drawn. */
+  .tabbar-item:not(.active) .tabbar-glyph svg {
+    opacity: 0.45;
   }
 
   /* The chosen tab is one pill round its icon and its name together, rather
@@ -5016,4 +5024,19 @@ input.panel-name-field {
   font: inherit;
   font-size: 13px;
   color: var(--ink);
+}
+
+/* The rail's icons, for the reason the tab bar's are: a translucent stroke
+   darkens wherever two strokes of the same icon overlap, so the icon is drawn
+   solid and faded as a whole. */
+.rail-item:not(.active) svg {
+  opacity: 0.62;
+}
+
+.rail-item:not(.active) {
+  color: var(--ink);
+}
+
+.rail-item:not(.active):hover svg {
+  opacity: 1;
 }
