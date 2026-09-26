@@ -282,11 +282,17 @@ to hide what is under it.
 - **Columns on a desktop screen start level.** A heading belongs above all of a
   screen's columns, not inside one of them; `editcheck` and `devicecheck` both
   measure it.
-- **Framed, the home indicator's clearance is not ours.** Home Assistant's iOS
-  app stops the frame above it, and newer versions also report the inset
-  inside the frame, which put the tab bar 40pt off the bottom. Every clearance
-  goes through `--safe-bottom`, which is `0` under `:root[data-framed]`
-  (`markFramed()` in `hostChrome.js`).
+- **The tab bar's clearance under its labels is measured, not assumed.**
+  Two guesses about Home Assistant's iOS frame were both wrong on the phone.
+  `fitToHost()` in `hostChrome.js` reads, off the same-origin page above,
+  where the frame ends and how tall the home-indicator inset is there, and sets
+  `--safe-bottom` to how much of that area the frame overlaps. Settings > This
+  editor > Screen fit shows the numbers, so a screenshot from the phone says
+  what the editor saw. `editcheck` covers the geometry in a mock frame; only a
+  phone can cover the inset.
+- **Settings is the last tab** and the Device screen is called Settings. The
+  panel switcher in the top bar only chooses; naming and forgetting a panel are
+  in Settings > Panels. With one panel the switcher is a plain name.
 - The UI is built to a Claude Design project ("glass"): floating panels,
   Bauhaus colour, **light and dark**. `theme.js` sets `<html data-theme>` --
   following Home Assistant's own `hass.themes.darkMode` off the ingress parent,

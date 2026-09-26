@@ -82,6 +82,7 @@ const answer = async (route) => {
     return json({
       panels: [
         { id: "inkplate-a864a0", name: "Hallway", model: "inkplate5v2", online: true, width: 1280, height: 720, has_manifest: true },
+        { id: "inkplate-057090", name: "Kitchen", model: "inkplate5v1", online: false, width: 960, height: 540, has_manifest: true },
       ],
       default: "inkplate-a864a0",
     });
@@ -304,6 +305,9 @@ check(
   check(Math.abs(m.x - t.x) < 2 && m.y >= t.y + t.height && m.y - (t.y + t.height) < 12,
     `the panel list opens right under its button (${Math.round(m.x)},${Math.round(m.y)})`);
   check((await page.locator(".picker-backdrop").count()) === 0, "as a menu, not a dialog over the page");
+  check((await page.locator(".panel-menu .panel-choose").count()) === 2, "listing both panels");
+  check((await page.locator(".panel-menu").getByText(/Rename|Forget/).count()) === 0,
+    "and only choosing: naming and forgetting are in Settings");
   await page.keyboard.press("Escape");
   await page.waitForTimeout(200);
   check((await page.locator(".panel-menu").count()) === 0, "and Escape puts it away");
@@ -323,24 +327,28 @@ await noSpill("on a desktop");
 
 // ---------- inside Home Assistant's frame ----------
 
-// The iOS app stops its frame above the home indicator and paints the band
-// itself -- and newer versions also report the inset inside the frame, so the
-// tab bar added it again and sat 40pt off the bottom. Framed, the bar leaves
-// the clearance to the page above. The inset cannot be faked here, so what is
-// checked is that the frame is recognised and the bar adds nothing of its own.
-{
-  console.log("--- inside a frame ---");
+// The tab bar's clearance under its labels is measured from the page above:
+// how much of the home-indicator area the frame overlaps. Headless WebKit has
+// no inset, so what can be checked is the geometry -- a frame that stops short
+// of the bottom leaves the bar alone, and one that runs past it lifts the bar
+// by the overrun.
+for (const [what, height, want] of [
+  ["a frame that stops 34px short of the bottom", "calc(100% - 34px)", "6px"],
+  ["a frame that runs 20px past the bottom", "calc(100% + 20px)", "26px"],
+]) {
+  console.log(`--- ${what} ---`);
   const outer = await browser.newPage({ viewport: PHONE, hasTouch: true, isMobile: true });
   await outer.route("**/api/**", answer);
   await outer.goto(`${BASE}/index.html`, { waitUntil: "domcontentloaded" });
-  await outer.evaluate((src) => {
-    document.body.innerHTML = `<iframe src="${src}" style="position:fixed;inset:0;width:100%;height:100%;border:0"></iframe>`;
-  }, `${BASE}/index.html`);
-  const frame = outer.frames()[1] || (await (await outer.waitForSelector("iframe")).contentFrame());
+  await outer.evaluate(([src, h]) => {
+    document.body.innerHTML = `<iframe src="${src}" style="position:fixed;left:0;top:0;width:100%;height:${h};border:0"></iframe>`;
+  }, [`${BASE}/index.html`, height]);
+  const frame = await (await outer.waitForSelector("iframe")).contentFrame();
   await frame.waitForSelector(".tabbar", { timeout: 8000 }).catch(() => {});
+  await frame.waitForTimeout(500);
   check(await frame.evaluate(() => document.documentElement.hasAttribute("data-framed")), "the editor knows it is framed");
   const pad = await frame.evaluate(() => getComputedStyle(document.querySelector(".tabbar")).paddingBottom).catch(() => "none");
-  check(pad === "6px", `and the tab bar adds no home-indicator clearance of its own (${pad})`);
+  check(pad === want, `the tab bar leaves ${want} under its labels (${pad})`);
   await outer.close();
 }
 

@@ -89,8 +89,6 @@ export default function TopBar({
   panels,
   panelId,
   onSelectPanel,
-  onRenamePanel,
-  onForgetPanel,
   lastSeenAge,
   sync,
   onPush,
@@ -117,8 +115,6 @@ export default function TopBar({
         panels={panels}
         selected={panelId}
         onSelect={onSelectPanel}
-        onRename={onRenamePanel}
-        onForget={onForgetPanel}
       />
 
       <span className="topbar-health" title={health}>

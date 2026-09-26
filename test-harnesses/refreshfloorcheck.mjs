@@ -38,7 +38,7 @@ for (const viewport of [{ width: 1400, height: 900 }, { width: 390, height: 844 
     return json({});
   });
   await page.goto("http://127.0.0.1:8127/", { waitUntil: "networkidle" });
-  await page.getByRole("button", { name: /^Device$/ }).first().click();
+  await page.getByRole("button", { name: /^Settings$/ }).first().click();
   // The Display section, where the refresh settings are. Open by default on a
   // desktop and a row to tap on a phone; clicking it is harmless either way.
   await page.locator(".section-row", { hasText: "Display" }).first().click();

@@ -47,6 +47,7 @@ const LAYOUT = {
   pages: [{ id: "p1", name: "Main", chip_row: "bottom", queued: true, widgets: [] }],
 };
 
+const renamed = [];
 const browser = await webkit.launch();
 const page = await browser.newPage({ viewport: PHONE, hasTouch: true, isMobile: true });
 
@@ -55,9 +56,16 @@ await page.route("**/api/**", async (route) => {
   const json = (body) =>
     route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
 
+  if (/\/panels\//.test(url) && route.request().method() !== "GET") {
+    renamed.push({ url, method: route.request().method(), body: route.request().postData() });
+    return json({ ok: true });
+  }
   if (/\/panels\b/.test(url)) {
     return json({
-      panels: [{ id: "p1", name: "Hallway", model: "inkplate5v2", online: true, width: 1280, height: 720, has_manifest: true }],
+      panels: [
+        { id: "p1", name: "Hallway", model: "inkplate5v2", online: true, width: 1280, height: 720, has_manifest: true },
+        { id: "p2", name: "", model: "inkplate5v1", online: false, width: 960, height: 540, has_manifest: true },
+      ],
       default: "p1",
     });
   }
@@ -83,7 +91,7 @@ await page.route("**/api/**", async (route) => {
 });
 
 await page.goto(`${BASE}/`, { waitUntil: "domcontentloaded" });
-await page.locator(".tabbar").getByRole("button", { name: "Device" }).click();
+await page.locator(".tabbar").getByRole("button", { name: "Settings" }).click();
 await page.waitForSelector(".section-row", { timeout: 8000 });
 
 // ---------- the list ----------
@@ -93,7 +101,7 @@ const rowText = async (label) =>
 const screenTitle = () => page.locator("h2.screen-title").innerText();
 const back = () => page.locator(".back-row").click();
 
-check((await page.locator(".section-row").count()) === 6, "the settings are six sections");
+check((await page.locator(".section-row").count()) === 7, "the settings are seven sections");
 check(/Upside down/.test(await rowText("Display")), "each row says what it is set to");
 check(/Rarely/.test(await rowText("Display")), "reading the layout, not the default");
 check(/23:00/.test(await rowText("Power")), "a sleep window is the hours it covers");
@@ -133,7 +141,7 @@ check((await ghosting("Often").getAttribute("aria-pressed")) === "true", "the co
 
 await back();
 await page.waitForTimeout(400);
-check((await page.locator(".section-row").count()) === 6, "back returns the list");
+check((await page.locator(".section-row").count()) === 7, "back returns the list");
 check(/Often/.test(await rowText("Display")), "showing what was just chosen");
 
 // The ⓘ: the explanation that used to be a paragraph is one tap away
@@ -180,11 +188,33 @@ for (const name of ["Refresh", "Show", "Start setup…"]) {
 await back();
 await page.waitForTimeout(300);
 
+// Settings is the last tab, where a settings tab is expected
+{
+  const tabs = await page.locator(".tabbar .tabbar-item").allInnerTexts();
+  check(tabs[tabs.length - 1].trim() === "Settings", `Settings is the rightmost tab (${tabs.map((t) => t.trim()).join(", ")})`);
+}
+
+// Naming and forgetting a panel live here now, not in the switcher
+await page.locator(".section-row", { hasText: "Panels" }).click();
+await page.waitForTimeout(400);
+check((await screenTitle()) === "Panels", "Panels opens its own screen");
+check((await page.locator(".panel-name-field").count()) === 2, "with a name field for every panel");
+{
+  const field = page.getByRole("textbox", { name: "Name for Hallway" });
+  await field.fill("Hall");
+  await field.press("Enter");
+  await page.waitForTimeout(300);
+  check(renamed.some((one) => one.url.includes("/panels/p1") && /Hall/.test(one.body || "")), "a new name is saved when Enter is pressed");
+}
+check((await page.getByRole("button", { name: "Forget" }).count()) === 1, "Forget is offered only for the panel that is offline");
+await back();
+await page.waitForTimeout(300);
+
 // ---------- a desktop: the list beside the section ----------
 
 await page.setViewportSize(DESKTOP);
 await page.waitForTimeout(500);
-check((await page.locator(".section-row").count()) === 6, "a wide window keeps the list");
+check((await page.locator(".section-row").count()) === 7, "a wide window keeps the list");
 check((await page.locator(".section-row.active").count()) === 1, "with one section open beside it");
 await page.locator(".section-row", { hasText: "Power" }).click();
 await page.waitForTimeout(300);

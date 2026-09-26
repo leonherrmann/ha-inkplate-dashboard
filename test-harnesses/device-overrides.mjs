@@ -48,7 +48,7 @@ const open = async (browser, overrides) => {
   });
 
   await page.goto(process.env.BASE || "http://127.0.0.1:8127/", { waitUntil: "networkidle" });
-  await page.getByRole("button", { name: "Device", exact: true }).click();
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
   await page.waitForTimeout(300);
   await page.getByRole("button", { name: "Display", exact: true }).click().catch(() => {});
   await page.waitForTimeout(300);

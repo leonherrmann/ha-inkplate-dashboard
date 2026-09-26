@@ -3836,18 +3836,6 @@ input[type="range"]::-moz-range-thumb {
   gap: 2px;
 }
 
-.panel-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 2px 4px 2px 2px;
-  border-radius: 10px;
-}
-
-.panel-row:hover {
-  background: var(--ink-06);
-}
-
 /* The whole row is the target, not just the name: a dropdown entry that only
    answers to a three-word hit area is one people miss on a phone. */
 .panel-choose {
@@ -3859,13 +3847,15 @@ input[type="range"]::-moz-range-thumb {
   border: 0;
   background: transparent;
   box-shadow: none;
-  padding: 9px 8px;
+  padding: 9px 10px;
+  border-radius: 10px;
   text-align: left;
   justify-content: flex-start;
 }
 
 .panel-choose:hover:not(:disabled) {
   border: 0;
+  background: var(--ink-06);
 }
 
 .panel-choose > svg {
@@ -3898,50 +3888,6 @@ input[type="range"]::-moz-range-thumb {
   text-overflow: ellipsis;
 }
 
-.panel-row .icon-button {
-  width: 30px;
-  height: 30px;
-  background: transparent;
-}
-
-.panel-forget {
-  border: 0;
-  background: transparent;
-  box-shadow: none;
-  padding: 6px 8px;
-  font-size: 12px;
-  color: var(--on-red);
-}
-
-.panel-forget:hover:not(:disabled) {
-  border: 0;
-  background: var(--tint-red);
-}
-
-.panel-rename {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex: 1;
-  min-width: 0;
-  padding: 4px;
-}
-
-.panel-rename input {
-  flex: 1;
-  min-width: 0;
-}
-
-.panel-rename button {
-  padding: 8px 14px;
-}
-
-.panel-empty {
-  margin: 0;
-  padding: 10px;
-  font-size: 12.5px;
-  color: var(--ink-60);
-}
 
 /* --- an option that has a screen of its own ---------------------------------
    The options list turns its big options into these rows -- label, what
@@ -4211,7 +4157,14 @@ input[type="range"]::-moz-range-thumb {
   letter-spacing: -0.01em;
 }
 
-.topbar-panel:hover:not(:disabled) {
+/* With one panel it is a name, not a button, and should not act like one */
+span.topbar-panel {
+  display: inline-flex;
+  align-items: center;
+  cursor: default;
+}
+
+.topbar-panel:hover:not(:disabled):not(span) {
   border: 0;
   background: var(--ink-06);
 }
@@ -4884,6 +4837,7 @@ input[type="range"]::-moz-range-thumb {
 .setting-title {
   display: flex;
   align-items: center;
+  gap: 6px;
   font-size: 13.5px;
   font-weight: 700;
 }
@@ -5024,4 +4978,19 @@ input[type="range"]::-moz-range-thumb {
 /* The second list's heading sits a step further from the list above it */
 .side-column > .image-list + .list-title {
   margin-top: 8px;
+}
+
+/* A panel's name, edited where it is shown in Settings > Panels */
+input.panel-name-field {
+  width: 200px;
+  max-width: 100%;
+  min-height: 0;
+  padding: 8px 12px;
+  border: 1px solid var(--ink-12);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  box-shadow: var(--lift-sm);
+  font: inherit;
+  font-size: 13px;
+  color: var(--ink);
 }

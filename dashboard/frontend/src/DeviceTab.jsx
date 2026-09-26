@@ -5,9 +5,9 @@ import BatterySettings, { DEFAULT_LOW_PERCENT } from "./BatterySettings.jsx";
 import RefreshSettings from "./RefreshSettings.jsx";
 import OrientationSettings from "./OrientationSettings.jsx";
 import TimerSettings from "./TimerSettings.jsx";
-import AppearanceSettings, { THEME_LABELS, useThemeChoice } from "./AppearanceSettings.jsx";
+import AppearanceSettings, { ScreenFit, THEME_LABELS, useThemeChoice } from "./AppearanceSettings.jsx";
 import DeviceReports from "./DeviceReports.jsx";
-import { MODEL_LABELS } from "./PanelPicker.jsx";
+import { MODEL_LABELS, panelLabel } from "./PanelPicker.jsx";
 import Sparkline from "./Sparkline.jsx";
 import { Setting, SettingsCard } from "./Setting.jsx";
 import { Hint } from "./Popover.jsx";
@@ -20,6 +20,7 @@ import { DEFAULT_GHOST_PERCENT as REFRESH_DEFAULT, REFRESH_LEVELS } from "./Refr
 import {
   ArrowRight,
   BoltIcon,
+  DeviceIcon,
   ChevronLeft,
   ChevronRight,
   InfoIcon,
@@ -117,6 +118,7 @@ const SECTIONS = [
   { id: "timers", label: "Timers", Icon: TimerIcon, tone: "yellow" },
   { id: "panel", label: "Panel actions", Icon: BoltIcon, tone: "teal" },
   { id: "diagnostics", label: "Diagnostics", Icon: InfoIcon, tone: "" },
+  { id: "panels", label: "Panels", Icon: DeviceIcon, tone: "blue" },
   { id: "editor", label: "This editor", Icon: MonitorIcon, tone: "violet" },
 ];
 
@@ -142,6 +144,35 @@ function SectionRow({ section, value, active, onOpen, badge }) {
   );
 }
 
+// One panel's name, edited where it is shown. Saved when the field is left or
+// Enter is pressed, and only if it changed -- a rename is a network call, and
+// typing in the field should not make one per key.
+function PanelName({ panel, onRename }) {
+  const [draft, setDraft] = useState(panel.name || "");
+  useEffect(() => setDraft(panel.name || ""), [panel.name]);
+  const commit = () => {
+    if (draft.trim() !== (panel.name || "")) onRename(panel.id, draft.trim());
+  };
+  return (
+    <input
+      className="panel-name-field"
+      value={draft}
+      maxLength={48}
+      placeholder={MODEL_LABELS[panel.model] || "Panel"}
+      aria-label={`Name for ${panelLabel(panel)}`}
+      onChange={(event) => setDraft(event.target.value)}
+      onBlur={commit}
+      onKeyDown={(event) => {
+        if (event.key === "Enter") event.currentTarget.blur();
+        if (event.key === "Escape") {
+          setDraft(panel.name || "");
+          event.currentTarget.blur();
+        }
+      }}
+    />
+  );
+}
+
 function Fact({ value, label, tone }) {
   return (
     <div className="fact">
@@ -154,6 +185,10 @@ function Fact({ value, label, tone }) {
 export default function DeviceTab({
   status,
   pages,
+  panels,
+  panelId,
+  onRenamePanel,
+  onForgetPanel,
   sleep,
   onSleepChange,
   battery,
@@ -266,6 +301,12 @@ export default function DeviceTab({
     timers: `${timerLabel.replace("Every ", "")}${pomodoroAutoStart === false ? " · no auto-start" : ""}`,
     panel: "Refresh, show info, WiFi setup",
     diagnostics: canUpdate ? "Update ready" : firmware?.device?.running || "Screen, log, firmware",
+    panels: [
+      panelLabel((panels || []).find((one) => one.id === panelId)),
+      (panels || []).length > 1 ? `${panels.length} panels` : null,
+    ]
+      .filter(Boolean)
+      .join(" · "),
     editor: `${THEME_LABELS[themeChoice]} theme`,
   };
 
@@ -425,9 +466,57 @@ export default function DeviceTab({
         </SettingsCard>
       </div>
     ),
+    // Every panel the add-on knows, not only the one being edited: naming and
+    // forgetting are about the list itself.
+    panels: (
+      <SettingsCard>
+        {(panels || []).map((panel) => (
+          <Setting
+            key={panel.id}
+            title={
+              <>
+                <span className={panel.online ? "dot online" : "dot offline"} />
+                {panelLabel(panel)}
+                {panel.id === panelId && <span className="badge blue">editing</span>}
+              </>
+            }
+            note={`${MODEL_LABELS[panel.model] || "Panel"} · ${panel.online ? "online" : "offline"}`}
+            control={
+              <>
+                <PanelName panel={panel} onRename={onRenamePanel} />
+                {/* Only for a panel that is not here: one that is online would
+                    be back in the list within seconds. Its pages are kept
+                    either way; see panels.py. */}
+                {!panel.online && (
+                  <button
+                    className="danger"
+                    onClick={() => {
+                      if (
+                        window.confirm(
+                          `Remove ${panelLabel(panel)} from the list? Its pages are kept, ` +
+                            "and it comes back by itself if it is switched on again."
+                        )
+                      ) {
+                        onForgetPanel(panel.id);
+                      }
+                    }}
+                  >
+                    Forget
+                  </button>
+                )}
+              </>
+            }
+          />
+        ))}
+        {(panels || []).length === 0 && (
+          <Setting title="No panel yet" note="Switch one on; it appears once it reaches the MQTT broker" />
+        )}
+      </SettingsCard>
+    ),
     editor: (
       <SettingsCard>
         <AppearanceSettings />
+        <ScreenFit />
       </SettingsCard>
     ),
   };
@@ -460,7 +549,7 @@ export default function DeviceTab({
     if (!current) {
       return (
         <div className="screen-layout">
-          <h2 className="screen-title">Device</h2>
+          <h2 className="screen-title">Settings</h2>
           {overrides}
           {list}
         </div>
@@ -470,7 +559,7 @@ export default function DeviceTab({
       <div className="screen-layout">
         <button className="back-row" onClick={() => setChosen(null)}>
           <ChevronLeft size={15} />
-          Device
+          Settings
         </button>
         <h2 className="screen-title">{current.label}</h2>
         {overrides}
@@ -481,7 +570,7 @@ export default function DeviceTab({
 
   return (
     <div className="screen-layout wide">
-      <h2 className="screen-title">Device</h2>
+      <h2 className="screen-title">Settings</h2>
       <div className="settings-layout">
         {list}
         <div className={section === "diagnostics" ? "settings-detail wide" : "settings-detail"}>

@@ -34,6 +34,66 @@ export function markFramed() {
   }
 }
 
+// How tall env(safe-area-inset-bottom) is in a document, read off an element
+// sized by it -- there is no other way to ask for an env() value.
+function insetIn(doc) {
+  const probe = doc.createElement("div");
+  probe.style.cssText =
+    "position:fixed;left:0;bottom:0;width:1px;height:env(safe-area-inset-bottom,0px);" +
+    "visibility:hidden;pointer-events:none";
+  doc.body.appendChild(probe);
+  const height = probe.getBoundingClientRect().height;
+  probe.remove();
+  return height;
+}
+
+// Where this frame sits in the page above it, and how much of the phone's
+// home-indicator area it overlaps. The tab bar needs exactly that much room
+// under its labels: none if the frame stops above the indicator, the whole
+// inset if it runs to the bottom of the screen, more if it runs past it.
+//
+// Guessed twice before this and wrong both times -- first that the inset read
+// 0 in the frame, then that the app reports it there as well -- so it is now
+// measured rather than assumed. Ingress is same-origin, which is what makes
+// the page above measurable at all.
+export function measureHost() {
+  const result = { framed: window.parent !== window, frameInset: 0 };
+  try {
+    result.frameInset = insetIn(document);
+    if (!result.framed || !window.frameElement) return result;
+    const frame = window.frameElement.getBoundingClientRect();
+    result.hostInset = insetIn(window.parent.document);
+    result.hostHeight = window.parent.innerHeight;
+    result.gap = Math.round(result.hostHeight - frame.bottom);
+    result.clearance = Math.max(0, Math.min(80, Math.round(result.hostInset - result.gap)));
+  } catch {
+    result.unreadable = true;
+  }
+  return result;
+}
+
+// Keeps --safe-bottom at the measured clearance. Re-measured when anything
+// that moves the frame can have changed: a turn of the phone, the page above
+// settling after it loads, the keyboard.
+export function fitToHost() {
+  if (window.parent === window) return;
+  const apply = () => {
+    const found = measureHost();
+    if (found.clearance === undefined) return;
+    document.documentElement.style.setProperty("--safe-bottom", `${found.clearance}px`);
+    window.dispatchEvent(new CustomEvent("inkplate-host-fit", { detail: found }));
+  };
+  apply();
+  [300, 1000, 3000].forEach((ms) => setTimeout(apply, ms));
+  window.addEventListener("resize", apply);
+  window.visualViewport?.addEventListener("resize", apply);
+  try {
+    window.parent.addEventListener("resize", apply);
+  } catch {
+    // Cross-origin: nothing to listen to, and nothing was measured either
+  }
+}
+
 export function blendHostBackground() {
   let restore = () => {};
 

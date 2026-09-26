@@ -212,7 +212,7 @@ for (const scheme of ["light", "dark"]) {
   const page = await context.newPage();
   await install(page);
   await page.goto(`${BASE}/index.html`, { waitUntil: "networkidle" });
-  await page.locator(".rail-item[aria-label=Device]").click();
+  await page.locator(".rail-item[aria-label=Settings]").click();
   await page.locator(".section-row", { hasText: "This editor" }).click();
   await page.getByRole("button", { name: "Dark", exact: true }).click();
   check((await page.evaluate(() => document.documentElement.dataset.theme)) === "dark", "choosing Dark turns it dark on a light OS");
@@ -222,7 +222,7 @@ for (const scheme of ["light", "dark"]) {
     (await page.evaluate(() => getComputedStyle(document.body).backgroundColor)) !== "rgb(239, 236, 230)",
     "with the dark ground, not the light one"
   );
-  await page.locator(".rail-item[aria-label=Device]").click();
+  await page.locator(".rail-item[aria-label=Settings]").click();
   await page.locator(".section-row", { hasText: "This editor" }).click();
   await page.getByRole("button", { name: "Auto", exact: true }).click();
   check((await page.evaluate(() => document.documentElement.dataset.theme)) === "light", "Auto hands it back to the OS");
@@ -280,7 +280,7 @@ for (const [label, viewport, mobile, scheme] of [
 
   await go("Pages");
   await inspect("pages");
-  await go("Device");
+  await go("Settings");
   await inspect("device");
   await page.locator(".section-row", { hasText: "This editor" }).click();
   await page.waitForTimeout(250);

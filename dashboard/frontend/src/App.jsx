@@ -51,11 +51,12 @@ const MOD = APPLE ? "⌘" : "Ctrl+";
 
 // Four places to be, in the rail on a desktop and the tab bar on a phone.
 // Identity, device health and Push are in the top bar above all of them.
+// Settings last, where a settings tab is expected to be.
 const SECTIONS = [
   { id: "design", label: "Editor", Icon: GridIcon },
   { id: "pages", label: "Pages", Icon: LayersIcon },
-  { id: "device", label: "Device", Icon: SlidersIcon },
   { id: "images", label: "Images", Icon: ImageIcon },
+  { id: "device", label: "Settings", Icon: SlidersIcon },
 ];
 
 // What the panel is showing versus what is in the editor, in words the reader
@@ -938,8 +939,6 @@ export default function App() {
             panels={panels}
             panelId={panelId}
             onSelectPanel={selectPanel}
-            onRenamePanel={renamePanel}
-            onForgetPanel={forgetPanel}
             lastSeenAge={lastSeenAge}
             sync={sync}
             onPush={push}
@@ -1097,6 +1096,10 @@ export default function App() {
         <DeviceTab
           status={status}
           pages={pages}
+          panels={panels}
+          panelId={panelId}
+          onRenamePanel={renamePanel}
+          onForgetPanel={forgetPanel}
           lastSeenAge={lastSeenAge}
           sleep={layout.sleep}
           onSleepChange={(next) => persist({ ...layout, sleep: next })}
