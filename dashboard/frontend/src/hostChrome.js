@@ -48,14 +48,14 @@ function insetIn(doc) {
 }
 
 // Where this frame sits in the page above it, and how much of the phone's
-// home-indicator area it overlaps. The tab bar needs exactly that much room
-// under its labels: none if the frame stops above the indicator, the whole
-// inset if it runs to the bottom of the screen, more if it runs past it.
+// home-indicator area it really overlaps.
 //
-// Guessed twice before this and wrong both times -- first that the inset read
-// 0 in the frame, then that the app reports it there as well -- so it is now
-// measured rather than assumed. Ingress is same-origin, which is what makes
-// the page above measurable at all.
+// Measured on an iPhone in the Home Assistant app (2026-09-26): the frame runs
+// to the bottom of Home Assistant's page and the page reports a 34px inset --
+// but the page itself stops above the home indicator, and the strip under it
+// is the app's own, drawn outside every web view. So the inset is only ours to
+// leave when the top page reaches the bottom of the screen, which is judged by
+// how much shorter than the screen it is.
 export function measureHost() {
   const result = { framed: window.parent !== window, frameInset: 0 };
   try {
@@ -65,27 +65,61 @@ export function measureHost() {
     result.hostInset = insetIn(window.parent.document);
     result.hostHeight = window.parent.innerHeight;
     result.gap = Math.round(result.hostHeight - frame.bottom);
-    result.clearance = Math.max(0, Math.min(80, Math.round(result.hostInset - result.gap)));
+    result.screenHeight = window.screen.height;
+    result.topHeight = window.top.innerHeight;
+    result.reachesBottom = result.screenHeight - result.topHeight < result.hostInset / 2;
+    // A frame that runs past the page's foot still needs lifting by the
+    // overrun, whether or not the page reaches the bottom of the screen.
+    const inset = result.reachesBottom ? result.hostInset : 0;
+    result.clearance = Math.max(0, Math.min(80, Math.round(inset - result.gap)));
+    // The colour the app paints that strip with: Home Assistant's own
+    // background, which is what the strip was measured to be on 2026-09-12.
+    result.band = getComputedStyle(window.parent.document.documentElement)
+      .getPropertyValue("--primary-background-color")
+      .trim();
   } catch {
     result.unreadable = true;
   }
   return result;
 }
 
-// Keeps --safe-bottom at the measured clearance. Re-measured when anything
-// that moves the frame can have changed: a turn of the phone, the page above
-// settling after it loads, the keyboard.
+// How light a CSS colour is, 0..1, or null for one this cannot read
+function lightness(colour) {
+  const probe = document.createElement("span");
+  probe.style.color = colour;
+  document.body.appendChild(probe);
+  const rgb = getComputedStyle(probe).color.match(/[\d.]+/g);
+  probe.remove();
+  if (!rgb || rgb.length < 3) return null;
+  const [r, g, b] = rgb.map(Number);
+  return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+}
+
+// Keeps --safe-bottom at the measured clearance, and gives the tab bar the
+// strip's colour when there is a strip under it: the bar and the strip then
+// read as one surface to the bottom of the screen, as an app's own tab bar
+// does. Only when the colour suits the theme the editor is in -- a dark bar
+// under light-theme labels would be unreadable. Re-measured when anything that
+// moves the frame can have changed.
 export function fitToHost() {
   if (window.parent === window) return;
+  const root = document.documentElement;
   const apply = () => {
     const found = measureHost();
     if (found.clearance === undefined) return;
-    document.documentElement.style.setProperty("--safe-bottom", `${found.clearance}px`);
+    root.style.setProperty("--safe-bottom", `${found.clearance}px`);
+    const light = found.band ? lightness(found.band) : null;
+    const dark = root.dataset.theme === "dark";
+    const suits = light !== null && (dark ? light < 0.35 : light > 0.8);
+    if (!found.reachesBottom && suits) root.style.setProperty("--tabbar", found.band);
+    else root.style.removeProperty("--tabbar");
+    found.banded = !found.reachesBottom && suits;
     window.dispatchEvent(new CustomEvent("inkplate-host-fit", { detail: found }));
   };
   apply();
   [300, 1000, 3000].forEach((ms) => setTimeout(apply, ms));
   window.addEventListener("resize", apply);
+  window.addEventListener("inkplate-theme", apply);
   window.visualViewport?.addEventListener("resize", apply);
   try {
     window.parent.addEventListener("resize", apply);

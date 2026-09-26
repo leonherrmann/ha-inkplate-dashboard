@@ -286,7 +286,12 @@ to hide what is under it.
   Two guesses about Home Assistant's iOS frame were both wrong on the phone.
   `fitToHost()` in `hostChrome.js` reads, off the same-origin page above,
   where the frame ends and how tall the home-indicator inset is there, and sets
-  `--safe-bottom` to how much of that area the frame overlaps. Settings > This
+  `--safe-bottom` to how much of that area the frame overlaps. **Measured on
+  the iPhone app (2026-09-26): the page reports a 34px inset but stops above
+  the home indicator**, and the strip under it is the app's own, painted in
+  Home Assistant's `--primary-background-color` -- so the inset only counts
+  when the top page reaches the screen's foot, and the tab bar takes that
+  colour (when it suits the editor's theme) so bar and strip read as one. Settings > This
   editor > Screen fit shows the numbers, so a screenshot from the phone says
   what the editor saw. `editcheck` covers the geometry in a mock frame; only a
   phone can cover the inset.

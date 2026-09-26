@@ -67,9 +67,11 @@ export function ScreenFit() {
     ? `Not framed · home indicator ${Math.round(found.frameInset)} px`
     : found.unreadable
       ? "Framed, but the page above cannot be measured"
-      : `Frame ends ${found.gap} px above the screen's foot · home indicator ${Math.round(
-          found.hostInset
-        )} px (${Math.round(found.frameInset)} in the frame) · tab bar lifted ${found.clearance} px`;
+      : `Frame ends ${found.gap} px above the page's foot · page ${found.topHeight} of ${
+          found.screenHeight
+        } px · home indicator ${Math.round(found.hostInset)} px · tab bar lifted ${
+          found.clearance
+        } px · strip ${found.band || "unknown"}${found.banded ? " (matched)" : ""}`;
 
   return (
     <Setting

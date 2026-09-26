@@ -352,6 +352,39 @@ for (const [what, height, want] of [
   await outer.close();
 }
 
+// What the iPhone app measured on 2026-09-26: the frame runs to the foot of
+// Home Assistant's page, but the page stops above the home indicator and the
+// app paints the strip under it in Home Assistant's own background. The bar
+// must not be lifted, and in the matching theme takes the strip's colour so
+// the two read as one surface.
+{
+  console.log("--- a page that stops above the home indicator (the iPhone app) ---");
+  const context = await browser.newContext({
+    viewport: PHONE,
+    screen: { width: PHONE.width, height: PHONE.height + 80 },
+    colorScheme: "dark",
+    hasTouch: true,
+    isMobile: true,
+  });
+  const outer = await context.newPage();
+  await outer.route("**/api/**", answer);
+  await outer.goto(`${BASE}/index.html`, { waitUntil: "domcontentloaded" });
+  await outer.evaluate((src) => {
+    document.documentElement.style.setProperty("--primary-background-color", "#111111");
+    document.body.innerHTML = `<iframe src="${src}" style="position:fixed;inset:0;width:100%;height:100%;border:0"></iframe>`;
+  }, `${BASE}/index.html`);
+  const frame = await (await outer.waitForSelector("iframe")).contentFrame();
+  await frame.waitForSelector(".tabbar", { timeout: 8000 }).catch(() => {});
+  await frame.waitForTimeout(500);
+  const bar = await frame.evaluate(() => {
+    const style = getComputedStyle(document.querySelector(".tabbar"));
+    return { pad: style.paddingBottom, colour: style.backgroundColor };
+  });
+  check(bar.pad === "6px", `the bar is not lifted (${bar.pad})`);
+  check(bar.colour === "rgb(17, 17, 17)", `and takes the strip's colour (${bar.colour})`);
+  await context.close();
+}
+
 console.log(`\n${passes + failures} checks, ${failures ? `${failures} FAILED` : "all edit checks passed"}`);
 await browser.close();
 process.exit(failures ? 1 : 0);
