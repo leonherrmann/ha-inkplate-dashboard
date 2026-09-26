@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026.9.88
+
+Add-on only. Works with firmware **v2026.9.77**; nothing to flash.
+
+- **Even tab bar icons.** The faded icons had darker spots wherever two of
+  their lines crossed; every line is now the same shade. The same fix
+  applies to the side rail on a computer.
+
 ## 2026.9.87
 
 Add-on only. Works with firmware **v2026.9.77**; nothing to flash.
