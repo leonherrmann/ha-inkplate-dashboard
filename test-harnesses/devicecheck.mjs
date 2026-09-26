@@ -5,10 +5,10 @@
 //   cd ha-inkplate-dashboard/dashboard/frontend && npx serve dist -l 8127
 //   node ../../test-harnesses/devicecheck.mjs
 //
-// The subject is the phone layout: four settings expanded down a 390px screen
-// was most of it spent on controls that are set once and read at a glance after
-// that. They are a list of rows now, each opening on its own -- and the desktop
-// keeps the cards side by side, which is what its width is for.
+// The settings are named sections -- Display, Power, Timers, Panel actions,
+// Diagnostics, This editor. On a phone they are a list of rows, each opening on
+// its own screen; on a desktop the list sits beside the open section, and the
+// two start level with each other.
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -83,117 +83,124 @@ await page.route("**/api/**", async (route) => {
 });
 
 await page.goto(`${BASE}/`, { waitUntil: "domcontentloaded" });
-await page.getByRole("button", { name: /^Device$/ }).first().click();
-await page.waitForSelector(".setting-row", { timeout: 8000 });
+await page.locator(".tabbar").getByRole("button", { name: "Device" }).click();
+await page.waitForSelector(".section-row", { timeout: 8000 });
 
 // ---------- the list ----------
 
 const rowText = async (label) =>
-  (await page.locator(".setting-row", { hasText: label }).innerText()).replace(/\n/g, " ");
+  (await page.locator(".section-row", { hasText: label }).innerText()).replace(/\n/g, " ");
+const screenTitle = () => page.locator("h2.screen-title").innerText();
+const back = () => page.locator(".back-row").click();
 
-check((await page.locator(".setting-row").count()) >= 5, "the settings are a list of rows");
-check(/Upside down/.test(await rowText("Orientation")), "each row says what it is set to");
-check(/25\s*%/.test(await rowText("Screen refresh")), "reading the layout, not the default");
-check(/23:00/.test(await rowText("Night sleep")), "a sleep window is the hours it covers");
-check(/auto-start off/.test(await rowText("Timers")), "and the timers row mentions auto-start when it is off");
+check((await page.locator(".section-row").count()) === 6, "the settings are six sections");
+check(/Upside down/.test(await rowText("Display")), "each row says what it is set to");
+check(/Rarely/.test(await rowText("Display")), "reading the layout, not the default");
+check(/23:00/.test(await rowText("Power")), "a sleep window is the hours it covers");
+check(/warns at 10%/.test(await rowText("Power")), "and the battery warning is on the same row");
+check(/no auto-start/.test(await rowText("Timers")), "the timers row mentions auto-start when it is off");
 
-// The whole point: it has to fit. Four cards expanded came to well over a
-// screen; the block is measured rather than eyeballed so it cannot creep back.
+// It has to fit, measured rather than eyeballed so it cannot creep back
 {
   const height = await page
-    .locator(".device-screen")
+    .locator(".screen-layout")
     .evaluate((el) => Math.round(el.getBoundingClientRect().height));
-  check(height < 900, `and the screen is ${height}px rather than a scroll of cards`);
+  check(height < 700, `and the list is ${height}px rather than a scroll of cards`);
 }
 
 check(
   await page.evaluate(() => {
     const bar = document.querySelector(".tabbar");
-    const last = document.querySelector(".setting-row:last-of-type");
+    const rows = document.querySelectorAll(".section-row");
+    const last = rows[rows.length - 1];
     return !bar || !last || last.getBoundingClientRect().bottom < bar.getBoundingClientRect().top;
   }),
   "the last row is above the tab bar rather than under it"
 );
 
-// ---------- one setting at a time ----------
+// ---------- one section at a time ----------
 
-await page.locator(".setting-row", { hasText: "Screen refresh" }).click();
+await page.locator(".section-row", { hasText: "Display" }).click();
 await page.waitForTimeout(400);
-check((await page.locator(".screen-head h2").innerText()) === "Screen refresh", "a row opens that setting");
-check((await page.locator(".setting-row").count()) === 0, "with the rest of the list out of the way");
-check((await page.locator(".settings-grid .card").count()) === 1, "and the setting's own card on it");
+check((await screenTitle()) === "Display", "a row opens that section");
+check((await page.locator(".section-row").count()) === 0, "with the list out of the way");
 
-// The control still works from in here -- it is the same card, not a copy. The
-// levels are buttons with aria-pressed rather than radios, which is what the
-// rest of the editor uses for a one-of-several choice.
-await page.locator(".settings-grid .card .choice").first().click();
+const ghosting = (name) =>
+  page.getByRole("group", { name: "Clear ghosting" }).getByRole("button", { name, exact: true });
+await ghosting("Often").click();
 await page.waitForTimeout(300);
-check(
-  (await page.locator(".settings-grid .card .choice").first().getAttribute("aria-pressed")) === "true",
-  "the control on it is live"
-);
+check((await ghosting("Often").getAttribute("aria-pressed")) === "true", "the control on it is live");
 
-await page.getByRole("button", { name: /Back to Device/ }).click();
+await back();
 await page.waitForTimeout(400);
-check((await page.locator(".setting-row").count()) >= 5, "back returns the list");
-check(/6\s*%/.test(await rowText("Screen refresh")), "showing what was just chosen");
+check((await page.locator(".section-row").count()) === 6, "back returns the list");
+check(/Often/.test(await rowText("Display")), "showing what was just chosen");
 
-// The battery warning: a level and whether it takes the whole panel, both read
-// back from the layout and both changeable from its own screen.
-check(
-  /Below 10%.*full screen/.test(await rowText("Low battery")),
-  "the battery row says the level and that it goes full screen"
-);
-await page.locator(".setting-row", { hasText: "Low battery" }).click();
-await page.waitForTimeout(400);
-check((await page.locator(".screen-head h2").innerText()) === "Low battery", "it opens its own card");
-await page.getByRole("button", { name: "20 %" }).click();
-await page.waitForTimeout(300);
-check(
-  (await page.getByRole("button", { name: "20 %" }).getAttribute("aria-pressed")) === "true",
-  "a level can be picked"
-);
-await page.locator(".settings-grid .card .switch").click();
-await page.waitForTimeout(300);
-check(
-  !(await page.locator(".settings-grid .card .switch input").isChecked()),
-  "and the full-screen warning turned off"
-);
-await page.screenshot({ path: "/tmp/device-battery-phone.png" });
-await page.getByRole("button", { name: "Off" }).click();
-await page.waitForTimeout(300);
-check(
-  (await page.locator(".settings-grid .card .switch").count()) === 0,
-  "with the warning off there is no full-screen switch to set"
-);
-await page.getByRole("button", { name: "20 %" }).click();
+// The ⓘ: the explanation that used to be a paragraph is one tap away
+await page.locator(".section-row", { hasText: "Display" }).click();
+await page.getByRole("button", { name: "About clear ghosting" }).click();
 await page.waitForTimeout(200);
-await page.getByRole("button", { name: /Back to Device/ }).click();
-await page.waitForTimeout(400);
-check(/Below 20%/.test(await rowText("Low battery")), "and the row shows the new level");
-check(!/full screen/.test(await rowText("Low battery")), "without the full screen");
+check(await page.getByRole("tooltip").isVisible(), "an ⓘ opens its explanation");
+check(/black flash/.test(await page.getByRole("tooltip").innerText()), "which says the why");
+await page.mouse.click(5, 300);
+await page.waitForTimeout(200);
+check((await page.getByRole("tooltip").count()) === 0, "and a tap elsewhere closes it");
+await back();
 
-// Commands are actions rather than a setting, and they are behind a row too --
-// three buttons that each do something the moment they are pressed are not
-// something to keep on a screen you scroll past.
-await page.locator(".setting-row", { hasText: "Commands" }).click();
+// The battery warning: a level and whether it takes the whole panel
+await page.locator(".section-row", { hasText: "Power" }).click();
 await page.waitForTimeout(400);
+check((await screenTitle()) === "Power", "Power opens its own screen");
+const warn = (name) => page.getByRole("group", { name: "Warn below" }).getByRole("button", { name, exact: true });
+await warn("20 %").click();
+await page.waitForTimeout(300);
+check((await warn("20 %").getAttribute("aria-pressed")) === "true", "a level can be picked");
+const reminder = page.getByRole("checkbox", { name: "Full-screen reminder" });
+await page.locator(".setting", { hasText: "Full-screen reminder" }).locator(".switch").click();
+await page.waitForTimeout(300);
+check(!(await reminder.isChecked()), "and the full-screen reminder turned off");
+await warn("Off").click();
+await page.waitForTimeout(300);
 check(
-  (await page.locator(".action-row").count()) >= 3,
-  "the commands are on a screen of their own"
+  (await page.locator(".setting", { hasText: "Full-screen reminder" }).count()) === 0,
+  "with the warning off there is no reminder to set"
 );
-await page.getByRole("button", { name: /Back to Device/ }).click();
+await warn("20 %").click();
+await page.waitForTimeout(200);
+await back();
+await page.waitForTimeout(400);
+check(/warns at 20%/.test(await rowText("Power")), "and the row shows the new level");
+
+// Actions are sent the moment they are pressed, each a named button
+await page.locator(".section-row", { hasText: "Panel actions" }).click();
+await page.waitForTimeout(400);
+for (const name of ["Refresh", "Show", "Start setup…"]) {
+  check((await page.getByRole("button", { name, exact: true }).count()) === 1, `Panel actions has ${name}`);
+}
+await back();
 await page.waitForTimeout(300);
 
-// ---------- and the desktop is untouched ----------
+// ---------- a desktop: the list beside the section ----------
 
 await page.setViewportSize(DESKTOP);
 await page.waitForTimeout(500);
-check((await page.locator(".setting-row").count()) === 0, "a wide window has no rows");
-check(
-  (await page.locator(".settings-grid .card").count()) === 6,
-  "it has the six cards side by side, which is what the width is for"
-);
+check((await page.locator(".section-row").count()) === 6, "a wide window keeps the list");
+check((await page.locator(".section-row.active").count()) === 1, "with one section open beside it");
+await page.locator(".section-row", { hasText: "Power" }).click();
+await page.waitForTimeout(300);
+check((await page.locator(".setting", { hasText: "Night sleep" }).count()) === 1, "choosing a row opens it");
+
+// Asked for by name: the columns start level. A heading over one of them set
+// the detail 60px below the list.
+for (const section of ["Display", "Power", "Diagnostics", "This editor"]) {
+  await page.locator(".section-row", { hasText: section }).click();
+  await page.waitForTimeout(250);
+  const [list, detail] = await Promise.all([
+    page.locator(".section-list").boundingBox(),
+    page.locator(".settings-detail > *").first().boundingBox(),
+  ]);
+  check(Math.abs(list.y - detail.y) < 2, `${section}: the section starts level with the list (${Math.round(detail.y - list.y)}px)`);
+}
 await page.screenshot({ path: "/tmp/device-desktop.png" });
 
 console.log(`\n${passes + failures} checks, ${failures ? `${failures} FAILED` : "all device screen checks passed"}`);

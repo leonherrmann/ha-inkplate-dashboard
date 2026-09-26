@@ -233,13 +233,13 @@ is the alarm for the two repos having been released apart.
 
 `/entities`, `/devices` and `/areas` answer with a **bare array**, not an
 object — a stub that wraps them crashes the inspector rather than emptying it.
-`sheetcheck.mjs` stubs `/status` with `manifest.json` next to it, which is
+`editcheck.mjs` stubs `/status` with `manifest.json` next to it, which is
 `./sim/preview --manifest` from the firmware repo.
 
 **Headless WebKit reports `backdrop-filter` as supported and then does not
 blur.** A screenshot showing the page legible through a glass surface is that,
-not a bug — but it is also why the sheet is 0.9 white rather than `--glass`:
-a surface that covers a whole page cannot rely on a blur to hide it.
+not a bug — and a surface that covers a page of content cannot rely on a blur
+to hide what is under it.
 
 ## Layout of the code
 
@@ -249,34 +249,48 @@ a surface that covers a whole page cannot rely on a blur to hide it.
 - `dashboard/frontend/src/` — `App.jsx` owns the layout state,
   `Inspector.jsx` renders a widget's options from the manifest,
   `WidgetPreview.jsx` draws each widget on the canvas.
-- **On a phone the toolbar is shorter than on a desktop.** The four selection
-  actions are not on it: they are already on the widget's own sheet, which at
-  that width is over the canvas and nearer than the bar. Zoom is a menu rather
-  than three pills. `PageBar` chooses with `useNarrow` rather than hiding a
-  second copy with CSS -- two copies are two tab stops.
-- **On a phone the Device screen is a list of rows, one per setting**, each
-  opening on its own; the desktop keeps the four cards side by side. Same shape
-  as the sheet's option rows, deliberately -- these are the same idea, and a
-  setting is something you set once and read at a glance after that.
-- **A big option in the sheet is a row that opens a screen**, not a control
+- **One top bar over every screen** (`TopBar.jsx`): which panel, whether it is
+  online, the battery, and the push pill -- "2 changes · Push" when pressing it
+  helps, a quiet state pill that opens its detail otherwise. It replaced the
+  device card, the panel name over each screen and the Device screen's sync
+  card, which said parts of the same thing three times.
+- **The canvas toolbar is one row** (`PageBar.jsx`): Add, the arrangement,
+  View and undo/redo. Snap, zoom and the page's chip row are in the View menu;
+  on a phone the arrangement joins them. The four selection actions float beside
+  the selected widget on a desktop (`SelectionBar` in `Panel.jsx`) and are
+  behind ⋯ on the phone's edit screen.
+- **Below 820px, editing a widget is a screen of its own**: `.app.editing`
+  hides the top bar and the tab bar, `.workspace.editing > main` pins the edit
+  head and the canvas with `position: sticky`, and the options follow in the
+  page's own scroll. It replaced a bottom sheet at three heights, whose options
+  scrolled in a box a few hundred pixels tall behind its own buttons.
+  `editcheck.mjs` asserts the options never scroll in a box of their own.
+- **A big option on that screen is a row that opens a screen**, not a control
   expanded in the list: a room card has twelve options and nobody is looking at
   eleven of them. `wantsScreen()` in `Inspector.jsx` decides, and the firmware
   says which `text` options are multi-line -- a name and a paragraph are both
-  "text" and want different controls.
-- **The sheet's peek height is measured, not `auto`.** A transition with `auto`
-  at one end does not run, so the sheet snapped open instead of rising; Sheet.jsx
-  measures the row and puts the number back as a length.
-- **Below 820px the inspector is a bottom sheet** (`Sheet.jsx`, design 1b) at
-  three heights, portalled to `document.body`. It marks `<html>` with
-  `.sheet-open` and `data-sheet`, and the stylesheet answers with `--sheet-h`:
-  the sheet's height and the room the page reserves under it are the same
-  number, because that reserve is also what gives the page the scroll range to
-  lift the canvas clear of the sheet. `Inspector.jsx` renders the same head and
-  fields into either shell.
+  "text", and only the paragraph gets a textarea. `update_interval` is under a
+  closed Advanced section everywhere.
+- **Settings are sections** (`DeviceTab.jsx`): Display, Power, Timers, Panel
+  actions, Diagnostics, This editor. A list beside the open one on a desktop,
+  rows that open a screen on a phone. Every setting is a `Setting` from
+  `Setting.jsx` -- a name, one line, an ⓘ and a control -- and a choice among a
+  few values is always a segment, on/off always a switch.
+- **Explanations live behind ⓘ** (`Hint` in `Popover.jsx`), not in paragraphs
+  under controls: at most one short line shows. The popover is portalled and
+  placed with fixed coordinates, because cards and the canvas well clip.
+- **Columns on a desktop screen start level.** A heading belongs above all of a
+  screen's columns, not inside one of them; `editcheck` and `devicecheck` both
+  measure it.
+- **Framed, the home indicator's clearance is not ours.** Home Assistant's iOS
+  app stops the frame above it, and newer versions also report the inset
+  inside the frame, which put the tab bar 40pt off the bottom. Every clearance
+  goes through `--safe-bottom`, which is `0` under `:root[data-framed]`
+  (`markFramed()` in `hostChrome.js`).
 - The UI is built to a Claude Design project ("glass"): floating panels,
   Bauhaus colour, **light and dark**. `theme.js` sets `<html data-theme>` --
   following Home Assistant's own `hass.themes.darkMode` off the ingress parent,
-  else the OS, unless the Appearance card on the Device screen overrides it per
+  else the OS, unless the theme in the Device screen's This editor section overrides it per
   browser -- and the dark theme is one block of token overrides in
   `styles.css`. **A literal colour in a rule is a dark-mode bug**: use
   `--ink-rgb` (text, hairlines), `--shade-rgb` (blurred shadows, scrims, always

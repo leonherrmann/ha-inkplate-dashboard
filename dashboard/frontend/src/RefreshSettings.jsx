@@ -1,4 +1,4 @@
-import { RefreshIcon } from "./Icons.jsx";
+import { Segmented, Setting } from "./Setting.jsx";
 
 // How often the panel clears itself. e-ink can repaint quickly, but each quick
 // repaint leaves a faint ghost of what was there before; only the slow
@@ -13,30 +13,10 @@ import { RefreshIcon } from "./Icons.jsx";
 // firmware for where the per-minute figures come from.
 
 export const REFRESH_LEVELS = [
-  {
-    percent: 6,
-    label: "Cleanest — clears often",
-    short: "about every hour",
-    estimate: "roughly every hour on a typical dashboard",
-  },
-  {
-    percent: 12,
-    label: "Balanced (recommended)",
-    short: "about twice an hour · default",
-    estimate: "roughly every 2 hours on a typical dashboard",
-  },
-  {
-    percent: 25,
-    label: "Relaxed — fewer flashes",
-    short: "a few times a day",
-    estimate: "roughly every 5 hours on a typical dashboard",
-  },
-  {
-    percent: 50,
-    label: "Rarely — expect visible ghosting",
-    short: "rarely, more ghosting",
-    estimate: "most of a day on a typical dashboard",
-  },
+  { percent: 6, name: "Often", short: "about every hour", estimate: "Roughly every hour on a typical dashboard" },
+  { percent: 12, name: "Balanced", short: "about twice an hour · default", estimate: "Roughly every 2 hours on a typical dashboard" },
+  { percent: 25, name: "Rarely", short: "a few times a day", estimate: "Roughly every 5 hours on a typical dashboard" },
+  { percent: 50, name: "Seldom", short: "rarely, more ghosting", estimate: "Most of a day, with visible ghosting" },
 ];
 
 export const DEFAULT_GHOST_PERCENT = 12;
@@ -49,11 +29,11 @@ export const DEFAULT_GHOST_PERCENT = 12;
 // turns are never held back. The firmware reads refresh.min_interval as a
 // duration, or "off", and defaults to 30 seconds when it is absent.
 export const UPDATE_FLOORS = [
-  { value: "off", label: "Every change", short: "as soon as a reading moves" },
-  { value: "30s", label: "30 seconds", short: "default" },
-  { value: "1m", label: "1 minute", short: "" },
-  { value: "5m", label: "5 minutes", short: "saves battery" },
-  { value: "15m", label: "15 minutes", short: "saves the most" },
+  { value: "off", label: "Instantly", note: "As soon as a reading moves; costs the most battery" },
+  { value: "30s", label: "30 s", note: "Default" },
+  { value: "1m", label: "1 min", note: "" },
+  { value: "5m", label: "5 min", note: "Saves battery" },
+  { value: "15m", label: "15 min", note: "Saves the most battery" },
 ];
 
 export const DEFAULT_UPDATE_FLOOR = "30s";
@@ -70,81 +50,59 @@ export default function RefreshSettings({ refresh, onChange }) {
   const knownFloor = UPDATE_FLOORS.find((one) => one.value === floor);
 
   return (
-    <section className="card">
-      <div className="card-head">
-        <span className="token teal">
-          <RefreshIcon size={16} width={2} />
-        </span>
-        <b>Screen refresh</b>
-        <span className="report-age" style={{ marginLeft: "auto" }}>
-          ghosting allowed
-        </span>
-      </div>
-
-      <div className="choice-cards">
-        {!known && (
-          <div className="choice active">
-            <span className="choice-mark" />
-            <b>{percent} %</b>
-            <small>set through the API</small>
-          </div>
-        )}
-        {REFRESH_LEVELS.map((level) => {
-          const active = level.percent === percent;
-          return (
-            <button
-              key={level.percent}
-              className={active ? "choice active" : "choice"}
-              onClick={() => onChange({ ...value, ghost_percent: level.percent })}
-              aria-pressed={active}
-              title={level.label}
-            >
-              <span className="choice-mark" />
-              <b>{level.percent} %</b>
-              <small>{level.short}</small>
-            </button>
-          );
-        })}
-      </div>
-
-      <p className="hint">
-        The device flashes once {percent}% of the screen has ghosted —{" "}
-        {known?.estimate || "how often depends on what is on screen"}. A page with a large
-        clock reaches it about twice as fast.
-      </p>
-
-      <div className="eyebrow" style={{ marginTop: 18 }}>Changed readings repaint at most</div>
-      <div className="choice-cards">
-        {!knownFloor && (
-          <div className="choice active">
-            <span className="choice-mark" />
-            <b>{floor}</b>
-            <small>set through the API</small>
-          </div>
-        )}
-        {UPDATE_FLOORS.map((one) => {
-          const active = one.value === floor;
-          return (
-            <button
-              key={one.value}
-              className={active ? "choice active" : "choice"}
-              onClick={() => onChange({ ...value, min_interval: one.value })}
-              aria-pressed={active}
-              title={one.label}
-            >
-              <span className="choice-mark" />
-              <b>{one.label}</b>
-              {one.short && <small>{one.short}</small>}
-            </button>
-          );
-        })}
-      </div>
-      <p className="hint">
-        Each repaint costs battery. A card whose reading is held back is still drawn at its
-        newest value by the next repaint for any other reason — the clock&apos;s minute, a page
-        turn — so on a page with a clock it is never more than a minute behind. One card can set
-        its own, longer limit in its options.
-      </p>
-    </section>
+    <>
+      <Setting
+        stacked
+        title="Clear ghosting"
+        note={known ? known.estimate : `${percent}%, set through the API`}
+        hint={
+          <>
+            Quick repaints leave faint ghosts; a full black flash clears them. The panel
+            flashes once this share of the screen has ghosted: <b>6%</b> often,{" "}
+            <b>12%</b> balanced, <b>25%</b> rarely, <b>50%</b> seldom. A page with a large
+            clock gets there about twice as fast.
+          </>
+        }
+        control={
+          <Segmented
+            label="Clear ghosting"
+            value={percent}
+            onChange={(next) => onChange({ ...value, ghost_percent: next })}
+            options={[
+              ...REFRESH_LEVELS.map((level) => ({
+                value: level.percent,
+                label: level.name,
+                title: `Flash at ${level.percent}% ghosted`,
+              })),
+              ...(known ? [] : [{ value: percent, label: `${percent}%` }]),
+            ]}
+          />
+        }
+      />
+      <Setting
+        stacked
+        title="Redraw changed readings"
+        note={knownFloor ? knownFloor.note || "At most once a minute" : `${floor}, set through the API`}
+        hint={
+          <>
+            Each repaint costs battery. A reading held back is still drawn at its newest
+            value by the next repaint for any other reason — the clock&apos;s minute, a
+            page turn — so a page with a clock is never more than a minute behind. A
+            widget can set its own, longer limit under Advanced.
+          </>
+        }
+        control={
+          <Segmented
+            label="Redraw changed readings"
+            value={floor}
+            onChange={(next) => onChange({ ...value, min_interval: next })}
+            options={[
+              ...UPDATE_FLOORS.map((one) => ({ value: one.value, label: one.label })),
+              ...(knownFloor ? [] : [{ value: floor, label: floor }]),
+            ]}
+          />
+        }
+      />
+    </>
   );
 }

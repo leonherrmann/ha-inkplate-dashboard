@@ -1,5 +1,5 @@
-// Device health. The header carries a compact summary; the full set lives in
-// the device modal, since none of it is layout editing.
+// Device health: how its facts are worded, and the battery glyph the top bar
+// draws.
 
 export function formatAge(seconds) {
   if (seconds === null || seconds === undefined) return "never";
@@ -43,17 +43,5 @@ export function Battery({ percentage, charging }) {
       <span className="battery-cap" />
       <b>{percentage}%</b>
     </span>
-  );
-}
-
-// Compact header summary: is it there, how full is it, when did we last hear it
-export default function DeviceSummary({ online, stats, charging, lastSeenAge, onOpen }) {
-  return (
-    <button className="device-summary" onClick={onOpen}>
-      <span className={online ? "dot online" : "dot offline"} />
-      <span className="device-summary-state">{online ? "ONLINE" : "OFFLINE"}</span>
-      {stats && <Battery percentage={stats.battery ?? 0} charging={charging} />}
-      <span className="device-summary-seen">{formatAge(lastSeenAge)}</span>
-    </button>
   );
 }

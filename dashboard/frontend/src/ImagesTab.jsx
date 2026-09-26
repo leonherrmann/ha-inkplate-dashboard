@@ -409,15 +409,18 @@ export default function ImagesTab({ grid, panel, onMessage }) {
   const ditherOf = (entry) => (entry.mode === "exact" ? "threshold" : entry.dither || "atkinson");
 
   return (
+    <div className="images-wrap">
+      {/* Above both columns, so the lists and the preview start level */}
+      <h2 className="screen-title">Images</h2>
     <div className="images-tab">
       <div className="side-column">
-        <div>
-          <div className="eyebrow">
-            {images.length} held
-            {deviceReports ? ` · panel holds ${onDevice.length}` : ""}
-          </div>
-          <h2 style={{ fontSize: 24 }}>Images</h2>
-        </div>
+        <h3 className="list-title">
+          Pictures
+          <small>
+            {images.length}
+            {deviceReports ? ` · ${onDevice.length} on the panel` : ""}
+          </small>
+        </h3>
 
         <div className="image-list">
           {images.map((image) => {
@@ -455,7 +458,6 @@ export default function ImagesTab({ grid, panel, onMessage }) {
 
           <button className="add-button stacked" onClick={() => fileInput.current?.click()}>
             + Upload a picture
-            <span style={{ fontWeight: 400, fontSize: 11 }}>Names: a–z, 0–9, _ and -, up to 32</span>
           </button>
 
           <input
@@ -474,13 +476,13 @@ export default function ImagesTab({ grid, panel, onMessage }) {
             first: a picture is something you framed, an album is a source that
             fills itself. They share the column because both answer "what can a
             widget show", and both are chosen the same way. */}
-        <div>
-          <div className="eyebrow">
-            {albums.length} album{albums.length === 1 ? "" : "s"}
+        <h3 className="list-title">
+          Albums
+          <small>
+            {albums.length}
             {albumPictures ? ` · ${albumPictures} pictures` : ""}
-          </div>
-          <h2 style={{ fontSize: 24 }}>Albums</h2>
-        </div>
+          </small>
+        </h3>
 
         <div className="image-list">
           {albums.map((one) => (
@@ -512,9 +514,6 @@ export default function ImagesTab({ grid, panel, onMessage }) {
             }}
           >
             + Add an iCloud album
-            <span style={{ fontWeight: 400, fontSize: 11 }}>
-              A shared album's Public Website link
-            </span>
           </button>
         </div>
 
@@ -525,10 +524,8 @@ export default function ImagesTab({ grid, panel, onMessage }) {
               The panel cannot download images yet
             </div>
             <p>
-              The add-on could not work out your Home Assistant address by itself. Set{" "}
-              <code>image_base_url</code> in this add-on's <b>Configuration</b> tab — for example{" "}
-              <code>http://192.168.1.50:8098</code> — then restart it. Uploading and previewing
-              work regardless; only the download to the panel is affected.
+              Set <code>image_base_url</code> in this add-on's <b>Configuration</b> tab, for
+              example <code>http://192.168.1.50:8098</code>, then restart it.
             </p>
           </div>
         )}
@@ -537,12 +534,14 @@ export default function ImagesTab({ grid, panel, onMessage }) {
       <section className="card">
         {!editing && !held && !album && !addingAlbum && (
           <>
-            <div className="eyebrow">Nothing selected</div>
-            <p className="hint" style={{ marginTop: 8 }}>
-              Choose a picture to see exactly what the panel draws, or upload a new one. The
-              preview is the stored bitmap, so it is the real dither rather than an impression
-              of it. An album fills itself instead — a photo widget rotates through one.
-            </p>
+            <div className="empty-state">
+              <ImageIcon size={26} />
+              <b>Choose a picture or an album</b>
+              <p className="hint">
+                A picture shows exactly what the panel draws. An album fills a photo widget
+                by itself.
+              </p>
+            </div>
           </>
         )}
 
@@ -570,8 +569,7 @@ export default function ImagesTab({ grid, panel, onMessage }) {
                 </div>
                 <p>
                   Rendered {albumRefresh.rendered || 0}
-                  {albumRefresh.total ? ` of ${albumRefresh.total}` : ""} pictures. Each is
-                  cropped and dithered here, which takes a few seconds.
+                  {albumRefresh.total ? ` of ${albumRefresh.total}` : ""} pictures.
                 </p>
               </div>
             )}
@@ -583,8 +581,7 @@ export default function ImagesTab({ grid, panel, onMessage }) {
                   iCloud would not give us this album
                 </div>
                 <p>
-                  {album.last_error} The pictures already on the panel are kept, so the widget
-                  carries on showing them.
+                  {album.last_error} The pictures already on the panel are kept.
                 </p>
               </div>
             )}
@@ -616,8 +613,7 @@ export default function ImagesTab({ grid, panel, onMessage }) {
 
             {album.sets > 1 && (
               <p className="hint">
-                Rendered {album.sets} times over — once for each size, crop and border
-                the widgets showing this album use.
+                Rendered {album.sets} times: once per size, crop and border in use.
               </p>
             )}
 
@@ -669,8 +665,7 @@ export default function ImagesTab({ grid, panel, onMessage }) {
 
                 {!picker.explicit && (
                   <p className="hint">
-                    Nothing has been chosen by hand, so the newest {picker.limit} are shown.
-                    Tick the ones you want and save to choose for yourself.
+                    Showing the newest {picker.limit}. Tick photos and save to choose.
                   </p>
                 )}
 
@@ -704,8 +699,7 @@ export default function ImagesTab({ grid, panel, onMessage }) {
                     {/* Said plainly because it is the one surprise here: the
                         panel downloads by position, so changing the set makes
                         it re-fetch the pictures after the change. */}
-                    Changing which photos are shown renumbers the album, so the panel
-                    re-fetches the ones that moved. Each is a few seconds of rendering.
+                    The panel re-downloads the photos that moved.
                   </p>
                   <button
                     className="primary"
@@ -724,11 +718,7 @@ export default function ImagesTab({ grid, panel, onMessage }) {
             )}
 
             <div className="upload-actions">
-              <p className="hint">
-                Pictures are rendered only for the widgets that show them, at each size, crop
-                and border in use — so a bigger album is a slower refresh and a fuller card.
-                Widgets showing this album go blank if it is removed.
-              </p>
+              <p className="hint">Widgets showing this album go blank if it is removed.</p>
               <button className="danger" onClick={() => removeAlbum(album)}>
                 <TrashIcon size={14} />
                 Remove
@@ -755,14 +745,10 @@ export default function ImagesTab({ grid, panel, onMessage }) {
               />
             </label>
 
-            <div className="note info" style={{ marginTop: 12 }}>
-              <div className="note-head">Where to find it</div>
-              <p>
-                In Photos, open the album, share it, and turn on <b>Public Website</b> — then
-                paste the link it gives you. Nothing is signed in to: the link is all iCloud
-                needs, and the add-on only ever reads.
-              </p>
-            </div>
+            <p className="hint" style={{ marginTop: 6 }}>
+              In Photos, share the album and turn on <b>Public Website</b>, then paste its link.
+              No sign-in needed.
+            </p>
 
             <label className="field-block" style={{ marginTop: 16 }}>
               <span>Name (optional)</span>
@@ -789,10 +775,7 @@ export default function ImagesTab({ grid, panel, onMessage }) {
             </label>
 
             <div className="upload-actions">
-              <p className="hint">
-                The link is checked with iCloud before the album is saved. Rendering its
-                pictures happens afterwards and takes a few seconds each.
-              </p>
+              <p className="hint">The link is checked with iCloud before it is saved.</p>
               <button className="primary" disabled={albumBusy || !albumUrl.trim()} onClick={addAlbum}>
                 {albumBusy ? "Checking…" : "Add album"}
               </button>
@@ -807,7 +790,7 @@ export default function ImagesTab({ grid, panel, onMessage }) {
           <>
             <div className="screen-head">
               <div>
-                <div className="eyebrow">Stored · the real dither</div>
+                <div className="eyebrow">Picture</div>
                 <h3 style={{ fontSize: 21 }}>{held.name}</h3>
               </div>
             </div>
@@ -851,10 +834,7 @@ export default function ImagesTab({ grid, panel, onMessage }) {
             </div>
 
             <div className="upload-actions">
-              <p className="hint">
-                This is the stored bitmap, the same bytes the panel fetches. Deleting it blanks
-                any widget showing it.
-              </p>
+              <p className="hint">Exactly what the panel draws. Deleting it blanks any widget showing it.</p>
             </div>
           </>
         )}
@@ -863,7 +843,7 @@ export default function ImagesTab({ grid, panel, onMessage }) {
           <>
             <div className="screen-head">
               <div>
-                <div className="eyebrow">Crop · preview is the real dither</div>
+                <div className="eyebrow">New picture</div>
                 <h3 style={{ fontSize: 21 }}>{name || "New picture"}</h3>
               </div>
               <div className="seg" role="group" aria-label="Kind" style={{ marginLeft: "auto" }}>
@@ -958,7 +938,7 @@ export default function ImagesTab({ grid, panel, onMessage }) {
 
                 <div className="upload-size">
                   <label className="field">
-                    <span>Name</span>
+                    <span>Name <small>a–z, 0–9, _ and -</small></span>
                     <input
                       value={name}
                       onChange={(event) => setName(event.target.value)}
@@ -1022,7 +1002,7 @@ export default function ImagesTab({ grid, panel, onMessage }) {
             ) : (
               <>
                 <label className="field" style={{ marginTop: 16 }}>
-                  <span>Name</span>
+                  <span>Name <small>a–z, 0–9, _ and -</small></span>
                   <input
                     value={name}
                     onChange={(event) => setName(event.target.value)}
@@ -1030,8 +1010,7 @@ export default function ImagesTab({ grid, panel, onMessage }) {
                   />
                 </label>
                 <p className="hint" style={{ marginTop: 12 }}>
-                  Uploaded as-is at its own pixel size, with anything darker than mid-grey
-                  becoming black. Draw it at the size you want it drawn.
+                  Kept at its own pixel size; anything darker than mid-grey turns black.
                 </p>
               </>
             )}
@@ -1039,8 +1018,8 @@ export default function ImagesTab({ grid, panel, onMessage }) {
             <div className="upload-actions">
               <p className="hint" style={{ maxWidth: 460 }}>
                 {mode === "photo"
-                  ? "Uploads as a greyscale bitmap at final size, so the backend only packs it — the preview and the panel agree pixel for pixel."
-                  : "Uploaded exactly as drawn, thresholded rather than dithered."}
+                  ? "The preview and the panel match pixel for pixel."
+                  : "Uploaded exactly as drawn, without dithering."}
               </p>
               <button className="spacer" onClick={reset}>
                 Cancel
@@ -1052,6 +1031,7 @@ export default function ImagesTab({ grid, panel, onMessage }) {
           </>
         )}
       </section>
+    </div>
     </div>
   );
 }

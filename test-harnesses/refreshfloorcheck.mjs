@@ -39,21 +39,24 @@ for (const viewport of [{ width: 1400, height: 900 }, { width: 390, height: 844 
   });
   await page.goto("http://127.0.0.1:8127/", { waitUntil: "networkidle" });
   await page.getByRole("button", { name: /^Device$/ }).first().click();
-  const row = page.locator(".setting-row", { hasText: "Screen refresh" });
-  if (await row.count()) await row.first().click();
+  // The Display section, where the refresh settings are. Open by default on a
+  // desktop and a row to tap on a phone; clicking it is harmless either way.
+  await page.locator(".section-row", { hasText: "Display" }).first().click();
+  const floor = (name) =>
+    page.getByRole("group", { name: "Redraw changed readings" }).getByRole("button", { name, exact: true });
 
-  const current = page.locator('button.choice[title="30 seconds"]');
+  const current = floor("30 s");
   check(await current.getAttribute("aria-pressed") === "true",
         `${label}: with nothing set, the firmware's default of 30 seconds is shown as chosen`);
-  await page.locator('button.choice[title="5 minutes"]').click();
+  await floor("5 min").click();
   await page.waitForTimeout(400);
   check(layout.refresh?.min_interval === "5m", `${label}: choosing 5 minutes saves refresh.min_interval = 5m (${layout.refresh?.min_interval})`);
   check(layout.refresh?.ghost_percent === 12, `${label}: and leaves the ghosting setting alone`);
-  check(await page.locator('button.choice[title="5 minutes"]').getAttribute("aria-pressed") === "true",
+  check(await floor("5 min").getAttribute("aria-pressed") === "true",
         `${label}: and shows it as chosen`);
-  await page.locator('button.choice[title="Every change"]').click();
+  await floor("Instantly").click();
   await page.waitForTimeout(400);
-  check(layout.refresh?.min_interval === "off", `${label}: every change is "off", which the firmware reads as no limit`);
+  check(layout.refresh?.min_interval === "off", `${label}: instantly is "off", which the firmware reads as no limit`);
   const wide = await page.evaluate(() =>
     [...document.querySelectorAll("*")].filter((el) => el.getBoundingClientRect().right > window.innerWidth + 1).length);
   check(wide === 0, `${label}: nothing is wider than the window (${wide})`);

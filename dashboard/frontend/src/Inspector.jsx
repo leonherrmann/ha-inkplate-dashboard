@@ -5,16 +5,20 @@ import DevicePicker, { MAX_DEVICE_ENTITIES } from "./DevicePicker.jsx";
 import AreaPicker, { MAX_ROOM_ENTITIES } from "./AreaPicker.jsx";
 import DeviceEntities from "./DeviceEntities.jsx";
 import { IconField, IconGlyph, IconGrid } from "./IconGrid.jsx";
-import Sheet, { SheetBody, SheetFoot, useNarrow, HALF, PEEK } from "./Sheet.jsx";
+import { useNarrow } from "./useNarrow.js";
+import { Menu, MenuItem } from "./Popover.jsx";
 import { imagePreviewUrl } from "./api.js";
-import { LAYER_MOVES, sizesOn, widgetSize, widgetType } from "./layout.js";
+import { sizesOn, widgetType } from "./layout.js";
 import { categoryLabel, categoryTone, optionValues } from "./format.js";
 import {
+  BackIcon,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
-  ChevronUp,
   DuplicateIcon,
+  FrontIcon,
   HomeIcon,
+  MoreIcon,
   TrashIcon,
 } from "./Icons.jsx";
 
@@ -77,13 +81,13 @@ function roomRoles(available) {
 
 // --- options big enough to be a screen of their own --------------------------
 //
-// The sheet's field list is as long as the widget has options, and the room
-// card has twelve. Scrolling past ten controls to reach the eleventh is the
+// The field list is as long as the widget has options, and the room card has
+// twelve. Scrolling past ten controls to reach the eleventh is the
 // cost of showing every one of them expanded; on a phone that is most of the
 // screen spent on fields nobody is looking at.
 //
 // So the big ones become a row -- label, the value they are set to, a chevron
-// -- and open on a second screen inside the sheet. "Big" means the control is
+// -- and open on a screen of their own. "Big" means the control is
 // taller than a line or its list is longer than a glance:
 //
 //   icon, image, album   selects of every icon the firmware carries, every
@@ -105,7 +109,7 @@ const SCREEN_TYPES = ["icon", "image", "album"];
 const CHOICE_LIMIT = 5;
 
 // The room card's counted list is not one of the manifest's options -- it is
-// worked out here from the area -- but it is the longest thing in the sheet by
+// worked out here from the area -- but it is the longest thing in the options by
 // some way: every light, plug, speaker and door in the room, each a row with a
 // tick and two arrows. It gets a screen under a key of its own.
 const ROOM_LIST = "__room_entities";
@@ -330,8 +334,10 @@ function Option({ option, manifest, widget, value, entities, devices, areas, upl
     );
   }
 
-  // Newlines are meaningful to the text widget, so it needs a real textarea
-  if (option.type === "text") {
+  // Newlines are meaningful to the text widget, so it needs a real textarea.
+  // A card's name is "text" too, and wants one line -- the firmware says which
+  // is which with `multiline`.
+  if (option.type === "text" && option.multiline) {
     return (
       <textarea
         rows={3}
@@ -350,7 +356,7 @@ function Option({ option, manifest, widget, value, entities, devices, areas, upl
     return (
       <>
         <select value={value || ""} onChange={(event) => onChange(event.target.value)}>
-          <option value="">— none —</option>
+          <option value="">None</option>
           {(albums || []).map((album) => (
             <option key={album.id} value={album.id}>
               {`${album.name} (${album.rendered} ready)`}
@@ -358,10 +364,7 @@ function Option({ option, manifest, widget, value, entities, devices, areas, upl
           ))}
         </select>
         {albums?.length === 0 && (
-          <p className="hint">
-            No albums yet. Add one in the Images tab — a photo widget shows an album
-            rather than a picture, so there is nothing to choose until there is one.
-          </p>
+          <p className="hint">No albums yet. Add one in the Images tab.</p>
         )}
       </>
     );
@@ -389,7 +392,7 @@ function Option({ option, manifest, widget, value, entities, devices, areas, upl
     return (
       <>
         <select value={value || ""} onChange={(event) => onChange(event.target.value)}>
-          <option value="">— none —</option>
+          <option value="">None</option>
           {uploads?.length > 0 && (
             <optgroup label="Uploaded">
               {uploads.map((image) => (
@@ -427,62 +430,128 @@ function Option({ option, manifest, widget, value, entities, devices, areas, upl
   );
 }
 
+
+// Options that change how often a widget redraws rather than what it shows.
+// Every widget has one and nearly nobody changes it, so it waits behind
+// "Advanced" instead of sitting in the middle of the list with a label longer
+// than any other.
+const ADVANCED_KEYS = ["update_interval"];
+
+// What a widget is called in a heading: the name the user gave it, since on a
+// page of six room cards "Room" is the one thing that does not tell them apart.
+export function widgetTitle(manifest, widget) {
+  const type = widgetType(manifest, widget);
+  return widget?.options?.name || type?.label || widget?.type || "Widget";
+}
+
+// The head of the edit screen on a phone. Done in reach of the thumb that
+// tapped the widget, and the things done *to* the widget rather than *with*
+// it behind the ⋯, where a stray tap cannot delete anything.
+export function EditHead({ widget, manifest, layer, layerCount, onDone, onFront, onBack, onDuplicate, onRemove }) {
+  const type = widgetType(manifest, widget);
+  const group = categoryLabel(manifest, type?.category);
+  return (
+    <div className="edit-head">
+      <span className={`token ${categoryTone(type?.category)}`}>
+        <HomeIcon size={16} />
+      </span>
+      <div className="edit-head-text">
+        <small>{[group, type?.label || widget.type].filter(Boolean).join(" · ")}</small>
+        <h2>{widgetTitle(manifest, widget)}</h2>
+      </div>
+      <Menu label="Widget actions" icon={<MoreIcon size={17} />} buttonClassName="icon-button">
+        {(close) => (
+          <>
+            <MenuItem
+              icon={<FrontIcon size={15} />}
+              disabled={layer >= layerCount - 1}
+              onClick={() => {
+                close();
+                onFront();
+              }}
+            >
+              Bring to front
+            </MenuItem>
+            <MenuItem
+              icon={<BackIcon size={15} />}
+              disabled={layer <= 0}
+              onClick={() => {
+                close();
+                onBack();
+              }}
+            >
+              Send to back
+            </MenuItem>
+            <MenuItem
+              icon={<DuplicateIcon size={15} />}
+              onClick={() => {
+                close();
+                onDuplicate();
+              }}
+            >
+              Duplicate
+            </MenuItem>
+            <MenuItem
+              icon={<TrashIcon size={15} />}
+              danger
+              onClick={() => {
+                close();
+                onRemove();
+              }}
+            >
+              Delete
+            </MenuItem>
+          </>
+        )}
+      </Menu>
+      <button className="primary edit-done" onClick={onDone}>
+        Done
+      </button>
+    </div>
+  );
+}
+
 export default function Inspector({
   widget,
   manifest,
-  chipRow,
   grid,
   entities,
   devices,
   areas,
   uploads,
   albums,
-  layer,
-  layerCount,
-  dragging,
   onSetOption,
   onSetOptions,
   onSetSize,
-  onSetLayer,
-  onDuplicate,
-  onRemove,
   onClose,
 }) {
-  // Below the tab bar's breakpoint the options are a sheet over the canvas
-  // rather than a column beside it, and the sheet owns how tall it stands.
-  // Held here rather than in App because nothing else has any use for it.
+  // On a phone the fields are the page under a pinned canvas; on a desktop a
+  // column beside it.
   const narrow = useNarrow();
-  const [detent, setDetent] = useState(PEEK);
 
-  // Which option has the sheet to itself, by key, or null for the field list.
-  // Only ever set on a phone: the desktop inspector is a column that scrolls
-  // beside the canvas, where a long list costs a scroll rather than a screen.
+  // Which option has the screen to itself, by key, or null for the field list.
+  // Only ever set on a phone: the desktop column scrolls, where a long list
+  // costs a scroll rather than a screen.
   const [screen, setScreen] = useState(null);
 
-  // Selecting a different widget starts the sheet low again. The form is about
-  // the widget, so carrying its height across a change of subject would open a
-  // full-height sheet over a canvas the user was still choosing from.
+  // A different widget starts on its field list
   useEffect(() => {
-    setDetent(PEEK);
     setScreen(null);
   }, [widget?.id]);
 
-  // Collapsing the sheet leaves it on the field list. Coming back to a sheet
-  // still showing one option, with no memory of having opened it, reads as the
-  // editor having lost the rest of them.
+  // Opening or leaving an option starts it at the top, under the canvas,
+  // rather than wherever the list had been scrolled to.
   useEffect(() => {
-    if (detent === PEEK) setScreen(null);
-  }, [detent]);
+    if (narrow) window.scrollTo({ top: 0 });
+  }, [screen, narrow]);
 
   if (!widget) {
-    // Nothing selected is not worth a sheet on a phone -- it would be a
-    // permanent strip across the bottom saying only that it is empty. The
-    // canvas says the same thing by having nothing outlined on it.
+    // On a phone there is no edit screen until something is selected
     if (narrow) return null;
     return (
       <aside className="inspector">
         <div className="eyebrow">Options</div>
-        <p className="hint">Tap a widget on the panel to edit it.</p>
+        <p className="hint">Select a widget on the panel to edit it.</p>
       </aside>
     );
   }
@@ -494,45 +563,39 @@ export default function Inspector({
   const options = (type?.options || []).filter(
     (option) => !(fullScreen && option.key === "border")
   );
-  // Measured against the page being edited: a card is taller on a page whose
-  // chip row is off, and this line is what tells the user its footprint.
-  const size = widgetSize(manifest, widget, undefined, chipRow, grid);
+  const everyday = options.filter((option) => !ADVANCED_KEYS.includes(option.key));
+  const advanced = options.filter((option) => ADVANCED_KEYS.includes(option.key));
 
   // How many entities the chosen size actually draws. The firmware publishes it
-  // per size, because guessing from the cell count happened to be right for two
-  // of the three device sizes and stopped being right the moment the card was
-  // relaid out as a bento -- where every shape holds the same six, arranged
-  // differently.
+  // per size, because guessing from the cell count stopped being right the
+  // moment the device card was relaid out as a bento.
   const chosenSize = type?.sizes?.find(
     (one) => one.id === (widget.size || type.sizes?.[0]?.id)
   );
   const capacity = chosenSize?.capacity || 0;
 
   // The room this card is set to, if it is a room card at all. Its counted list
-  // is rendered below the options rather than beside the picker, so it needs to
-  // be reachable from here.
+  // is rendered below the options rather than beside the picker.
   const room =
     options.some((one) => one.type === "area") && widget.options?.area
       ? areas.find((one) => one.id === widget.options.area)
       : null;
 
   // An entity already doing one of the band's jobs is not offered to the list as
-  // well: it describes the room rather than being a thing in it, and counting a
-  // thermostat among the plugs is how the old arrangement went wrong.
+  // well: it describes the room rather than being a thing in it.
   const takenByBand = ROOM_ROLES.map((role) => widget.options?.[role.key]).filter(Boolean);
 
   // What kind of thing this is, in the category's own words
   const group = categoryLabel(manifest, type?.category);
 
-  // The option the sheet is showing on its own, if it is showing one. Looked up
-  // rather than stored, so that a widget whose options changed under it -- a new
-  // firmware, a different size -- cannot leave a screen open on an option that
-  // is no longer offered.
+  // The option on a screen of its own, if one is. Looked up rather than
+  // stored, so a widget whose options changed under it cannot leave a screen
+  // open on an option that is no longer offered.
   const screenOption = screen ? options.find((one) => one.key === screen) : null;
 
   // The values that option offers, or null for one that is not a list. Albums
-  // are the add-on's own -- the panel only ever sees their pictures -- and
-  // images come from two places, so neither is simply the manifest's.
+  // are the add-on's own and images come from two places, so neither is simply
+  // the manifest's.
   const screenValues = !screenOption
     ? null
     : screenOption.type === "album"
@@ -558,63 +621,81 @@ export default function Inspector({
     <p className="hint">This room has nothing else in it.</p>
   );
 
-  // How many of the room's things the card is showing, against how many the
-  // chosen size can draw -- which is the question the row is asked.
+  // How many of the room's things the card is showing, against how many there are
   const roomListSummary = !room
     ? ""
     : room.entities.length === 0
       ? "Nothing in it"
       : `${(widget.options?.entities || []).length || room.entities.length} of ${room.entities.length}`;
 
-  const title = widget.options?.name || type?.label || widget.type;
+  const title = widgetTitle(manifest, widget);
   const tone = categoryTone(type?.category);
-
-  // The summary line. Cells where the chosen size has them, because that is
-  // what the user picked and what the panel's grid is counted in; pixels only
-  // for the self-sizing widgets, which have no cell count to give.
-  const footprint =
-    chosenSize?.cols > 0 && chosenSize?.rows > 0
-      ? `${chosenSize.cols}×${chosenSize.rows}`
-      : `${size.width}×${size.height}`;
-
-  const head = (
-    <div className="inspector-head">
-      {/* The accent is the widget's category, which the manifest names and
-          orders, so a category added in a later firmware arrives with a tone
-          rather than with none. */}
-      <span className={`token lg ${tone}`}>
-        <HomeIcon size={19} />
-      </span>
-      <div style={{ minWidth: 0 }}>
-        <div className="inspector-meta">
-          {group ? `${group} · ` : ""}
-          {type?.label || widget.type}
-        </div>
-        {/* The name the user gave it leads: on a page of six room cards
-            "Room" is the one thing that does not tell them apart. */}
-        <h2>{title}</h2>
-      </div>
-      <button className="icon-button plain" onClick={onClose} aria-label="Close">
-        ×
-      </button>
-    </div>
-  );
 
   // Only the sizes the shape being edited has room for. The manifest carries
   // both shapes' -- a 3x6 photo fits a panel on its side and nothing else.
   const offeredSizes = sizesOn(type, grid);
 
+  const field = (option) => {
+    // An option whose control is a *button* cannot sit in a <label>: a control
+    // inside one takes its accessible name from the label, and Safari forwards
+    // a click anywhere in a label to the first labelable descendant. A label
+    // may only wrap one real form control; these three wrap a button.
+    const isButton = ["entity", "device", "area"].includes(option.type);
+
+    // On a phone the big ones are a row that opens a screen -- see wantsScreen
+    if (narrow && wantsScreen(option, manifest)) {
+      return (
+        <button
+          key={option.key}
+          type="button"
+          className="option-row"
+          onClick={() => setScreen(option.key)}
+        >
+          <span className="option-row-label">{option.label}</span>
+          <span className="option-row-value">
+            {/* The icon beside its name: "shower" and "shield" are a great
+                deal easier to tell apart as pictures. */}
+            {option.type === "icon" && widget.options?.[option.key] && (
+              <IconGlyph name={widget.options[option.key]} className="option-row-glyph" />
+            )}
+            {valueSummary(option, widget.options?.[option.key], { albums, uploads })}
+          </span>
+          <ChevronRight size={15} />
+        </button>
+      );
+    }
+
+    const Wrapper = isButton ? "div" : "label";
+    return (
+      <Wrapper
+        key={option.key}
+        className={isButton ? "field-block" : undefined}
+        {...(isButton ? { role: "group", "aria-label": option.label } : {})}
+      >
+        <span>{option.label}</span>
+        <Option
+          option={option}
+          manifest={manifest}
+          widget={widget}
+          value={widget.options?.[option.key]}
+          entities={entities}
+          devices={devices}
+          areas={areas}
+          uploads={uploads}
+          albums={albums}
+          capacity={capacity}
+          onChange={(next) => onSetOption(widget.id, option.key, next)}
+          onChangeMany={(patch) => onSetOptions(widget.id, patch)}
+        />
+      </Wrapper>
+    );
+  };
+
   const fields = (
     <>
-      <div className="hint">
-        {widget.x}, {widget.y} · {size.width}×{size.height}
-      </div>
-
-      {/* Only for widgets that offer more than one; the specials have none.
-          A div rather than a label, though it is styled as one: a <label>
-          wrapping several buttons hands every one of them the *others'* text as
-          its accessible name, so "Small" announces as the row's other sizes.
-          Caught by a WebKit pass, where getByRole could not find any of them. */}
+      {/* Only for widgets that offer more than one; the specials have none. A
+          div rather than a label: a <label> wrapping several buttons hands every
+          one of them the others' text as its accessible name. */}
       {offeredSizes.length > 1 && (
         <div className="field-block">
           <span>Size</span>
@@ -627,8 +708,8 @@ export default function Inspector({
                 }
                 onClick={() => onSetSize(widget.id, option.id)}
               >
-                {/* A self-sizing variant has no cell count worth showing, so
-                    it falls back to the name the firmware gave it. */}
+                {/* A self-sizing variant has no cell count worth showing, so it
+                    falls back to the name the firmware gave it. */}
                 {option.cols > 0 && option.rows > 0
                   ? `${option.cols}×${option.rows}`
                   : option.label}
@@ -638,86 +719,13 @@ export default function Inspector({
         </div>
       )}
 
-      {options.map((option) => {
-        // An option whose control is a *button* cannot sit in a <label>. A
-        // control inside one takes its accessible name from the label, so the
-        // entity trigger announced as "Light" -- the field's name -- rather
-        // than as the entity it is showing, and a screen reader had no way to
-        // hear what was chosen. Safari also forwards a click anywhere in a
-        // label to the first labelable descendant, which is the same trap the
-        // pickers are portalled out of the tree for.
-        //
-        // This is the third time this defect has been fixed in this file: the
-        // size picker and the layer buttons already moved to .field-block for
-        // it. The rule is simply that a label may only wrap one real form
-        // control, and these three option types wrap a button instead.
-        const isButton = ["entity", "device", "area"].includes(option.type);
+      {everyday.map(field)}
 
-        // On a phone the big ones are a row that opens a screen -- see
-        // wantsScreen. A button, not a label: it opens something rather than
-        // naming a control.
-        if (narrow && wantsScreen(option, manifest)) {
-          return (
-            <button
-              key={option.key}
-              type="button"
-              className="option-row"
-              onClick={() => setScreen(option.key)}
-            >
-              <span className="option-row-label">{option.label}</span>
-              <span className="option-row-value">
-                {/* The icon itself beside its name: the row is what the list is
-                    read from, and "shower" and "shield" are a great deal easier
-                    to tell apart as pictures. */}
-                {option.type === "icon" && widget.options?.[option.key] && (
-                  <IconGlyph name={widget.options[option.key]} className="option-row-glyph" />
-                )}
-                {valueSummary(option, widget.options?.[option.key], { albums, uploads })}
-              </span>
-              <ChevronRight size={15} />
-            </button>
-          );
-        }
-
-        const Wrapper = isButton ? "div" : "label";
-        return (
-          <Wrapper
-            key={option.key}
-            className={isButton ? "field-block" : undefined}
-            {...(isButton ? { role: "group", "aria-label": option.label } : {})}
-          >
-            <span>{option.label}</span>
-            <Option
-              option={option}
-              manifest={manifest}
-              widget={widget}
-              value={widget.options?.[option.key]}
-              entities={entities}
-              devices={devices}
-              areas={areas}
-              uploads={uploads}
-              albums={albums}
-              capacity={capacity}
-              onChange={(next) => onSetOption(widget.id, option.key, next)}
-              onChangeMany={(patch) => onSetOptions(widget.id, patch)}
-            />
-          </Wrapper>
-        );
-      })}
-
-      {/* The room's counted list, after the readings rather than among them.
-          The band's entities are each one field; this is a list, and it is what
-          the buckets tally -- the lights, plugs, media and openings. */}
+      {/* The room's counted list, after the readings rather than among them:
+          the band's entities are each one field, and this is a list. */}
       {room &&
         (narrow ? (
-          // On a phone it is a row like the big options above it. It is longer
-          // than any of them -- a room with a dozen things in it is a dozen
-          // rows of tick and arrows -- so if anything earns a screen, this does.
-          <button
-            type="button"
-            className="option-row"
-            onClick={() => setScreen(ROOM_LIST)}
-          >
+          <button type="button" className="option-row" onClick={() => setScreen(ROOM_LIST)}>
             <span className="option-row-label">Things in the room</span>
             <span className="option-row-value">{roomListSummary}</span>
             <ChevronRight size={15} />
@@ -731,157 +739,95 @@ export default function Inspector({
 
       {options.length === 0 && <p className="hint">This widget has no options.</p>}
 
-      {/* Which of two overlapping widgets the panel draws on top. It is the
-          layout's order, so the canvas shows the same answer the device will.
-          Shown only where there is something to be in front of. */}
-      {layerCount > 1 && (
-        <div className="field-block">
-          <span>
-            Layer <small className="layer-count">{layer + 1} of {layerCount}</small>
-          </span>
-          <div className="layer-picker">
-            {LAYER_MOVES.map((move) => (
-              <button
-                key={move.id}
-                className="chip"
-                title={move.title}
-                disabled={
-                  layer < 0 ||
-                  (["back", "backward"].includes(move.id) ? layer === 0 : layer === layerCount - 1)
-                }
-                onClick={() => onSetLayer(widget.id, move.id)}
-              >
-                {move.label}
-              </button>
-            ))}
-          </div>
-        </div>
+      {advanced.length > 0 && (
+        <details className="advanced">
+          <summary>
+            <ChevronDown size={14} />
+            Advanced
+          </summary>
+          <div className="advanced-body">{advanced.map(field)}</div>
+        </details>
       )}
-
-      {/* Duplicate and Remove were here as well until the toolbar grew the
-          design's four selection actions. Two buttons that do the same thing on
-          the same widget, one on each side of the canvas, is a question the
-          reader has to answer ("do these differ?") before they can use either.
-          The toolbar keeps them, because that is where 1a draws them and it is
-          the side the selection is on. */}
     </>
   );
 
-  // On a phone, design 1b: the same head and the same fields, in a sheet that
-  // rises over the canvas instead of a column that only exists below it.
   if (narrow) {
-    return (
-      <Sheet detent={detent} onDetent={setDetent} label={`${title} options`} retracted={dragging}>
-        {detent === PEEK ? (
-          // What is selected, and the way in. The whole row opens the sheet
-          // rather than only the chevron -- at this height the row *is* the
-          // control, and a 32px target for the one thing there is to do here
-          // would be the smallest tap target on the screen.
-          <button type="button" className="sheet-summary" onClick={() => setDetent(HALF)}>
-            <span className={`token lg ${tone}`}>
-              <HomeIcon size={19} />
-            </span>
-            <span className="sheet-summary-text">
-              <b>{title}</b>
-              <small>
-                {type?.label || widget.type} · {footprint} · {widget.x}, {widget.y}
-              </small>
-            </span>
-            <span className="sheet-summary-more" aria-hidden="true">
-              <ChevronUp size={15} />
-            </span>
+    if (screen) {
+      // One option with the screen to itself. Back is the whole way out: every
+      // control here writes as it is changed, exactly as in the list.
+      return (
+        <section className="edit-fields" aria-label={`${title} options`}>
+          <button className="back-row" onClick={() => setScreen(null)}>
+            <ChevronLeft size={15} />
+            All options
           </button>
-        ) : screen ? (
-          // One option, with the sheet to itself. The back button is the whole
-          // way out: there is nothing to confirm, because every control here
-          // writes as it is changed exactly as it does in the list.
-          <>
-            <div className="inspector-head">
-              <button
-                className="icon-button plain"
-                onClick={() => setScreen(null)}
-                aria-label={`Back to ${title} options`}
-              >
-                <ChevronLeft size={15} />
-              </button>
-              <div style={{ minWidth: 0 }}>
-                <div className="inspector-meta">{title}</div>
-                <h2>{screen === ROOM_LIST ? "Things in the room" : screenOption?.label || "Option"}</h2>
-              </div>
-              <button className="icon-button plain" onClick={onClose} aria-label="Close">
-                ×
-              </button>
-            </div>
-            <SheetBody>
-              {screen === ROOM_LIST && <div className="option-screen">{roomList}</div>}
-              {screenOption && (
-                <div className="option-screen">
-                  {/* A list of values gets the list control; anything else --
-                      the text widget's paragraph -- gets the same control it
-                      has in the field list, with the room to be read. */}
-                  {screenValues && screenOption.type === "icon" ? (
-                    /* Icons get shown rather than named -- see IconGrid.jsx. */
-                    <IconGrid
-                      option={screenOption}
-                      values={screenValues}
-                      value={widget.options?.[screenOption.key] || ""}
-                      onChange={(next) => onSetOption(widget.id, screenOption.key, next)}
-                    />
-                  ) : screenValues ? (
-                    <ScreenList
-                      option={screenOption}
-                      values={screenValues}
-                      value={widget.options?.[screenOption.key] || ""}
-                      uploads={uploads}
-                      onChange={(next) => onSetOption(widget.id, screenOption.key, next)}
-                    />
-                  ) : (
-                  <Option
-                    option={screenOption}
-                    manifest={manifest}
-                    widget={widget}
-                    value={widget.options?.[screenOption.key]}
-                    entities={entities}
-                    devices={devices}
-                    areas={areas}
-                    uploads={uploads}
-                    albums={albums}
-                    capacity={capacity}
-                    onChange={(next) => onSetOption(widget.id, screenOption.key, next)}
-                    onChangeMany={(patch) => onSetOptions(widget.id, patch)}
-                  />
-                  )}
-                </div>
-              )}
-            </SheetBody>
-          </>
-        ) : (
-          <>
-            {head}
-            <SheetBody>{fields}</SheetBody>
-            {/* The design puts these in the sheet's foot on a phone, not in the
-                toolbar: the toolbar is above the canvas and therefore off
-                screen whenever the sheet is open, which is exactly when you
-                want them. */}
-            <SheetFoot>
-              <button className="sheet-action" onClick={() => onDuplicate?.(widget.id)}>
-                <DuplicateIcon size={15} />
-                Duplicate
-              </button>
-              <button className="sheet-action danger" onClick={() => onRemove?.(widget.id)}>
-                <TrashIcon size={15} />
-                Delete
-              </button>
-            </SheetFoot>
-          </>
-        )}
-      </Sheet>
+          <h3 className="edit-screen-title">
+            {screen === ROOM_LIST ? "Things in the room" : screenOption?.label || "Option"}
+          </h3>
+          <div className="option-screen">
+            {screen === ROOM_LIST && roomList}
+            {screenOption &&
+              (screenValues && screenOption.type === "icon" ? (
+                <IconGrid
+                  option={screenOption}
+                  values={screenValues}
+                  value={widget.options?.[screenOption.key] || ""}
+                  onChange={(next) => onSetOption(widget.id, screenOption.key, next)}
+                />
+              ) : screenValues ? (
+                <ScreenList
+                  option={screenOption}
+                  values={screenValues}
+                  value={widget.options?.[screenOption.key] || ""}
+                  uploads={uploads}
+                  onChange={(next) => onSetOption(widget.id, screenOption.key, next)}
+                />
+              ) : (
+                <Option
+                  option={screenOption}
+                  manifest={manifest}
+                  widget={widget}
+                  value={widget.options?.[screenOption.key]}
+                  entities={entities}
+                  devices={devices}
+                  areas={areas}
+                  uploads={uploads}
+                  albums={albums}
+                  capacity={capacity}
+                  onChange={(next) => onSetOption(widget.id, screenOption.key, next)}
+                  onChangeMany={(patch) => onSetOptions(widget.id, patch)}
+                />
+              ))}
+          </div>
+        </section>
+      );
+    }
+    return (
+      <section className="edit-fields" aria-label={`${title} options`}>
+        {fields}
+      </section>
     );
   }
 
   return (
     <aside className="inspector open">
-      {head}
+      <div className="inspector-head">
+        {/* The accent is the widget's category, which the manifest names and
+            orders, so a category added in a later firmware arrives with a tone. */}
+        <span className={`token lg ${tone}`}>
+          <HomeIcon size={19} />
+        </span>
+        <div style={{ minWidth: 0 }}>
+          <div className="inspector-meta">
+            {group ? `${group} · ` : ""}
+            {type?.label || widget.type}
+          </div>
+          <h2>{title}</h2>
+        </div>
+        <button className="icon-button plain" onClick={onClose} aria-label="Close">
+          ×
+        </button>
+      </div>
       {fields}
     </aside>
   );

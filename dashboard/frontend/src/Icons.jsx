@@ -112,6 +112,30 @@ export const TrashIcon = (props) => (
   </Svg>
 );
 
+export const PlusIcon = (props) => (
+  <Svg {...props}>
+    <path d="M12 5v14M5 12h14" />
+  </Svg>
+);
+
+// Three sliders on a frame: the View menu, which holds settings rather than
+// actions
+export const ViewIcon = (props) => (
+  <Svg {...props}>
+    <path d="M4 7h10M18 7h2M4 17h2M10 17h10" />
+    <circle cx="16" cy="7" r="2" />
+    <circle cx="8" cy="17" r="2" />
+  </Svg>
+);
+
+export const MoreIcon = (props) => (
+  <Svg {...props}>
+    <circle cx="5" cy="12" r="1.2" fill="currentColor" />
+    <circle cx="12" cy="12" r="1.2" fill="currentColor" />
+    <circle cx="19" cy="12" r="1.2" fill="currentColor" />
+  </Svg>
+);
+
 export const PencilIcon = (props) => (
   <Svg {...props}>
     <path d="M4 20h4L20 8l-4-4L4 16z" />

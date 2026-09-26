@@ -17,6 +17,7 @@
 //   cd ../../test-harnesses && node photosizecheck.mjs      (PORT=... to use another)
 import { readFileSync } from "node:fs";
 import { webkit } from "playwright";
+import { arrangement } from "./arrangement.mjs";
 
 const HERE = new URL(".", import.meta.url).pathname;
 const BASE = `http://127.0.0.1:${process.env.PORT || 8127}`;
@@ -111,7 +112,7 @@ const browser = await webkit.launch();
 for (const [standing, manifest] of Object.entries(MANIFESTS)) {
   console.log(`\n--- the panel standing ${standing} ---`);
   const page = await open(browser, manifest);
-  const select = page.locator(".bar-menu select").filter({ hasText: "Upright layout" });
+  const select = arrangement(page);
 
   for (const which of ["landscape", "portrait"]) {
     await select.selectOption(which);

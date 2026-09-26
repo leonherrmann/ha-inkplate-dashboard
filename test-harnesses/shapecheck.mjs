@@ -19,6 +19,7 @@
 //   cd ../../test-harnesses && node shapecheck.mjs
 import { readFileSync } from "node:fs";
 import { webkit } from "playwright";
+import { arrangement } from "./arrangement.mjs";
 
 const HERE = new URL(".", import.meta.url).pathname;
 const BASE = "http://127.0.0.1:8127";
@@ -132,7 +133,7 @@ async function open(browser, manifest) {
 }
 
 const shapeSelect = (page) =>
-  page.locator(".bar-menu select").filter({ hasText: "Upright layout" });
+  arrangement(page);
 
 async function canvasBox(page) {
   return page.locator(".panel-outer .panel").first().boundingBox();
@@ -156,9 +157,9 @@ for (const [standing, manifest] of Object.entries(MANIFESTS)) {
     await page.waitForTimeout(300);
     const portrait = which === "portrait";
 
-    const label = (await select.locator("option:checked").innerText()).trim();
+    const label = await select.label();
     check(
-      label === (portrait ? "Sideways layout" : "Upright layout"),
+      label.startsWith(portrait ? "Sideways" : "Upright"),
       `${which}: the switch says "${label}"`
     );
 

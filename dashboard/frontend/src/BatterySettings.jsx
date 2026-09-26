@@ -1,4 +1,4 @@
-import { BatteryIcon } from "./Icons.jsx";
+import { Segmented, Setting, Switch } from "./Setting.jsx";
 
 // When the panel counts its battery as low, and what it does about it.
 //
@@ -23,11 +23,11 @@ export const LOW_LEVELS = [
 // Roughly how long each level leaves, on the V2's own measured run with
 // night sleep off. A layout that repaints less lasts longer.
 const LEFT_AT = {
-  5: "about 2 hours left awake",
-  10: "about 4 hours left awake",
-  15: "about 6 hours left awake",
-  20: "about 8 hours left awake",
-  30: "about 12 hours left awake",
+  5: "About 2 hours left awake",
+  10: "About 4 hours left awake",
+  15: "About 6 hours left awake",
+  20: "About 8 hours left awake",
+  30: "About 12 hours left awake",
 };
 
 export default function BatterySettings({ battery, onChange }) {
@@ -36,60 +36,35 @@ export default function BatterySettings({ battery, onChange }) {
   const set = (key, next) => onChange({ ...value, [key]: next });
 
   return (
-    <section className="card">
-      <div className="card-head">
-        <span className="token yellow">
-          <BatteryIcon size={16} />
-        </span>
-        <b>Low battery</b>
-      </div>
-
-      {/* A group rather than a <label>: see SleepSettings. */}
-      <div className="field-block" role="group" aria-label="Warn below">
-        <span>Warn below</span>
-        <div className="pill-row">
-          {LOW_LEVELS.map((level) => (
-            <button
-              key={level.percent}
-              className={percent === level.percent ? "pill active" : "pill"}
-              onClick={() => set("low_percent", level.percent)}
-              aria-pressed={percent === level.percent}
-            >
-              {level.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
+    <>
+      <Setting
+        stacked
+        title="Low battery warning"
+        note={percent === 0 ? "The panel will not warn about its battery" : LEFT_AT[percent] || null}
+        hint="Below this the battery chip on the panel shows an exclamation mark. It stops as soon as the panel is charging."
+        control={
+          <Segmented
+            label="Warn below"
+            value={percent}
+            onChange={(next) => set("low_percent", next)}
+            options={LOW_LEVELS.map((level) => ({ value: level.percent, label: level.label }))}
+          />
+        }
+      />
       {percent > 0 && (
-        <>
-          {/* The same row as the timers' auto-start switch */}
-          <div className="inspector-section" style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div>
-              <b style={{ fontSize: 13.5 }}>Full-screen warning</b>
-              <div className="hint">Instead of the dashboard, until charged</div>
-            </div>
-            <label className="switch" style={{ marginLeft: "auto" }}>
-              <span className="sr-only">Full-screen warning</span>
-              <input
-                type="checkbox"
-                checked={Boolean(value.low_screen)}
-                onChange={(event) => set("low_screen", event.target.checked)}
-              />
-            </label>
-          </div>
-
-          <p className="hint">
-            At {percent}% or less{LEFT_AT[percent] ? ` — ${LEFT_AT[percent]} —` : ""} the
-            battery chip shows an exclamation mark
-            {value.low_screen
-              ? ", and the panel shows a charging reminder instead of the dashboard. A button press brings the dashboard back until the battery has dropped another 5%."
-              : ". Turn on the full-screen warning for a panel nobody looks at closely."}{" "}
-            Both stop as soon as the panel is charging.
-          </p>
-        </>
+        <Setting
+          title="Full-screen reminder"
+          note="Instead of the dashboard, until charged"
+          hint="For a panel nobody looks at closely. A button press brings the dashboard back until the battery drops another 5%."
+          control={
+            <Switch
+              label="Full-screen reminder"
+              checked={Boolean(value.low_screen)}
+              onChange={(next) => set("low_screen", next)}
+            />
+          }
+        />
       )}
-      {percent === 0 && <p className="hint">The panel will not warn about its battery.</p>}
-    </section>
+    </>
   );
 }

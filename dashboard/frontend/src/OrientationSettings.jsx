@@ -1,4 +1,4 @@
-import { OrientIcon } from "./Icons.jsx";
+import { Setting } from "./Setting.jsx";
 
 // Which way up the panel is hung.
 //
@@ -49,39 +49,28 @@ export default function OrientationSettings({ orientation, onChange }) {
   const degrees = Number(orientation ?? DEFAULT_ORIENTATION);
 
   return (
-    <section className="card">
-      <div className="card-head">
-        <span className="token blue">
-          <OrientIcon size={16} />
-        </span>
-        <b>Orientation</b>
-      </div>
-
-      {/* A group rather than a <label>: wrapping several buttons in a label
-          makes a screen reader read every one of them as the name of each,
-          so "Upside down" announces as "Orientation Upright Upside down". That
-          exact defect has been fixed in this editor twice already. */}
-      <div className="orient" role="group" aria-label="Screen orientation">
-        {ORIENTATIONS.map((option) => (
-          <button
-            key={option.degrees}
-            className={degrees === option.degrees ? "active" : undefined}
-            onClick={() => onChange(option.degrees)}
-            aria-pressed={degrees === option.degrees}
-            title={option.hint}
-          >
-            <span className={option.portrait ? "orient-screen tall" : "orient-screen"} />
-            {option.label}
-          </button>
-        ))}
-      </div>
-
-      <p className="hint">
-        A quarter turn changes the grid as well as the picture: this panel holds
-        fewer columns and more rows on its side, and widgets that no longer fit
-        are dropped from the page. The screen flashes once when this changes,
-        because every pixel means something different afterwards.
-      </p>
-    </section>
+    <Setting
+      stacked
+      title="Orientation"
+      hint="A quarter turn changes the grid as well as the picture: fewer columns and more rows on its side, and widgets that no longer fit are dropped from that page. The screen flashes once when this changes."
+      control={
+        // A group rather than a <label>: wrapping several buttons in a label
+        // makes a screen reader read every one of them as the name of each.
+        <div className="orient" role="group" aria-label="Screen orientation">
+          {ORIENTATIONS.map((option) => (
+            <button
+              key={option.degrees}
+              className={degrees === option.degrees ? "active" : undefined}
+              onClick={() => onChange(option.degrees)}
+              aria-pressed={degrees === option.degrees}
+              title={option.hint}
+            >
+              <span className={option.portrait ? "orient-screen tall" : "orient-screen"} />
+              {option.label}
+            </button>
+          ))}
+        </div>
+      }
+    />
   );
 }

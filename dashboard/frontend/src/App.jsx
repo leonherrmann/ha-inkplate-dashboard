@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
 
-import DeviceCard from "./DeviceCard.jsx";
 import DeviceTab from "./DeviceTab.jsx";
 import ImagesTab from "./ImagesTab.jsx";
-import Inspector from "./Inspector.jsx";
+import Inspector, { EditHead } from "./Inspector.jsx";
 import Panel from "./Panel.jsx";
 import PageBar from "./PageBar.jsx";
-import PageList from "./PageList.jsx";
+import PageList, { PageTabs } from "./PageList.jsx";
 import PagesTab from "./PagesTab.jsx";
+import TopBar from "./TopBar.jsx";
+import { useNarrow } from "./useNarrow.js";
 import WidgetPicker from "./WidgetPicker.jsx";
 import * as api from "./api.js";
 import { useHistory } from "./history.js";
@@ -48,9 +49,8 @@ import {
 const APPLE = typeof navigator !== "undefined" && /Mac|iP(hone|ad|od)/.test(navigator.platform || navigator.userAgent);
 const MOD = APPLE ? "⌘" : "Ctrl+";
 
-// Four places to be, in the rail on a desktop and the tab bar on a phone. The
-// page-wide header and its row of tabs are gone: identity, device health and
-// Push moved into the editor's own column, beside the pages they act on.
+// Four places to be, in the rail on a desktop and the tab bar on a phone.
+// Identity, device health and Push are in the top bar above all of them.
 const SECTIONS = [
   { id: "design", label: "Editor", Icon: GridIcon },
   { id: "pages", label: "Pages", Icon: LayersIcon },
@@ -220,11 +220,11 @@ export default function App() {
   const [snapMode, setSnapMode] = useState(DEFAULT_SNAP);
   const [zoom, setZoom] = useState("fit");
   const [adding, setAdding] = useState(false);
-  // Whether a widget is being dragged on the canvas. Only the options sheet
-  // cares -- it gets out of the way for the duration -- but it has to be held
-  // here because the canvas and the sheet are siblings.
-  const [dragging, setDragging] = useState(false);
   const [message, setMessage] = useToast();
+  const narrow = useNarrow();
+  // Too narrow for a column of pages beside the canvas: they become a strip of
+  // tabs above it instead.
+  const compact = useNarrow("(max-width: 1400px)");
 
   const manifest = status?.manifest;
 
@@ -275,6 +275,11 @@ export default function App() {
   const chipRow = activePage?.chip_row || DEFAULT_CHIP_ROW;
   const grid = pageGrid(deviceGrid, chipRow);
   const selected = widgets.find((widget) => widget.id === selectedId) || null;
+
+  // Editing a widget on a phone is a screen of its own: the canvas pinned at
+  // the top, the options under it, and nothing else -- no bars, no tab bar.
+  // That is all the height a phone has, given to the thing being edited.
+  const editing = narrow && tab === "design" && Boolean(selected);
 
   // Both timestamps come from the backend, so a clock skewed on this machine
   // cannot make "last seen" nonsense.
@@ -848,8 +853,51 @@ export default function App() {
     return <div className="banner">Loading…</div>;
   }
 
+  const selectPage = (id) => {
+    setActivePageId(id);
+    setSelectedId(null);
+  };
+
+  const view = {
+    snapMode,
+    onSnap: setSnapMode,
+    zoom,
+    onZoom: setZoom,
+    chipRow,
+    onChipRow: (next) => activePage && setChipRow(activePage.id, next),
+  };
+
+  const layer = widgets.findIndex((one) => one.id === selected?.id);
+  const selectionActions = selected && {
+    layer,
+    layerCount: widgets.length,
+    onFront: () => setLayer(selectedId, "front"),
+    onBack: () => setLayer(selectedId, "back"),
+    onDuplicate: () => duplicateWidget(selectedId),
+    onDelete: () => removeWidget(selectedId),
+    mod: MOD,
+  };
+
+  const pageBar = (
+    <PageBar
+      narrow={narrow}
+      shape={shape}
+      onShape={setEditShape}
+      shapeSwitchable={hasBothShapes(manifest)}
+      shapeInherited={inherited}
+      onAddWidget={() => setAdding(true)}
+      canAddWidget={Boolean(manifest)}
+      undo={undo}
+      redo={redo}
+      canUndo={history.canUndo}
+      canRedo={history.canRedo}
+      mod={MOD}
+      {...view}
+    />
+  );
+
   return (
-    <div className="app">
+    <div className={editing ? "app editing" : "app"}>
       <nav className="rail" aria-label="Sections">
         {SECTIONS.map(({ id, label, Icon }) => (
           <button
@@ -865,38 +913,27 @@ export default function App() {
         ))}
       </nav>
 
-      <nav className="tabbar" aria-label="Sections">
-        {SECTIONS.map(({ id, label, Icon }) => (
-          <button
-            key={id}
-            className={tab === id ? "tabbar-item active" : "tabbar-item"}
-            onClick={() => setTab(id)}
-            aria-current={tab === id ? "page" : undefined}
-          >
-            <span className="tabbar-glyph">
-              <Icon size={tab === id ? 17 : 19} width={tab === id ? 2 : 1.9} />
-            </span>
-            <span>{label}</span>
-          </button>
-        ))}
-      </nav>
+      {!editing && (
+        <nav className="tabbar" aria-label="Sections">
+          {SECTIONS.map(({ id, label, Icon }) => (
+            <button
+              key={id}
+              className={tab === id ? "tabbar-item active" : "tabbar-item"}
+              onClick={() => setTab(id)}
+              aria-current={tab === id ? "page" : undefined}
+            >
+              <span className="tabbar-glyph">
+                <Icon size={tab === id ? 17 : 19} width={tab === id ? 2 : 1.9} />
+              </span>
+              <span>{label}</span>
+            </button>
+          ))}
+        </nav>
+      )}
 
       <div className="main">
-        {!manifest && (
-          <div className="banner">
-            Waiting for the device to publish its widget manifest. It does that at boot, so
-            power it on and check it is using the same MQTT broker.
-          </div>
-        )}
-
-      {tab === "design" && (
-        <div className="workspace">
-          {/* What the page header used to carry: which device, how it is, and
-              the one action that sends anything to it. Its own grid area rather
-              than sharing a wrapper with the page list, because the two want
-              different places on a phone -- the device leads there, above the
-              canvas, while the pages stay below it. */}
-          <DeviceCard
+        {!editing && (
+          <TopBar
             status={status}
             panels={panels}
             panelId={panelId}
@@ -906,55 +943,55 @@ export default function App() {
             lastSeenAge={lastSeenAge}
             sync={sync}
             onPush={push}
-            onOpenDevice={() => setTab("device")}
           />
+        )}
 
-          <PageList
-            pages={pages}
-            activeId={activePage?.id}
-            currentPageId={status?.current_page}
-            pageLocked={Boolean(status?.page_locked)}
-            rotation={layout.rotation}
-            onSelect={(id) => {
-              setActivePageId(id);
-              setSelectedId(null);
-            }}
-            onAdd={() => setTab("pages")}
-          />
+        {!manifest && (
+          <div className="banner">
+            Waiting for the panel to describe itself. It does that when it starts, so switch
+            it on and check it uses the same MQTT broker.
+          </div>
+        )}
 
-          <main>
-            <PageBar
-              shape={shape}
-              onShape={setEditShape}
-              shapeSwitchable={hasBothShapes(manifest)}
-              shapeInherited={inherited}
+      {tab === "design" && (
+        <div className={editing ? "workspace editing" : "workspace"}>
+          {!compact && (
+            <PageList
               pages={pages}
               activeId={activePage?.id}
               currentPageId={status?.current_page}
               pageLocked={Boolean(status?.page_locked)}
-              onSelect={(id) => {
-                setActivePageId(id);
-                setSelectedId(null);
-              }}
-              onAddWidget={() => setAdding(true)}
-              canAddWidget={Boolean(manifest)}
-              undo={undo}
-              redo={redo}
-              canUndo={history.canUndo}
-              canRedo={history.canRedo}
-              snapMode={snapMode}
-              onSnap={setSnapMode}
-              zoom={zoom}
-              onZoom={setZoom}
-              chipRow={chipRow}
-              onChipRow={(next) => activePage && setChipRow(activePage.id, next)}
-              hasSelection={Boolean(selected)}
-              onFront={() => setLayer(selectedId, "front")}
-              onBack={() => setLayer(selectedId, "back")}
-              onDuplicate={() => duplicateWidget(selectedId)}
-              onDelete={() => removeWidget(selectedId)}
-              mod={MOD}
+              rotation={layout.rotation}
+              onSelect={selectPage}
+              onAdd={() => setTab("pages")}
             />
+          )}
+
+          <main>
+            {editing && (
+              <EditHead
+                widget={selected}
+                manifest={manifest}
+                layer={layer}
+                layerCount={widgets.length}
+                onDone={() => setSelectedId(null)}
+                onFront={selectionActions.onFront}
+                onBack={selectionActions.onBack}
+                onDuplicate={selectionActions.onDuplicate}
+                onRemove={selectionActions.onDelete}
+              />
+            )}
+
+            {compact && !editing && (
+              <PageTabs
+                pages={pages}
+                activeId={activePage?.id}
+                currentPageId={status?.current_page}
+                onSelect={selectPage}
+              />
+            )}
+
+            {!narrow && pageBar}
 
             <Panel
               panel={panel}
@@ -969,31 +1006,25 @@ export default function App() {
               grid={grid}
               chipRow={chipRow}
               zoom={zoom}
-              mod={MOD}
-              onDragState={setDragging}
               shape={shape}
+              actions={narrow ? null : selectionActions}
             />
+
+            {narrow && !editing && pageBar}
           </main>
 
           <Inspector
             widget={selected}
             manifest={manifest}
-            chipRow={chipRow}
             grid={grid}
             entities={entities}
             devices={devices}
             areas={areas}
             uploads={uploads}
             albums={albums}
-            layer={widgets.findIndex((one) => one.id === selected?.id)}
-            layerCount={widgets.length}
-            dragging={dragging}
             onSetOption={setOption}
             onSetOptions={setOptions}
             onSetSize={setSize}
-            onSetLayer={setLayer}
-            onDuplicate={duplicateWidget}
-            onRemove={removeWidget}
             onClose={() => setSelectedId(null)}
           />
 
@@ -1001,6 +1032,7 @@ export default function App() {
             <WidgetPicker
               manifest={manifest}
               chipRow={chipRow}
+              grid={grid}
               onAdd={addWidget}
               onClose={() => setAdding(false)}
             />
@@ -1011,11 +1043,7 @@ export default function App() {
       {tab === "pages" && (
         <PagesTab
           layout={layout}
-          panels={panels}
-          panelId={panelId}
-          onSelectPanel={selectPanel}
-          onRenamePanel={renamePanel}
-          onForgetPanel={forgetPanel}
+          onChipRow={setChipRow}
           currentPageId={status?.current_page}
           pageLocked={Boolean(status?.page_locked)}
           manifest={manifest}
@@ -1068,12 +1096,7 @@ export default function App() {
       {tab === "device" && (
         <DeviceTab
           status={status}
-          panels={panels}
-          panelId={panelId}
-          onSelectPanel={selectPanel}
-          onRenamePanel={renamePanel}
-          onForgetPanel={forgetPanel}
-          sync={sync}
+          pages={pages}
           lastSeenAge={lastSeenAge}
           sleep={layout.sleep}
           onSleepChange={(next) => persist({ ...layout, sleep: next })}
@@ -1095,7 +1118,7 @@ export default function App() {
           }
           onRefresh={() => api.refreshDevice().then(() => setMessage("Refresh sent"))}
           onShowInfo={() =>
-            api.showDeviceInfo().then(() => setMessage("Device info sent to the panel"))
+            api.showDeviceInfo().then(() => setMessage("Showing diagnostics on the panel"))
           }
           onPush={push}
         />

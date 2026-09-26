@@ -24,6 +24,16 @@ const band = () =>
   getComputedStyle(document.documentElement).getPropertyValue("--host-band").trim() ||
   "#efece6";
 
+// Framed at all, whatever the origin. The stylesheet reads it to leave the home
+// indicator's clearance to the page above -- see --safe-bottom.
+export function markFramed() {
+  try {
+    if (window.parent !== window) document.documentElement.setAttribute("data-framed", "");
+  } catch {
+    // Reading window.parent itself never throws; this is only belt and braces
+  }
+}
+
 export function blendHostBackground() {
   let restore = () => {};
 

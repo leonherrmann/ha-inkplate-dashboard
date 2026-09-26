@@ -213,6 +213,7 @@ for (const scheme of ["light", "dark"]) {
   await install(page);
   await page.goto(`${BASE}/index.html`, { waitUntil: "networkidle" });
   await page.locator(".rail-item[aria-label=Device]").click();
+  await page.locator(".section-row", { hasText: "This editor" }).click();
   await page.getByRole("button", { name: "Dark", exact: true }).click();
   check((await page.evaluate(() => document.documentElement.dataset.theme)) === "dark", "choosing Dark turns it dark on a light OS");
   await page.reload({ waitUntil: "networkidle" });
@@ -222,6 +223,7 @@ for (const scheme of ["light", "dark"]) {
     "with the dark ground, not the light one"
   );
   await page.locator(".rail-item[aria-label=Device]").click();
+  await page.locator(".section-row", { hasText: "This editor" }).click();
   await page.getByRole("button", { name: "Auto", exact: true }).click();
   check((await page.evaluate(() => document.documentElement.dataset.theme)) === "light", "Auto hands it back to the OS");
   await context.close();
@@ -266,24 +268,25 @@ for (const [label, viewport, mobile, scheme] of [
   await inspect("editor");
   await page.locator(".panel .widget").first().click();
   await page.waitForTimeout(350);
-  await inspect("editor, widget selected");
-  if (mobile) {
-    await page.locator(".sheet-summary").click();
-    await page.waitForTimeout(350);
-    await inspect("options sheet");
-  }
+  await inspect(mobile ? "edit screen" : "editor, widget selected");
+  // The edit screen has no tab bar: Done is the way back to the editor
+  if (mobile) await page.getByRole("button", { name: "Done" }).click();
+
+  // The View menu and the push state, both popovers over the page
+  await page.locator(".pagebar .menu-button").click();
+  await page.waitForTimeout(200);
+  await inspect("view menu");
+  await page.keyboard.press("Escape");
 
   await go("Pages");
   await inspect("pages");
   await go("Device");
   await inspect("device");
-  if (mobile) {
-    await page.locator(".setting-row", { hasText: "Appearance" }).click();
-    await page.waitForTimeout(250);
-    await inspect("appearance");
-    await page.getByLabel("Back to Device").click();
-  }
-  await page.locator(mobile ? ".setting-row" : ".action-row", { hasText: "Diagnostics & firmware" }).click();
+  await page.locator(".section-row", { hasText: "This editor" }).click();
+  await page.waitForTimeout(250);
+  await inspect("appearance");
+  if (mobile) await page.locator(".back-row").click();
+  await page.locator(".section-row", { hasText: "Diagnostics" }).click();
   await page.waitForTimeout(250);
   await inspect("diagnostics");
   await go("Images");

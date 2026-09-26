@@ -1,4 +1,4 @@
-import { TimerIcon } from "./Icons.jsx";
+import { Segmented, Setting, Switch } from "./Setting.jsx";
 
 // How often a running timer redraws itself on the panel.
 //
@@ -12,8 +12,8 @@ import { TimerIcon } from "./Icons.jsx";
 // cannot watch its buttons while it redraws, and at that rate it was redrawing
 // more than half the time, so presses went missing.
 export const TIMER_TICKS = [
-  { ms: 5000, label: "Every 5 seconds", hint: "Fewest refreshes, and the most responsive buttons" },
-  { ms: 2500, label: "Every 2.5 seconds", hint: "Livelier, and still leaves the panel time to watch its buttons" },
+  { ms: 5000, label: "Every 5 seconds", hint: "Fewest redraws, most responsive buttons" },
+  { ms: 2500, label: "Every 2.5 seconds", hint: "Livelier, still leaves time for the buttons" },
 ];
 
 export const DEFAULT_TIMER_TICK_MS = 5000;
@@ -23,55 +23,31 @@ export default function TimerSettings({ tickMs, onChange, autoStart, onAutoStart
   const chosen = TIMER_TICKS.find((one) => one.ms === ms);
 
   return (
-    <section className="card">
-      <div className="card-head">
-        <span className="token yellow">
-          <TimerIcon size={16} />
-        </span>
-        <b>Timers</b>
-      </div>
-
-      {/* A group rather than a <label>: a label wrapping several buttons hands
-          each of them the others' text as its accessible name. */}
-      <div className="group-actions" role="group" aria-label="Timer update rate">
-        <span style={{ fontSize: 12, color: "var(--ink-60)" }}>Update rate</span>
-        <div className="seg" style={{ marginLeft: "auto" }}>
-          {TIMER_TICKS.map((option) => (
-            <button
-              key={option.ms}
-              className={ms === option.ms ? "active" : undefined}
-              onClick={() => onChange(option.ms)}
-              aria-pressed={ms === option.ms}
-              title={option.hint}
-            >
-              {option.ms / 1000} s
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <p className="hint">Display cadence only — it does not change the timer itself.</p>
-
-      <div className="inspector-section" style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <div>
-          <b style={{ fontSize: 13.5 }}>Pomodoro auto-start</b>
-          <div className="hint">Next interval begins on its own</div>
-        </div>
-        <label className="switch" style={{ marginLeft: "auto" }}>
-          <span className="sr-only">Pomodoro auto-start</span>
-          <input
-            type="checkbox"
-            checked={autoStart !== false}
-            onChange={(event) => onAutoStartChange(event.target.checked)}
+    <>
+      <Setting
+        title="Countdown redraw"
+        note={chosen?.hint}
+        hint="How often a running timer redraws on the panel. It does not change the timer itself. The panel cannot watch its buttons while it redraws, which is why there is no faster setting."
+        control={
+          <Segmented
+            label="Countdown redraw"
+            value={ms}
+            onChange={onChange}
+            options={TIMER_TICKS.map((option) => ({ value: option.ms, label: `${option.ms / 1000} s` }))}
           />
-        </label>
-      </div>
-
-      <p className="hint">
-        {autoStart === false
-          ? "A focus block or break ends and waits on the panel until you press the middle button."
-          : chosen?.hint || ""}
-      </p>
-    </section>
+        }
+      />
+      <Setting
+        title="Pomodoro auto-start"
+        note={
+          autoStart === false
+            ? "Each block waits for the middle button"
+            : "The next block begins on its own"
+        }
+        control={
+          <Switch label="Pomodoro auto-start" checked={autoStart !== false} onChange={onAutoStartChange} />
+        }
+      />
+    </>
   );
 }

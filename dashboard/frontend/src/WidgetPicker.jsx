@@ -2,7 +2,8 @@ import { useMemo, useState } from "react";
 
 import { Picker, PickerSearch } from "./Picker.jsx";
 import { paletteShot } from "./widgetShots.js";
-import { hasChipRow, isChipType } from "./layout.js";
+import { hasChipRow, isChipType, sizesOn } from "./layout.js";
+import { GridIcon } from "./Icons.jsx";
 
 // Adding a widget. This was a rail down the side of the workspace and a
 // horizontally scrolling strip on a phone -- seventeen buttons in one
@@ -23,7 +24,19 @@ import { hasChipRow, isChipType } from "./layout.js";
 const ALL = "__all__";
 const OTHER = "__other__";
 
-export default function WidgetPicker({ manifest, chipRow, onAdd, onClose }) {
+// The sizes a widget comes in, counted in cells as the options panel counts
+// them. It said "457×172" before, which is a pixel size nobody lays out in.
+function sizesLabel(type, grid) {
+  if (isChipType(type)) return "Chip";
+  const offered = (grid ? sizesOn(type, grid) : type.sizes || []).filter(
+    (one) => one.cols > 0 && one.rows > 0
+  );
+  if (offered.length === 0) return "Sizes to fit";
+  const shown = offered.slice(0, 4).map((one) => `${one.cols}×${one.rows}`);
+  return shown.join(" · ") + (offered.length > 4 ? " …" : "");
+}
+
+export default function WidgetPicker({ manifest, chipRow, grid, onAdd, onClose }) {
   const [query, setQuery] = useState("");
   const [group, setGroup] = useState(ALL);
 
@@ -110,17 +123,19 @@ export default function WidgetPicker({ manifest, chipRow, onAdd, onClose }) {
               }}
             >
               <span className="widget-card-shot">
-                {/* A widget a newer firmware offers but that has no render yet
-                    still lists, just without a picture. */}
-                {shot && <img src={shot.url} alt="" draggable={false} />}
+                {/* A widget with no render yet still lists, with a mark in
+                    place of a picture rather than an empty white box. */}
+                {shot ? (
+                  <img src={shot.url} alt="" draggable={false} />
+                ) : (
+                  <span className="widget-card-blank">
+                    <GridIcon size={22} />
+                  </span>
+                )}
               </span>
               <span className="widget-card-label">{type.label}</span>
               <span className="widget-card-size">
-                {needsRow
-                  ? "needs a chip row"
-                  : type.size_from || !type.width
-                    ? "sizes to fit"
-                    : `${type.width}×${type.height}`}
+                {needsRow ? "Needs a chip row" : sizesLabel(type, grid)}
               </span>
             </button>
           );

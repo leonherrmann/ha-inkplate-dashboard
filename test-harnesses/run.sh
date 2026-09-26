@@ -86,7 +86,7 @@ if [ "$UI" = 1 ]; then
         curl -s -o /dev/null "http://127.0.0.1:$PORT/" && break
         sleep 0.1
     done
-    for h in shapecheck sheetcheck pickercheck devicecheck device-overrides \
+    for h in shapecheck editcheck pickercheck devicecheck device-overrides \
              refreshfloorcheck iconcheck manifestcheck photosizecheck canvascheck \
              chiprowcheck themecheck; do
         run "$h" "$HARN" node "$h.mjs"

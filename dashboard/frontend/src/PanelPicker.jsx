@@ -32,17 +32,14 @@ export function panelSpec(panel) {
   return [model, size, "1-bit"].filter(Boolean).join(" · ");
 }
 
-// `compact` is the form the tab headings use: the name where the eyebrow was,
-// with no avatar and no second line. Which panel a screen of settings belongs
-// to is the first thing to say on it -- the Device and Pages screens are both
-// reachable straight from the rail, without passing the editor's card.
+// Which panel the whole editor is about, from the top bar. Every screen below
+// it -- the layout, the pages, the settings -- is this panel's alone.
 export default function PanelPicker({
   panels,
   selected,
   onSelect,
   onRename,
   onForget,
-  compact = false,
 }) {
   const [open, setOpen] = useState(false);
   const [renaming, setRenaming] = useState(null);
@@ -65,33 +62,20 @@ export default function PanelPicker({
     await onRename(id, draft);
   };
 
-  const trigger = compact ? (
+  // The name and a chevron, always. The list it opens is also where a panel
+  // is renamed, so it is worth opening with only one panel.
+  const trigger = (
     <button
-      className="eyebrow panel-eyebrow"
+      className="topbar-panel"
       onClick={() => setOpen(true)}
-      title={several ? "Choose which panel this is about" : "This panel"}
+      title={several ? "Choose which panel to edit" : "Rename this panel"}
       aria-haspopup="dialog"
     >
-      {panelLabel(current)}
-      {several && <span className="device-chevron" aria-hidden="true" />}
-    </button>
-  ) : (
-    <button
-      className="device-ident"
-      onClick={() => setOpen(true)}
-      title={several ? "Choose which panel to edit" : "This panel"}
-      aria-haspopup="dialog"
-    >
-      <span className="device-mark">
-        <MonitorIcon size={17} />
+      <span className="topbar-mark">
+        <MonitorIcon size={14} />
       </span>
-      <span className="device-text">
-        <span className="device-name">
-          {panelLabel(current)}
-          {several && <span className="device-chevron" aria-hidden="true" />}
-        </span>
-        <span className="device-spec">{panelSpec(current)}</span>
-      </span>
+      <span className="topbar-name">{panelLabel(current)}</span>
+      <span className="device-chevron" aria-hidden="true" />
     </button>
   );
 
@@ -174,14 +158,12 @@ export default function PanelPicker({
             ))}
             {panels.length === 0 && (
               <p className="panel-empty">
-                No panel has been seen yet. Power one on and make sure it reaches the same
-                MQTT broker as Home Assistant.
+                No panel yet. Switch one on; it appears here once it reaches the MQTT broker.
               </p>
             )}
           </div>
           <p className="picker-note">
-            Each panel keeps its own pages and settings. A panel appears here by itself, as
-            soon as it is switched on.
+            Each panel keeps its own pages and settings.
           </p>
         </Picker>
       )}

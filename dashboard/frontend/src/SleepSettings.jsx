@@ -1,14 +1,14 @@
-import { MoonIcon } from "./Icons.jsx";
+import { Segmented, Setting, Switch } from "./Setting.jsx";
 
 // Nightly deep sleep. e-ink keeps its image with the power off, so a sleeping
 // device still shows the dashboard, it just stops updating.
 
 const WAKE_CHOICES = [
   { minutes: 0, label: "Never" },
-  { minutes: 15, label: "15" },
+  { minutes: 15, label: "15 min" },
   { minutes: 30, label: "30 min" },
-  { minutes: 60, label: "60" },
-  { minutes: 120, label: "120" },
+  { minutes: 60, label: "1 h" },
+  { minutes: 120, label: "2 h" },
 ];
 
 export default function SleepSettings({ sleep, onChange }) {
@@ -17,68 +17,65 @@ export default function SleepSettings({ sleep, onChange }) {
   const wake = Number(value.wake_minutes ?? 30);
 
   return (
-    <section className="card">
-      <div className="card-head">
-        <span className="token violet">
-          <MoonIcon size={16} />
-        </span>
-        <b>Night sleep</b>
-        <label className="switch" style={{ marginLeft: "auto" }}>
-          <span className="sr-only">Sleep through the night to save battery</span>
-          <input
-            type="checkbox"
+    <>
+      <Setting
+        title="Night sleep"
+        note={value.enabled ? "The dashboard stays up; it stops updating" : "Off"}
+        hint="E-ink keeps its picture with the power off, so a sleeping panel still shows the dashboard. It just stops updating until morning, which saves most of a night's battery."
+        control={
+          <Switch
+            label="Sleep through the night"
             checked={Boolean(value.enabled)}
-            onChange={(event) => set("enabled", event.target.checked)}
+            onChange={(next) => set("enabled", next)}
           />
-        </label>
-      </div>
+        }
+      />
 
       {value.enabled && (
         <>
-          <div className="field-row">
-            <label className="time-box">
-              <span>From</span>
-              <input
-                type="time"
-                value={value.start || "23:00"}
-                onChange={(event) => set("start", event.target.value)}
+          <Setting
+            title="Hours"
+            control={
+              <div className="time-pair">
+                <label className="time-box">
+                  <span>From</span>
+                  <input
+                    type="time"
+                    value={value.start || "23:00"}
+                    onChange={(event) => set("start", event.target.value)}
+                  />
+                </label>
+                <label className="time-box">
+                  <span>Until</span>
+                  <input
+                    type="time"
+                    value={value.end || "06:00"}
+                    onChange={(event) => set("end", event.target.value)}
+                  />
+                </label>
+              </div>
+            }
+          />
+          <Setting
+            stacked
+            title="Wake to check for changes"
+            note={
+              wake === 0
+                ? "The clock stops overnight, and changes wait until morning"
+                : "Every wake takes about 20 seconds"
+            }
+            hint="While asleep the panel can wake briefly to move the clock on and collect anything pushed. More often costs more battery."
+            control={
+              <Segmented
+                label="Wake to check for changes"
+                value={wake}
+                onChange={(next) => set("wake_minutes", next)}
+                options={WAKE_CHOICES.map((choice) => ({ value: choice.minutes, label: choice.label }))}
               />
-            </label>
-            <label className="time-box">
-              <span>Until</span>
-              <input
-                type="time"
-                value={value.end || "06:00"}
-                onChange={(event) => set("end", event.target.value)}
-              />
-            </label>
-          </div>
-
-          {/* A group rather than a <label>: a label wrapping several buttons
-              hands each of them the others' text as its accessible name. */}
-          <div className="field-block" role="group" aria-label="Wake to collect pushes">
-            <span>Wake to collect pushes</span>
-            <div className="pill-row">
-              {WAKE_CHOICES.map((choice) => (
-                <button
-                  key={choice.minutes}
-                  className={wake === choice.minutes ? "pill active" : "pill"}
-                  onClick={() => set("wake_minutes", choice.minutes)}
-                  aria-pressed={wake === choice.minutes}
-                >
-                  {choice.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <p className="hint">
-            {wake === 0
-              ? "The clock will show the time it went to sleep until morning, and a push will not arrive until then."
-              : "Each wake takes about 20 seconds, enough to refresh the clock and collect anything pushed while asleep."}
-          </p>
+            }
+          />
         </>
       )}
-    </section>
+    </>
   );
 }

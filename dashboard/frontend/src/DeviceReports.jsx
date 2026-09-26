@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import * as api from "./api.js";
 import { formatAge } from "./DeviceStats.jsx";
+import { Hint } from "./Popover.jsx";
 
 // How long to keep looking for what was asked for. A panel busy with an e-ink
 // refresh, or one that has just woken, can take several seconds to get to its
@@ -65,8 +66,7 @@ function useAskAndWait(ask, fetchLatest, stampOf) {
       if (Date.now() >= deadline) {
         setWaiting(false);
         setError(
-          "The panel did not answer. It may be asleep for the night, off the " +
-            "broker, or running a firmware from before this was added."
+          "No answer. The panel may be asleep, off the broker, or on older firmware."
         );
         return;
       }
@@ -158,7 +158,13 @@ export default function DeviceReports({ now }) {
   return (
     <>
       <section className="group">
-        <h3>Screen</h3>
+        <h3 className="setting-title">
+          Screenshot
+          <Hint label="About screenshots">
+            The panel sends the picture it is showing, exactly. It is also a Screen entity
+            in Home Assistant, so a capture can go on a dashboard there.
+          </Hint>
+        </h3>
 
         <div className="group-actions">
           <button disabled={screenshot.waiting} onClick={screenshot.request}>
@@ -180,21 +186,18 @@ export default function DeviceReports({ now }) {
             height={shot.height}
           />
         ) : (
-          <p className="hint">
-            Nothing captured yet. The panel sends the framebuffer it is showing,
-            which is the one thing about it none of the readings above can stand
-            in for.
-          </p>
+          <p className="hint">Nothing captured yet.</p>
         )}
-
-        <p className="hint">
-          Also a Screen entity in Home Assistant, so a captured picture can go on
-          a dashboard there.
-        </p>
       </section>
 
       <section className="group">
-        <h3>Log</h3>
+        <h3 className="setting-title">
+          Log
+          <Hint label="About the log">
+            The panel keeps its last few kilobytes of output and sends them when asked, and
+            once by itself after every start, which is when faults tend to happen.
+          </Hint>
+        </h3>
 
         <div className="group-actions">
           <button disabled={logs.waiting} onClick={logs.request}>
@@ -219,12 +222,7 @@ export default function DeviceReports({ now }) {
         {log?.text ? (
           <pre className="device-log">{log.text}</pre>
         ) : (
-          <p className="hint">
-            Nothing yet. The panel keeps its last few kilobytes of output and
-            sends them when asked — and once on its own after every boot, which
-            is the copy worth having: the faults this device has had all happen
-            during startup, hours from anyone holding a serial cable.
-          </p>
+          <p className="hint">Nothing received yet.</p>
         )}
       </section>
     </>

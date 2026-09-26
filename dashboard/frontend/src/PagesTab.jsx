@@ -18,9 +18,9 @@ import { CSS } from "@dnd-kit/utilities";
 
 import PageThumb from "./PageThumb.jsx";
 import { EyeIcon, GripIcon, LockIcon, PencilIcon, TrashIcon } from "./Icons.jsx";
-import { DEFAULT_CHIP_ROW, arrangementFor } from "./layout.js";
+import { CHIP_ROW_POSITIONS, DEFAULT_CHIP_ROW, arrangementFor } from "./layout.js";
 import { effectiveDwell, formatClock, formatDuration } from "./format.js";
-import PanelPicker from "./PanelPicker.jsx";
+import { Hint } from "./Popover.jsx";
 
 // The pages of the dashboard: what they are called, what order they come in,
 // which of them the panel cycles through, and for how long.
@@ -53,11 +53,6 @@ const DWELLS = [
   { value: 900, label: "15 min" },
 ];
 
-function chipRowPhrase(page) {
-  const chipRow = page.chip_row || DEFAULT_CHIP_ROW;
-  return chipRow === "off" ? "chip row off" : `chip row ${chipRow}`;
-}
-
 function Row({
   page,
   index,
@@ -73,6 +68,8 @@ function Row({
   onToggleLock,
   onRemove,
   onEdit,
+  onChipRow,
+  defaultDwell,
 }) {
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } =
     useSortable({ id: page.id });
@@ -130,28 +127,43 @@ function Row({
         </div>
 
         <div className="page-row-meta">
-          {widgets} {widgets === 1 ? "widget" : "widgets"} · {chipRowPhrase(page)} ·{" "}
-          {/* Dwell reads as part of the sentence and opens as a menu. The design
-              draws it as plain text, and a page's time on screen is a fact about
-              the page before it is a setting -- but it has to be settable
-              somewhere, and the sentence that states it is the honest place. */}
+          {widgets} {widgets === 1 ? "widget" : "widgets"} ·{" "}
+          {/* Each setting reads as part of the sentence and opens as a menu: a
+              page's chip row and time on screen are facts about it before they
+              are settings. The chip row goes through App, because moving it
+              moves every widget on the page. */}
+          <label className="meta-dwell">
+            <span className="sr-only">Chip row</span>
+            <select
+              value={page.chip_row || DEFAULT_CHIP_ROW}
+              onChange={(event) => onChipRow(event.target.value)}
+            >
+              {CHIP_ROW_POSITIONS.map(({ id, label }) => (
+                <option key={id} value={id}>
+                  chips {label.toLowerCase()}
+                </option>
+              ))}
+            </select>
+          </label>
           {page.queued ? (
-            <label className="meta-dwell">
-              <span className="sr-only">Time on this page</span>
-              dwell{" "}
-              <select
-                value={String(page.dwell_seconds || 0)}
-                onChange={(event) => onSet({ dwell_seconds: Number(event.target.value) })}
-              >
-                {DWELLS.map((entry) => (
-                  <option key={entry.value} value={entry.value}>
-                    {entry.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <>
+              {" · "}
+              <label className="meta-dwell">
+                <span className="sr-only">Time on this page</span>
+                <select
+                  value={String(page.dwell_seconds || 0)}
+                  onChange={(event) => onSet({ dwell_seconds: Number(event.target.value) })}
+                >
+                  {DWELLS.map((entry) => (
+                    <option key={entry.value} value={entry.value}>
+                      {entry.value === 0 ? `${formatDuration(defaultDwell)} (usual)` : entry.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </>
           ) : (
-            "kept, reachable by command"
+            " · paused, shown only on request"
           )}
         </div>
       </div>
@@ -227,8 +239,7 @@ function CycleCard({ rotation, queued, totalCycle }) {
       <section className="card">
         <span className="eyebrow">Cycle</span>
         <p className="hint" style={{ marginTop: 10 }}>
-          Rotation is off, so the panel stays on whichever page it was last sent and
-          nothing here is running. Turn it on above to cycle.
+          Rotation is off: the panel stays on the page it was last sent.
         </p>
       </section>
     );
@@ -240,8 +251,8 @@ function CycleCard({ rotation, queued, totalCycle }) {
         <span className="eyebrow">Cycle</span>
         <p className="hint" style={{ marginTop: 10 }}>
           {queued.length === 1
-            ? `Only “${queued[0].name || queued[0].id}” is queued, so it simply stays put. Queue a second page to start a cycle.`
-            : "No page is queued, so there is nothing to cycle. Queue at least two."}
+            ? `Only “${queued[0].name || queued[0].id}” is queued, so it stays put.`
+            : "No page is queued."}
         </p>
       </section>
     );
@@ -272,11 +283,7 @@ function CycleCard({ rotation, queued, totalCycle }) {
 
 export default function PagesTab({
   layout,
-  panels,
-  panelId,
-  onSelectPanel,
-  onRenamePanel,
-  onForgetPanel,
+  onChipRow,
   currentPageId,
   pageLocked,
   manifest,
@@ -334,28 +341,20 @@ export default function PagesTab({
   const lockedPage = pages.find((page) => page.id === currentPageId);
 
   return (
-    <div className="pages-screen">
-      <div className="pages-main">
+    <div className="pages-wrap">
+        {/* Above both columns, so the list and the cycle card start level */}
         <header className="screen-head">
-          <div>
-            {/* Pages are per panel: this list is this panel's dashboard, and
-                the rotation settings beside it are its own too. */}
-            <PanelPicker
-              compact
-              panels={panels}
-              selected={panelId}
-              onSelect={onSelectPanel}
-              onRename={onRenamePanel}
-              onForget={onForgetPanel}
-            />
-            <h2>Pages</h2>
-          </div>
+          <h2 className="screen-title">
+            Pages
+            <Hint label="About pages">
+              The order here is the order they rotate in; drag a page by its handle to move
+              it. A paused page is kept but never comes up on its own &mdash; the eye still
+              puts it on the panel, and so can a Home Assistant automation.
+            </Hint>
+          </h2>
 
-          {/* Both header pills describe the list below them rather than any one
-              page, which is why they are here and not in a card of their own at
-              the foot of the screen where they used to be. */}
           <label className="pill-field pill-toggle">
-            <span>Rotate pages</span>
+            <span>Rotate</span>
             <input
               type="checkbox"
               checked={Boolean(rotation.enabled)}
@@ -364,7 +363,7 @@ export default function PagesTab({
           </label>
 
           <label className="pill-field">
-            <span>Default dwell</span>
+            <span>Each page</span>
             <select
               value={String(rotation.default_dwell_seconds ?? 60)}
               onChange={(event) => setRotation("default_dwell_seconds", Number(event.target.value))}
@@ -379,6 +378,8 @@ export default function PagesTab({
           </label>
         </header>
 
+      <div className="pages-screen">
+      <div className="pages-main">
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
           <SortableContext items={pages.map((page) => page.id)} strategy={verticalListSortingStrategy}>
             <ol className="page-list">
@@ -399,6 +400,8 @@ export default function PagesTab({
                   onToggleLock={() => onSetPageLock(!pageLocked)}
                   onEdit={() => onEditPage(page.id)}
                   onRemove={() => remove(page.id)}
+                  onChipRow={(next) => onChipRow(page.id, next)}
+                  defaultDwell={rotation.default_dwell_seconds ?? 60}
                 />
               ))}
             </ol>
@@ -409,7 +412,6 @@ export default function PagesTab({
             wraps under it rather than the label breaking across two lines. */}
         <button className="add-button" onClick={onAddPage}>
           <b>+&nbsp; Add page</b>
-          <span>— inherits the chip row of the page you are editing</span>
         </button>
       </div>
 
@@ -425,23 +427,16 @@ export default function PagesTab({
               Page held
             </div>
             <p>
-              Rotation is pinned to <b>{lockedPage?.name || lockedPage?.id || "one page"}</b>,
-              from a hold on the panel's own button or the padlock on that row above. The
-              cycle below is not running. Release it either way — the panel forgets it on
-              a reboot regardless.
+              The panel is held on <b>{lockedPage?.name || lockedPage?.id || "one page"}</b>, so
+              rotation is paused. Release it with the padlock above or the panel's button.
             </p>
           </div>
         )}
 
         <CycleCard rotation={rotation} queued={queued} totalCycle={totalCycle} />
 
-        <div className="card side-note">
-          Dwell <b>default</b> on a page means it uses the default above. Page order here
-          is the rotation order — drag a page by its handle to move it. A paused page is
-          kept but never comes up on its own; Show still puts it on the panel, as can a
-          Home Assistant automation.
-        </div>
       </aside>
+      </div>
     </div>
   );
 }

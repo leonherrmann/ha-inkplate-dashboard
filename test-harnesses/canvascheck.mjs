@@ -19,6 +19,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { webkit } from "playwright";
+import { arrangement } from "./arrangement.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const BASE = "http://127.0.0.1:8127";
@@ -301,7 +302,7 @@ console.log("--- the two arrangements of one page ---");
   await page.goto(`${BASE}/index.html`, { waitUntil: "networkidle" });
   await page.waitForSelector(".panel .widget", { timeout: 8000 });
 
-  const switcher = page.locator(".bar-menu select").filter({ hasText: "Upright layout" });
+  const switcher = arrangement(page);
   check(await switcher.count() === 1, "the toolbar offers the two arrangements");
 
   const canvas = async () => {

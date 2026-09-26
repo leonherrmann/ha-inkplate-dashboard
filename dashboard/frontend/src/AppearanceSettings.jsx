@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { MonitorIcon } from "./Icons.jsx";
+import { Segmented, Setting } from "./Setting.jsx";
 import { onThemeChange, resolvedTheme, setThemeChoice, themeChoice, themeSource } from "./theme.js";
 
 // Light or dark, for this editor only.
@@ -24,33 +24,25 @@ export default function AppearanceSettings() {
   const { choice, theme } = useThemeChoice();
 
   return (
-    <section className="card">
-      <div className="card-head">
-        <span className="token violet">
-          <MonitorIcon size={16} />
-        </span>
-        <b>Appearance</b>
-      </div>
-
-      <div className="seg wide" role="group" aria-label="Editor theme">
-        {["auto", "light", "dark"].map((one) => (
-          <button
-            key={one}
-            className={choice === one ? "active" : undefined}
-            onClick={() => setThemeChoice(one)}
-            aria-pressed={choice === one}
-          >
-            {one === "auto" ? "Auto" : THEME_LABELS[one]}
-          </button>
-        ))}
-      </div>
-
-      <p className="hint">
-        {choice === "auto"
-          ? `Following ${themeSource() === "home-assistant" ? "Home Assistant" : "this device"}, which is ${theme} right now. `
-          : ""}
-        This editor only, kept in this browser. The panel and its preview stay black on white.
-      </p>
-    </section>
+    <Setting
+      title="Theme"
+      note={
+        choice === "auto"
+          ? `Following ${themeSource() === "home-assistant" ? "Home Assistant" : "this device"} (${theme})`
+          : "Kept in this browser"
+      }
+      hint="This editor only, kept in this browser. The panel and its preview stay black on white."
+      control={
+        <Segmented
+          label="Editor theme"
+          value={choice}
+          onChange={setThemeChoice}
+          options={["auto", "light", "dark"].map((one) => ({
+            value: one,
+            label: one === "auto" ? "Auto" : THEME_LABELS[one],
+          }))}
+        />
+      }
+    />
   );
 }

@@ -140,12 +140,12 @@ await page.waitForSelector(".panel .widget", { timeout: 5000 });
 
 console.log("--- the grid on a phone ---");
 
+// Tapping a widget on a phone opens its edit screen: the canvas pinned at the
+// top and the options under it.
 const openSheet = async (index) => {
   await page.locator(".panel .widget").nth(index).click();
-  await page.waitForSelector(".sheet", { timeout: 3000 });
-  await page.locator(".sheet-summary").click();
-  await page.waitForTimeout(350);
-  await page.waitForSelector(".sheet-body", { timeout: 3000 });
+  await page.waitForSelector(".edit-fields", { timeout: 3000 });
+  await page.waitForTimeout(250);
 };
 
 // "Icon" on the room card, "Icon override" on the entity card -- both are the
@@ -219,7 +219,7 @@ check(
 );
 
 // Back to the list, which is where the choice has to show.
-await page.locator(".inspector-head .icon-button").first().click();
+await page.locator(".back-row").first().click();
 await page.waitForTimeout(250);
 
 const chosen = (await iconRow().locator(".option-row-value").innerText()).trim();
@@ -233,8 +233,7 @@ check(
 
 console.log("--- a list short enough to take in at once ---");
 
-await page.locator(".sheet-close, .sheet-head button").first().click().catch(() => {});
-await page.keyboard.press("Escape").catch(() => {});
+await page.getByRole("button", { name: "Done" }).click();
 await openSheet(1);
 await iconRow().click();
 await page.waitForSelector(".icon-grid", { timeout: 3000 });
@@ -254,7 +253,7 @@ await page.setViewportSize(DESKTOP);
 await page.reload({ waitUntil: "networkidle" });
 await page.waitForSelector(".panel .widget", { timeout: 5000 });
 await page.locator(".panel .widget").first().click();
-await page.waitForSelector(".sheet-body, .inspector", { timeout: 3000 });
+await page.waitForSelector(".inspector.open", { timeout: 3000 });
 
 const trigger = page.locator(".icon-trigger");
 check(await trigger.count() === 1, "the field is a trigger, not a select of seventy names");
