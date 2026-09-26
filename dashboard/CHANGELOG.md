@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026.9.79
+
+Add-on only. Works with firmware **v2026.9.77**; nothing to flash.
+
+- **The panel list opens where you clicked.** Choosing a panel in the top
+  left now drops a short list right under the name, instead of a window in
+  the middle of the screen. Rename and Forget are still on each row.
+
 ## 2026.9.78
 
 Add-on only. Works with firmware **v2026.9.77**; nothing to flash.
