@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026.9.86
+
+Add-on only. Works with firmware **v2026.9.77**; nothing to flash.
+
+- **A floating tab bar on phones**, like iOS's own: a rounded glass capsule
+  that stands above the home indicator, with the chosen tab's pill fitting
+  snugly inside it. The icons are bigger and centred in the pill.
+
 ## 2026.9.85
 
 Add-on only. Works with firmware **v2026.9.77**; nothing to flash.
