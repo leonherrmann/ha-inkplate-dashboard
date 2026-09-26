@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 
 import { Segmented, Setting } from "./Setting.jsx";
 import { onThemeChange, resolvedTheme, setThemeChoice, themeChoice, themeSource } from "./theme.js";
-import { measureHost } from "./hostChrome.js";
+import { measureHost, probeHost } from "./hostChrome.js";
 
 // Light or dark, for this editor only.
 //
@@ -53,8 +53,12 @@ export default function AppearanceSettings() {
 // anywhere but on a phone, and these are what it is placed from.
 export function ScreenFit() {
   const [found, setFound] = useState(() => measureHost());
+  const [probe, setProbe] = useState(() => (window.parent !== window ? probeHost() : []));
   useEffect(() => {
-    const update = () => setFound(measureHost());
+    const update = () => {
+      setFound(measureHost());
+      if (window.parent !== window) setProbe(probeHost());
+    };
     window.addEventListener("inkplate-host-fit", update);
     window.addEventListener("resize", update);
     return () => {
@@ -75,9 +79,15 @@ export function ScreenFit() {
 
   return (
     <Setting
+      stacked
       title="Screen fit"
       note={note}
       hint="Where the editor sits inside the Home Assistant app, which is what the tab bar is placed from. Shown while its position on iPhones is being checked."
+      control={
+        probe.length > 0 && (
+          <pre className="screen-fit-probe">{probe.join("\n")}</pre>
+        )
+      }
     />
   );
 }
