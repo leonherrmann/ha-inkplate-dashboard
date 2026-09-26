@@ -924,7 +924,7 @@ export default function App() {
               aria-current={tab === id ? "page" : undefined}
             >
               <span className="tabbar-glyph">
-                <Icon size={27} width={tab === id ? 2 : 1.8} />
+                <Icon size={24} width={tab === id ? 2 : 1.8} />
               </span>
               <span>{label}</span>
             </button>

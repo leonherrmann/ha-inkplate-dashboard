@@ -87,10 +87,11 @@
   /* Where the floating tab bar stands: above the home indicator when there is
      one, a small margin off the bottom edge when there is not. */
   --tabbar-lift: max(12px, calc(var(--safe-bottom) - 6px));
-  /* How much of the screen's foot the tab bar takes: a 66px capsule (1 border
-     + 5 padding + a 54px item + 5 + 1) standing on its lift. Kept in step with
+  /* How much of the screen's foot the tab bar takes: a 62px capsule (1 border
+     + 4 padding + a 52px item + 4 + 1), iOS 26's own height, standing on its
+     lift. Kept in step with
      the .tabbar rule by hand. */
-  --tabbar-h: calc(66px + var(--tabbar-lift));
+  --tabbar-h: calc(62px + var(--tabbar-lift));
 
   /* Which of the two the band outside the frame should take. The stylesheet
      owns the decision so the breakpoint lives in one place; hostChrome.js only
@@ -165,20 +166,20 @@
 
   --ink-rgb: 236, 233, 227;
   --shade-rgb: 0, 0, 0;
-  --paper-rgb: 46, 45, 53;
+  --paper-rgb: 46, 45, 48;
 
   --ink: #ece9e3;
-  --on-ink: #131217;
-  --ground: #131217;
+  --on-ink: #151416;
+  --ground: #151416;
 
-  --surface: #33323a;
-  --surface-2: #1d1c22;
-  --raised: #4a4952;
+  --surface: #333235;
+  --surface-2: #1f1e20;
+  --raised: #4a494d;
 
-  /* rgba(46, 45, 53, 0.9) over the ground */
-  --tabbar: #2b2a32;
+  /* rgba(46, 45, 48, 0.9) over the ground */
+  --tabbar: #2b2a2d;
 
-  --wash: radial-gradient(120% 90% at 8% -10%, rgba(122, 90, 245, 0.2), transparent 60%),
+  --wash: radial-gradient(120% 90% at 8% -10%, rgba(122, 90, 245, 0.07), transparent 60%),
     radial-gradient(90% 80% at 100% 0%, rgba(242, 179, 51, 0.09), transparent 58%),
     radial-gradient(100% 100% at 60% 110%, rgba(18, 163, 160, 0.12), transparent 62%);
 
@@ -3686,7 +3687,7 @@ input[type="range"]::-moz-range-thumb {
     z-index: 40;
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    padding: 5px;
+    padding: 4px;
     border-radius: 999px;
     background: rgba(var(--paper-rgb), 0.88);
     backdrop-filter: blur(24px) saturate(1.6);
@@ -3705,12 +3706,15 @@ input[type="range"]::-moz-range-thumb {
     box-shadow: none;
     padding: 0;
     color: var(--ink-60);
-    font-size: 11px;
+    /* iOS's tab-bar size, in the editor's own face */
+    font-size: 10px;
+    line-height: 12px;
     font-weight: 500;
+    letter-spacing: 0.01em;
   }
 
   .tabbar-item .tabbar-glyph {
-    height: 27px;
+    height: 26px;
     display: grid;
     place-items: center;
     color: var(--ink-40);
@@ -3720,7 +3724,7 @@ input[type="range"]::-moz-range-thumb {
      than a pill round the icon with the name hanging under it. */
   .tabbar-item {
     justify-self: center;
-    padding: 6px 0 5px;
+    padding: 7px 0 5px;
     width: 100%;
     /* The iOS tab bar's selection: a stadium with fully round ends, about
        1.8 times as wide as it is tall and as tall as the bar allows. The
