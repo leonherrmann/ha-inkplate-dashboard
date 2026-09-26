@@ -333,8 +333,10 @@ await noSpill("on a desktop");
 // of the bottom leaves the bar alone, and one that runs past it lifts the bar
 // by the overrun.
 for (const [what, height, want] of [
-  ["a frame that stops 34px short of the bottom", "calc(100% - 34px)", "6px"],
-  ["a frame that runs 20px past the bottom", "calc(100% + 20px)", "26px"],
+  // The floating bar stands on max(12px, clearance - 6px): its own margin
+  // when nothing needs clearing, higher only when the frame overruns.
+  ["a frame that stops 34px short of the bottom", "calc(100% - 34px)", "12px"],
+  ["a frame that runs 20px past the bottom", "calc(100% + 20px)", "14px"],
 ]) {
   console.log(`--- ${what} ---`);
   const outer = await browser.newPage({ viewport: PHONE, hasTouch: true, isMobile: true });
@@ -347,8 +349,8 @@ for (const [what, height, want] of [
   await frame.waitForSelector(".tabbar", { timeout: 8000 }).catch(() => {});
   await frame.waitForTimeout(500);
   check(await frame.evaluate(() => document.documentElement.hasAttribute("data-framed")), "the editor knows it is framed");
-  const pad = await frame.evaluate(() => getComputedStyle(document.querySelector(".tabbar")).paddingBottom).catch(() => "none");
-  check(pad === want, `the tab bar leaves ${want} under its labels (${pad})`);
+  const lift = await frame.evaluate(() => getComputedStyle(document.querySelector(".tabbar")).bottom).catch(() => "none");
+  check(lift === want, `the floating tab bar stands ${want} off the frame's foot (${lift})`);
   await outer.close();
 }
 
@@ -378,9 +380,9 @@ for (const [what, height, want] of [
   await frame.waitForTimeout(500);
   const bar = await frame.evaluate(() => {
     const style = getComputedStyle(document.querySelector(".tabbar"));
-    return { pad: style.paddingBottom, colour: style.backgroundColor };
+    return { lift: style.bottom, colour: style.backgroundColor };
   });
-  check(bar.pad === "6px", `the bar is not lifted (${bar.pad})`);
+  check(bar.lift === "12px", `the bar is not lifted past its own margin (${bar.lift})`);
   check(bar.colour !== "rgb(17, 17, 17)", `with no inset there is no strip, so the bar keeps its own colour (${bar.colour})`);
   await context.close();
 }
@@ -411,7 +413,7 @@ for (const [what, height, want] of [
     getComputedStyle(document.querySelector("ha-panel").shadowRoot.querySelector("iframe")).paddingBottom);
   check(pad === "0px", `the frame's padding is cancelled (${pad})`);
   const bar = await frame.evaluate(() => document.querySelector(".tabbar").getBoundingClientRect().bottom);
-  check(Math.abs(bar - PHONE.height) < 1, `so the tab bar reaches the bottom of the screen (${Math.round(bar)})`);
+  check(Math.abs(bar - (PHONE.height - 12)) < 1, `so the floating tab bar stands its own margin off the screen's foot (${Math.round(bar)})`);
   await outer.close();
 }
 

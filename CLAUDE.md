@@ -306,6 +306,12 @@ to hide what is under it.
   Screen fit readout in Settings showed the numbers while this was worked
   out; it is gone, and git has it if the bar ever needs diagnosing again. `editcheck` covers the geometry in a mock frame; only a
   phone can cover the inset.
+- **The phone's tab bar floats**, as iOS 26 draws its own: a glass capsule
+  inset 14px, standing on `--tabbar-lift` (`max(12px, clearance - 6px)`),
+  with the chosen tab a stadium pill filling its height at a 5px inset so the
+  two sets of round ends are concentric. The iOS selection was measured from a
+  screenshot: a true semicircle-ended stadium, not a squircle, so
+  `border-radius: 999px` is exact. `--tabbar-h` is what the page reserves.
 - **Settings is the last tab** and the Device screen is called Settings. The
   panel switcher in the top bar only chooses; naming and forgetting a panel are
   in Settings > Panels. With one panel the switcher is a plain name.

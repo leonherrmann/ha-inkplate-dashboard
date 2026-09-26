@@ -84,9 +84,13 @@
      inside the frame as well -- so adding it again put the tab bar's labels
      40pt above the frame's edge. hostChrome.js marks the frame. */
   --safe-bottom: env(safe-area-inset-bottom, 0px);
-  /* How tall the tab bar is: 6 top + a 50px item (3 + 26 glyph + 3 gap + 14
-     label + 4) + 6 bottom. Kept in step with the .tabbar rule by hand. */
-  --tabbar-h: calc(62px + var(--safe-bottom));
+  /* Where the floating tab bar stands: above the home indicator when there is
+     one, a small margin off the bottom edge when there is not. */
+  --tabbar-lift: max(12px, calc(var(--safe-bottom) - 6px));
+  /* How much of the screen's foot the tab bar takes: a 66px capsule (1 border
+     + 5 padding + a 54px item + 5 + 1) standing on its lift. Kept in step with
+     the .tabbar rule by hand. */
+  --tabbar-h: calc(66px + var(--tabbar-lift));
 
   /* Which of the two the band outside the frame should take. The stylesheet
      owns the decision so the breakpoint lives in one place; hostChrome.js only
@@ -3654,7 +3658,7 @@ input[type="range"]::-moz-range-thumb {
   .app {
     padding: 12px;
     /* Clear of the fixed tab bar, plus the home indicator on an iPhone */
-    padding-bottom: calc(86px + var(--safe-bottom));
+    padding-bottom: calc(var(--tabbar-h) + 16px);
     gap: 0;
     --gap: 12px;
   }
@@ -3666,27 +3670,29 @@ input[type="range"]::-moz-range-thumb {
   /* Fixed rather than sticky: a sticky footer inside a grid column loses its
      containing block once the column scrolls, and lands mid-page. */
   :root {
-    --host-band: var(--tabbar);
+    --host-band: var(--ground);
   }
 
+  /* A floating capsule, as iOS 26 draws its own: inset from the screen's
+     edges, standing above the home indicator, glass over the page. The chosen
+     tab's pill fills its height with the same inset all round, so the two
+     rounded ends are concentric -- which is what makes the pill look right
+     inside it. */
   .tabbar {
     position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    left: 14px;
+    right: 14px;
+    bottom: var(--tabbar-lift);
     z-index: 40;
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    /* Flat, not translucent. The band below the frame is painted this exact
-       colour from hostChrome.js, and only a flat one can be matched -- a
-       backdrop-filtered bar changes shade with whatever scrolls behind it, and
-       the join would shimmer. */
-    background: var(--tabbar);
-    border-top: 1px solid var(--ink-12);
-    /* 6 at the foot, plus the home indicator's clearance only when this page
-       owns the viewport. Framed, Home Assistant's band below us already is
-       that clearance -- see --safe-bottom. */
-    padding: 6px 6px calc(6px + var(--safe-bottom));
+    padding: 5px;
+    border-radius: 999px;
+    background: rgba(var(--paper-rgb), 0.88);
+    backdrop-filter: blur(24px) saturate(1.6);
+    -webkit-backdrop-filter: blur(24px) saturate(1.6);
+    border: 1px solid var(--ink-12);
+    box-shadow: 0 14px 32px -14px rgba(var(--shade-rgb), 0.55);
   }
 
   .tabbar-item {
@@ -3704,7 +3710,7 @@ input[type="range"]::-moz-range-thumb {
   }
 
   .tabbar-item .tabbar-glyph {
-    height: 26px;
+    height: 27px;
     display: grid;
     place-items: center;
     color: var(--ink-40);
@@ -3714,14 +3720,14 @@ input[type="range"]::-moz-range-thumb {
      than a pill round the icon with the name hanging under it. */
   .tabbar-item {
     justify-self: center;
-    padding: 3px 0 4px;
-    width: calc(100% - 4px);
+    padding: 6px 0 5px;
+    width: 100%;
     /* The iOS tab bar's selection: a stadium with fully round ends, about
        1.8 times as wide as it is tall and as tall as the bar allows. The
        proportion is what makes it soft -- a narrower one with the same round
        ends read as a box. */
     border-radius: 999px;
-    gap: 3px;
+    gap: 2px;
   }
 
   .tabbar-item.active,
@@ -3746,7 +3752,7 @@ input[type="range"]::-moz-range-thumb {
 
   /* The toast clears the tab bar rather than sitting behind it */
   .toast {
-    bottom: calc(86px + var(--safe-bottom));
+    bottom: calc(var(--tabbar-h) + 12px);
   }
 
   .panel-outer {
