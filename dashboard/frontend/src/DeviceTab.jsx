@@ -19,13 +19,13 @@ import { TIMER_TICKS } from "./TimerSettings.jsx";
 import { DEFAULT_GHOST_PERCENT as REFRESH_DEFAULT, REFRESH_LEVELS } from "./RefreshSettings.jsx";
 import {
   ArrowRight,
+  BoltIcon,
   ChevronLeft,
   ChevronRight,
   InfoIcon,
   MonitorIcon,
   MoonIcon,
   OrientIcon,
-  RefreshIcon,
   TimerIcon,
   WarningIcon,
 } from "./Icons.jsx";
@@ -115,7 +115,7 @@ const SECTIONS = [
   { id: "display", label: "Display", Icon: OrientIcon, tone: "blue" },
   { id: "power", label: "Power", Icon: MoonIcon, tone: "violet" },
   { id: "timers", label: "Timers", Icon: TimerIcon, tone: "yellow" },
-  { id: "panel", label: "Panel actions", Icon: RefreshIcon, tone: "teal" },
+  { id: "panel", label: "Panel actions", Icon: BoltIcon, tone: "teal" },
   { id: "diagnostics", label: "Diagnostics", Icon: InfoIcon, tone: "" },
   { id: "editor", label: "This editor", Icon: MonitorIcon, tone: "violet" },
 ];

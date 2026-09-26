@@ -136,6 +136,14 @@ export const MoreIcon = (props) => (
   </Svg>
 );
 
+// A bolt: something that happens the moment it is pressed, rather than a
+// setting that waits for a push
+export const BoltIcon = (props) => (
+  <Svg {...props}>
+    <path d="M13 3 5 13.5h6L10 21l8-10.5h-6L13 3z" />
+  </Svg>
+);
+
 export const PencilIcon = (props) => (
   <Svg {...props}>
     <path d="M4 20h4L20 8l-4-4L4 16z" />
