@@ -1,5 +1,41 @@
 # Changelog
 
+## 2026.9.78
+
+Add-on only. Works with firmware **v2026.9.77**; nothing to flash.
+
+A cleanup of the whole editor: fewer controls in view, and explanations
+moved out of the way.
+
+- **One bar over every screen.** The panel's name (tap it to switch or
+  rename), whether it is online, its battery, and **Push** -- which says how
+  many changes are waiting, or shows the sync state when there are none.
+  The device card, the panel name above each screen and the sync card on
+  the Device screen are gone; they said the same things three times.
+- **A one-row toolbar.** Add widget, Upright/Sideways, **View** (snap, zoom
+  and the page's chip row), undo and redo. Bring to front, send to back,
+  duplicate and delete now float beside the widget you have selected.
+- **Editing a widget on a phone is a screen of its own.** Tap a widget and
+  the canvas stays pinned small at the top while its options scroll with the
+  page -- no more pull-up sheet with options cut off in a small box. **Done**
+  goes back; duplicate and delete are behind **⋯**. The editor itself now
+  fits on one screen, with the pages as tabs above the canvas.
+- **Settings are sections**: Display, Power, Timers, Panel actions,
+  Diagnostics and This editor -- a list beside the open one on a computer,
+  rows that open a screen on a phone. Every setting looks the same way, and
+  screen refresh is two simple choices.
+- **Less text.** Each setting keeps one short line; the longer explanation
+  is behind the **ⓘ** next to it.
+- On a computer, the columns of every screen now start level.
+- **The tab bar sits lower in the Home Assistant iOS app.** The app reserves
+  room for the home indicator itself, and the editor was adding it again.
+- A page's chip row can be set on the Pages screen. The "default" badge on
+  every page is gone.
+- The widget picker shows sizes in cells (2×1, 2×2) instead of pixels.
+- A widget's name is a one-line field, and the update limit is under
+  **Advanced**.
+- The canvas no longer shows the grid's tint through the clock.
+
 ## 2026.9.75
 
 Add-on only. Works with firmware **v2026.9.74**; nothing to flash.
