@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 
 import { Popover } from "./Popover.jsx";
-import { CheckIcon, MonitorIcon } from "./Icons.jsx";
+import { BoltIcon, CheckIcon, MonitorIcon } from "./Icons.jsx";
 
 // Which panel is being edited.
 //
@@ -19,6 +19,35 @@ export const MODEL_LABELS = {
 export function panelLabel(panel) {
   if (!panel) return "Panel";
   return panel.name || MODEL_LABELS[panel.model] || "Panel";
+}
+
+// A panel's battery, as the Device screen would say it but at a glance: a cell
+// filled to the level, the number beside it, a bolt while it charges. Red when
+// the panel counts it low -- by its own threshold, which the backend applies,
+// so this and the panel's warning cannot disagree. Nothing at all for a panel
+// that has not reported one since the add-on started, rather than a 0 %.
+function PanelBattery({ panel }) {
+  if (panel.battery === null || panel.battery === undefined) return null;
+  const level = Math.max(0, Math.min(100, panel.battery));
+  const tone = panel.battery_low && !panel.charging ? " low" : "";
+  return (
+    <span
+      className={"panel-battery" + tone + (panel.online ? "" : " stale")}
+      title={
+        (panel.charging ? "Charging, " : "") +
+        `${level}%` +
+        (panel.online ? "" : " when last heard from")
+      }
+    >
+      {panel.charging && <BoltIcon size={12} width={2} />}
+      <svg width="22" height="12" viewBox="0 0 22 12" aria-hidden="true" focusable="false">
+        <rect x="0.75" y="0.75" width="18" height="10.5" rx="2.5" fill="none" stroke="currentColor" strokeWidth="1.5" />
+        <rect x="2.5" y="2.5" width={Math.max(level > 0 ? 1.5 : 0, (14.5 * level) / 100)} height="7" rx="1" fill="currentColor" />
+        <path d="M20.75 4.25v3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      </svg>
+      <span className="panel-battery-level">{level}%</span>
+    </span>
+  );
 }
 
 // Which panel the whole editor is about, from the top bar. Every screen below
@@ -89,7 +118,12 @@ export default function PanelPicker({ panels, selected, onSelect }) {
                     {!panel.has_manifest && " · not heard from yet"}
                   </span>
                 </span>
-                {panel.id === selected && <CheckIcon size={15} width={2.2} />}
+                <PanelBattery panel={panel} />
+                {/* A slot the tick fills, so every row's battery lines up
+                    whichever one is chosen. */}
+                <span className="panel-check">
+                  {panel.id === selected && <CheckIcon size={15} width={2.2} />}
+                </span>
               </button>
             ))}
           </div>

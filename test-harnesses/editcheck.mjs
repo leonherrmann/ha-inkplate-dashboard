@@ -81,8 +81,10 @@ const answer = async (route) => {
   if (/\/panels\b/.test(url)) {
     return json({
       panels: [
-        { id: "inkplate-a864a0", name: "Hallway", model: "inkplate5v2", online: true, width: 1280, height: 720, has_manifest: true },
-        { id: "inkplate-057090", name: "Kitchen", model: "inkplate5v1", online: false, width: 960, height: 540, has_manifest: true },
+        { id: "inkplate-a864a0", name: "Hallway", model: "inkplate5v2", online: true, width: 1280, height: 720, has_manifest: true,
+          battery: 82, charging: true, battery_low: false },
+        { id: "inkplate-057090", name: "Kitchen", model: "inkplate5v1", online: false, width: 960, height: 540, has_manifest: true,
+          battery: 12, charging: false, battery_low: true },
       ],
       default: "inkplate-a864a0",
     });
@@ -308,6 +310,22 @@ check(
   check((await page.locator(".panel-menu .panel-choose").count()) === 2, "listing both panels");
   check((await page.locator(".panel-menu").getByText(/Rename|Forget/).count()) === 0,
     "and only choosing: naming and forgetting are in Settings");
+  // Each panel's battery, from /panels: the level, a bolt while charging, red
+  // when the panel counts it low, dimmed for one that has gone quiet.
+  const batteries = page.locator(".panel-menu .panel-battery");
+  const levels = await batteries.locator(".panel-battery-level").allInnerTexts();
+  check(JSON.stringify(levels) === JSON.stringify(["82%", "12%"]), `each panel shows its battery (${levels.join(", ")})`);
+  check((await batteries.nth(0).locator("svg").count()) === 2, "a bolt beside the one that is charging");
+  check((await batteries.nth(1).locator("svg").count()) === 1, "and none beside the one that is not");
+  check(await batteries.nth(1).evaluate((el) => el.classList.contains("low") && el.classList.contains("stale")),
+    "the low one is marked low, and as last heard since it is offline");
+  {
+    const a = await box(batteries.nth(0).locator(".panel-battery-level"));
+    const b = await box(batteries.nth(1).locator(".panel-battery-level"));
+    check(Math.abs(a.x + a.width - (b.x + b.width)) < 1,
+      "the levels line up in a column, whichever panel is ticked");
+  }
+  if (process.env.SHOT) await page.locator(".panel-menu").screenshot({ path: process.env.SHOT });
   await page.keyboard.press("Escape");
   await page.waitForTimeout(200);
   check((await page.locator(".panel-menu").count()) === 0, "and Escape puts it away");

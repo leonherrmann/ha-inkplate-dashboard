@@ -426,12 +426,24 @@ async def get_panels() -> dict[str, Any]:
     """Every panel this add-on knows about, for the device dropdown.
 
     Each carries enough to be chosen between without a second request: what it
-    is called, what shape it is, and whether it is online now.
+    is called, what shape it is, whether it is online now, and its battery.
+
+    The battery is the last `stats` heard, kept through the panel going
+    offline -- the level it went quiet at is worth seeing, and is often why.
+    `battery_low` is judged against the panel's own threshold, the one its low
+    warning uses, so the dropdown and the panel agree about what low is. Null
+    for a panel not heard from since the add-on started.
     """
     listed = []
     for panel in panels.all():
         state = link.panel(panel["id"])
         grid = grids.of(panel["id"])
+        battery = (state.stats or {}).get("battery")
+        if not isinstance(battery, (int, float)) or isinstance(battery, bool):
+            battery = None
+        low_percent = (store.load(panel["id"]).get("battery") or {}).get(
+            "low_percent", store.DEFAULT_BATTERY["low_percent"]
+        )
         listed.append(
             {
                 **panel,
@@ -440,6 +452,9 @@ async def get_panels() -> dict[str, Any]:
                 "width": grid.width,
                 "height": grid.height,
                 "has_manifest": state.manifest is not None,
+                "battery": round(battery) if battery is not None else None,
+                "charging": state.charging if isinstance(state.charging, bool) else None,
+                "battery_low": battery is not None and battery <= low_percent,
             }
         )
     return {"panels": listed, "default": panels.default_id()}

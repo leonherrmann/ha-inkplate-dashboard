@@ -278,6 +278,35 @@ except Exception as error:  # noqa: BLE001 - the point is to catch anything
 check(announced, "and announcing every panel does not raise")
 
 
+print("--- the dropdown shows each panel's battery ---")
+#
+# The last stats heard, and whether that is low by the panel's own threshold --
+# the one its warning uses -- so the dropdown and the panel agree.
+
+def row(panel_id):
+    return next(one for one in editor.get("/api/panels").json()["panels"] if one["id"] == panel_id)
+
+link.panel(V1).charging = True
+check(row(V2)["battery"] == 88 and row(V1)["battery"] == 100, "each panel's own level")
+check(row(V1)["charging"] is True and row(V2)["charging"] is None, "and whether it is charging, if known")
+check(row(V2)["battery_low"] is False, "88% is not low")
+
+layout = editor.get(f"/api/layout?panel={V2}").json()
+layout.setdefault("battery", {})["low_percent"] = 90
+editor.put(f"/api/layout?panel={V2}", json=layout)
+check(row(V2)["battery_low"] is True, "but is against a threshold of 90, the panel's own")
+check(row(V1)["battery_low"] is False, "which is that panel's alone")
+
+link.panel(V1).stats = {"firmware": {"running": "v2026.9.51"}, "battery": 41.6}
+check(row(V1)["battery"] == 42, "a fractional reading is shown whole")
+saved_stats = link.panel(V1).stats
+link.panel(V1).stats = None
+check(row(V1)["battery"] is None and row(V1)["battery_low"] is False,
+      "a panel not heard from has no battery, not a 0% that reads as low")
+link.panel(V1).stats = saved_stats
+link.panel(V1).charging = None
+
+
 print("--- the firmware offers follow the panels ---")
 #
 # They used to be published at startup and when a release changed, so a panel

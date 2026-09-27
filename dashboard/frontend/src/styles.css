@@ -3889,10 +3889,39 @@ input[type="range"]::-moz-range-thumb {
   background: var(--ink-06);
 }
 
-.panel-choose > svg {
+.panel-check {
+  width: 15px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  color: var(--blue);
+}
+
+/* Pushed right, so the batteries line up in a column down the list. */
+.panel-battery {
   margin-left: auto;
   flex: none;
-  color: var(--blue);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--ink-60);
+  font-size: 11.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.panel-battery.low {
+  color: var(--red);
+}
+
+/* The level a panel went quiet at: still worth showing, but not as live. */
+.panel-battery.stale {
+  opacity: 0.55;
+}
+
+.panel-battery-level {
+  min-width: 30px;
+  text-align: right;
 }
 
 .panel-text {
