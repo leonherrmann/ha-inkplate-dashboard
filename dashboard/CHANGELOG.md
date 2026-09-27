@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026.9.90
+
+Works with firmware **v2026.9.80** (the new battery chip); the add-on part
+needs no particular firmware.
+
+- **Battery in the panel dropdown.** Each panel in the top bar's list shows
+  its battery: a small cell filled to the level with the percentage beside
+  it, a bolt while charging, red when the panel counts it low, dimmed for a
+  panel that is offline.
+- **New battery chip on the panel** (firmware v2026.9.80): the percentage
+  sits inside a rounded battery, with a bolt while charging and an
+  exclamation mark when low.
+
 ## 2026.9.89
 
 Works with firmware **v2026.9.79**, which it needs for the climate card's
