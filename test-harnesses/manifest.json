@@ -228,9 +228,10 @@
         },
         {
           "key": "climate",
-          "label": "Radiator",
-          "type": "entity",
-          "filter": "climate"
+          "label": "Radiators",
+          "type": "entities",
+          "filter": "climate",
+          "max": 4
         },
         {
           "key": "update_interval",

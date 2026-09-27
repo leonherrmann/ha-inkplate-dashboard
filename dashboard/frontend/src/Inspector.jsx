@@ -48,15 +48,22 @@ const ROOM_ROLES = [
 // is what says it draws a list at all. Asked of the manifest, so a card the
 // firmware gives a room later needs nothing here.
 function areaFill(type) {
-  const declared = new Set((type?.options || []).map((option) => option.key));
+  const declared = new Map((type?.options || []).map((option) => [option.key, option]));
   return {
-    roles: ROOM_ROLES.filter((role) => declared.has(role.key)),
+    // A role whose option is a list takes every match rather than the first:
+    // every radiator in the room, not one of them.
+    roles: ROOM_ROLES.filter((role) => declared.has(role.key)).map((role) => ({
+      ...role,
+      list: declared.get(role.key).type === "entities",
+      max: declared.get(role.key).max || 0,
+    })),
     counts: (type?.sizes || []).some((size) => size.capacity > 0),
     named: declared.has("name"),
   };
 }
 
-const blankRoles = (roles) => Object.fromEntries(roles.map((role) => [role.key, ""]));
+const blankRoles = (roles) =>
+  Object.fromEntries(roles.map((role) => [role.key, role.list ? [] : ""]));
 
 // Which entity plays each part, and what is left for the list. An entity can
 // hold two parts at once -- a thermostat is both the temperature and the
@@ -68,6 +75,19 @@ function roomRoles(available, { roles, counts }) {
   const taken = new Set();
 
   for (const role of roles) {
+    if (role.list) {
+      // Every match, up to what the card reads -- filled past that, the list
+      // would open on a warning about a choice nobody made.
+      const all = entities.filter(
+        (one) =>
+          (role.domains || []).includes(one.domain) ||
+          (role.classes || []).includes(one.device_class)
+      );
+      const kept = role.max > 0 ? all.slice(0, role.max) : all;
+      chosen[role.key] = kept.map((one) => one.entity_id);
+      kept.forEach((one) => taken.add(one.entity_id));
+      continue;
+    }
     const match =
       (role.domains || []).reduce(
         (found, domain) => found || entities.find((one) => one.domain === domain),
@@ -327,6 +347,38 @@ function Option({ option, manifest, widget, value, entities, devices, areas, upl
           });
         }}
       />
+    );
+  }
+
+  // A list of one kind of entity -- the climate card's radiators. Every entity
+  // of the option's domain is offered, those in the card's room first, as a
+  // checklist whose order is the order the card reads them in. A layout from
+  // before the option was a list holds a single id, read as a list of one.
+  if (option.type === "entities") {
+    const picked = Array.isArray(value) ? value : value ? [value] : [];
+    const roomName = areas.find((one) => one.id === widget?.options?.area)?.name;
+    const offered = entities
+      .filter((one) => !option.filter || one.domain === option.filter)
+      .sort(
+        (a, b) =>
+          (b.area === roomName) - (a.area === roomName) ||
+          (a.area || "~").localeCompare(b.area || "~") ||
+          a.name.localeCompare(b.name)
+      );
+    return offered.length > 0 ? (
+      <DeviceEntities
+        available={offered}
+        chosen={picked}
+        capacity={option.max || 0}
+        limit={{
+          head: (count) => `the card reads ${count}`,
+          row: "not read by the card",
+        }}
+        describe={(one) => one.area || "No room"}
+        onChange={onChange}
+      />
+    ) : (
+      <p className="hint">Home Assistant has none of these.</p>
     );
   }
 
@@ -608,7 +660,7 @@ export default function Inspector({
 
   // An entity already doing one of the band's jobs is not offered to the list as
   // well: it describes the room rather than being a thing in it.
-  const takenByBand = ROOM_ROLES.map((role) => widget.options?.[role.key]).filter(Boolean);
+  const takenByBand = ROOM_ROLES.flatMap((role) => widget.options?.[role.key] || []).filter(Boolean);
 
   // What kind of thing this is, in the category's own words
   const group = categoryLabel(manifest, type?.category);
@@ -665,7 +717,7 @@ export default function Inspector({
     // inside one takes its accessible name from the label, and Safari forwards
     // a click anywhere in a label to the first labelable descendant. A label
     // may only wrap one real form control; these three wrap a button.
-    const isButton = ["entity", "device", "area"].includes(option.type);
+    const isButton = ["entity", "entities", "device", "area"].includes(option.type);
 
     // On a phone the big ones are a row that opens a screen -- see wantsScreen
     if (narrow && wantsScreen(option, manifest)) {
