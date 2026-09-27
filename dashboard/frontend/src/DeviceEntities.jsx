@@ -12,24 +12,7 @@
 
 const CHECK = "✓";
 
-// Also the control for an `entities` option -- the climate card's radiators --
-// which is the same idea with a different limit: how many the card reads, not
-// how many a size has room for. `limit` words that, and `describe` says what a
-// row is, since "climate" under every one of a list of radiators says nothing.
-const SIZE_LIMIT = {
-  head: (count) => `this size draws ${count}`,
-  row: "not drawn at this size",
-};
-const describeDefault = (one) => one.domain + (one.category ? ` · ${one.category}` : "");
-
-export default function DeviceEntities({
-  available,
-  chosen,
-  capacity,
-  onChange,
-  limit = SIZE_LIMIT,
-  describe = describeDefault,
-}) {
+export default function DeviceEntities({ available, chosen, capacity, onChange }) {
   if (!available?.length) return null;
 
   const picked = chosen || [];
@@ -65,7 +48,7 @@ export default function DeviceEntities({
             manifest, so it cannot drift from what the firmware draws. */}
         {capacity > 0 && picked.length > capacity && (
           <span className="device-entities-warn">
-            {limit.head(capacity)}
+            this size draws {capacity}
           </span>
         )}
       </div>
@@ -96,8 +79,9 @@ export default function DeviceEntities({
                 <span className="device-entity-text">
                   <span className="device-entity-name">{one.name}</span>
                   <span className="device-entity-meta">
-                    {describe(one)}
-                    {overflow && ` · ${limit.row}`}
+                    {one.domain}
+                    {one.category && ` · ${one.category}`}
+                    {overflow && " · not drawn at this size"}
                   </span>
                 </span>
               </button>

@@ -4,6 +4,7 @@ import EntityPicker from "./EntityPicker.jsx";
 import DevicePicker, { MAX_DEVICE_ENTITIES } from "./DevicePicker.jsx";
 import AreaPicker, { MAX_ROOM_ENTITIES } from "./AreaPicker.jsx";
 import DeviceEntities from "./DeviceEntities.jsx";
+import EntityList from "./EntityList.jsx";
 import { IconField, IconGlyph, IconGrid } from "./IconGrid.jsx";
 import { useNarrow } from "./useNarrow.js";
 import { Menu, MenuItem } from "./Popover.jsx";
@@ -350,35 +351,16 @@ function Option({ option, manifest, widget, value, entities, devices, areas, upl
     );
   }
 
-  // A list of one kind of entity -- the climate card's radiators. Every entity
-  // of the option's domain is offered, those in the card's room first, as a
-  // checklist whose order is the order the card reads them in. A layout from
-  // before the option was a list holds a single id, read as a list of one.
+  // A list of one kind of entity -- the climate card's radiators.
   if (option.type === "entities") {
-    const picked = Array.isArray(value) ? value : value ? [value] : [];
-    const roomName = areas.find((one) => one.id === widget?.options?.area)?.name;
-    const offered = entities
-      .filter((one) => !option.filter || one.domain === option.filter)
-      .sort(
-        (a, b) =>
-          (b.area === roomName) - (a.area === roomName) ||
-          (a.area || "~").localeCompare(b.area || "~") ||
-          a.name.localeCompare(b.name)
-      );
-    return offered.length > 0 ? (
-      <DeviceEntities
-        available={offered}
-        chosen={picked}
-        capacity={option.max || 0}
-        limit={{
-          head: (count) => `the card reads ${count}`,
-          row: "not read by the card",
-        }}
-        describe={(one) => one.area || "No room"}
+    return (
+      <EntityList
+        entities={entities}
+        value={value}
+        domain={option.filter}
+        max={option.max}
         onChange={onChange}
       />
-    ) : (
-      <p className="hint">Home Assistant has none of these.</p>
     );
   }
 

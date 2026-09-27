@@ -26,7 +26,7 @@ import { entityKind, kindLabel, kindsPresent } from "./entityKinds.js";
 const ANY = "__any__";
 const NO_AREA = "__no_area__";
 
-function Body({ entities, value, domain, onPick }) {
+function Body({ entities, value, domain, onPick, clearable }) {
   const [query, setQuery] = useState("");
   const [area, setArea] = useState(null);
   const [kind, setKind] = useState(null);
@@ -151,7 +151,7 @@ function Body({ entities, value, domain, onPick }) {
 
       {step === "rows" && (
         <PickerRows
-          rows={[{ id: "", label: "— none —" }, ...rows]}
+          rows={clearable ? [{ id: "", label: "— none —" }, ...rows] : rows}
           value={value || ""}
           onPick={(row) => onPick(row.id)}
           empty={
@@ -165,7 +165,18 @@ function Body({ entities, value, domain, onPick }) {
   );
 }
 
-export default function EntityPicker({ entities, value, domain, onChange }) {
+// `placeholder` is what an empty trigger says -- "Add…" as the last row of a
+// list of entities, where "Choose entity…" would read as a gap to fill.
+export default function EntityPicker({
+  entities,
+  value,
+  domain,
+  onChange,
+  placeholder = "Choose entity…",
+  // Whether "none" is on offer. Not when adding to a list, where it would add
+  // nothing; a row already in one has its own remove button.
+  clearable = true,
+}) {
   const [open, setOpen] = useState(false);
   const selected = entities.find((entity) => entity.entity_id === value);
 
@@ -178,7 +189,7 @@ export default function EntityPicker({ entities, value, domain, onChange }) {
             <span className="entity-trigger-meta">{selected.area || "No room"}</span>
           </>
         ) : (
-          <span className="entity-trigger-empty">{value ? value : "Choose entity…"}</span>
+          <span className="entity-trigger-empty">{value ? value : placeholder}</span>
         )}
       </button>
 
@@ -195,6 +206,7 @@ export default function EntityPicker({ entities, value, domain, onChange }) {
             entities={entities}
             value={value}
             domain={domain}
+            clearable={clearable}
             onPick={(next) => {
               // Closed before the change is applied, not after. Anything that
               // throws inside onChange used to leave the sheet open with

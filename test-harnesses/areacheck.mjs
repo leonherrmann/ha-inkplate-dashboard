@@ -164,27 +164,54 @@ check(await pickRoom(0, "Study"), "picking another room saves again");
 }
 
 console.log("--- the radiator list ---");
+const list = () => page.locator('[aria-label="Radiators"]');
+const listed = () => list().locator(".entity-list-row .entity-trigger-name").allInnerTexts();
+// Opens a picker from `trigger`, searches for `name` and picks it.
+const pickEntity = async (trigger, name) => {
+  const before = writes;
+  await trigger.click();
+  await page.locator(".picker-search input, input[type=search]").first().fill(name);
+  await page.locator(".picker-row", { hasText: name }).first().click();
+  for (let i = 0; i < 50 && writes === before; i++) await page.waitForTimeout(100);
+};
 {
   await page.locator(".panel .widget").nth(0).click();
   await page.waitForTimeout(300);
-  const rows = page.locator('[aria-label="Radiators"] .device-entity');
-  const names = await rows.locator(".device-entity-name").allInnerTexts();
-  check(names.length === 3, `every climate entity in the home is offered (${names.join(", ")})`);
-  check(names[0] === "Study radiator", "the chosen one first");
-  check((await page.locator('[aria-label="Radiators"] .device-entity.on').count()) === 1, "and only it ticked");
-  const before = writes;
-  await rows.filter({ hasText: "Window radiator" }).locator(".device-entity-toggle").click();
-  for (let i = 0; i < 50 && writes === before; i++) await page.waitForTimeout(100);
+  check(JSON.stringify(await listed()) === JSON.stringify(["Study radiator"]),
+        "the list is the radiators chosen, and nothing else");
+  check((await list().getByText(/\d+ of \d+/).count()) === 0, "with no count over it");
+  const add = list().locator(".entity-trigger", { hasText: "Add…" });
+  check((await add.count()) === 1, "an empty picker under it adds one");
+
+  await add.click();
+  const offered = await page.locator(".picker-row .picker-row-name").allInnerTexts();
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(200);
+  if (await page.locator(".picker-row").count()) await page.locator(".picker-head .icon-button").first().click();
+  check(!offered.includes("Study radiator"), `and does not offer one already in the list (${offered.join(", ")})`);
+  check(offered.length > 0 && !offered.some((one) => /none/.test(one)),
+        "nor a none, which would add nothing");
+
+  await pickEntity(list().locator(".entity-trigger", { hasText: "Add…" }), "Window radiator");
   check(JSON.stringify(options("c1").climate) === JSON.stringify(["climate.study", "climate.bed_window"]),
-        `ticking another adds it after the first (${JSON.stringify(options("c1").climate)})`);
-  check((await page.getByText("No room").count()) === 0, "each radiator says which room it is in");
+        `picking one adds it to the end (${JSON.stringify(options("c1").climate)})`);
+
+  await pickEntity(list().locator(".entity-list-row .entity-trigger").first(), "Bedroom radiator");
+  check(JSON.stringify(options("c1").climate) === JSON.stringify(["climate.bedroom", "climate.bed_window"]),
+        `tapping a row swaps that one, in place (${JSON.stringify(options("c1").climate)})`);
+
+  const before = writes;
+  await list().locator(".entity-list-row").first().getByRole("button", { name: "Remove" }).click();
+  for (let i = 0; i < 50 && writes === before; i++) await page.waitForTimeout(100);
+  check(JSON.stringify(options("c1").climate) === JSON.stringify(["climate.bed_window"]),
+        `the button beside a row takes it off (${JSON.stringify(options("c1").climate)})`);
+  check((await list().getByText("No room").count()) === 0, "each radiator says which room it is in");
 }
 {
   await page.locator(".panel .widget").nth(2).click();
   await page.waitForTimeout(300);
-  const on = await page.locator('[aria-label="Radiators"] .device-entity.on .device-entity-name').allInnerTexts();
-  check(JSON.stringify(on) === JSON.stringify(["Study radiator"]),
-        `a layout holding one radiator as a string shows it ticked (${on.join(", ")})`);
+  check(JSON.stringify(await listed()) === JSON.stringify(["Study radiator"]),
+        "a layout holding one radiator as a string shows it as a list of one");
 }
 
 console.log("--- the room card, unchanged ---");

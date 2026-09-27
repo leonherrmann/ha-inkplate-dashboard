@@ -5040,3 +5040,22 @@ input.panel-name-field {
 .rail-item:not(.active):hover svg {
   opacity: 1;
 }
+
+/* A list of entities: each row the ordinary entity picker with a remove button
+   beside it, and an empty picker under them that adds one. */
+.entity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.entity-list-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.entity-list-row .entity-trigger {
+  flex: 1;
+  min-width: 0;
+}
