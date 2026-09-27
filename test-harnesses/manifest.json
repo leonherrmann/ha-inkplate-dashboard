@@ -204,6 +204,11 @@
       "height": 172,
       "options": [
         {
+          "key": "area",
+          "label": "Room",
+          "type": "area"
+        },
+        {
           "key": "icon",
           "label": "Room icon",
           "type": "icon",
@@ -213,8 +218,7 @@
         {
           "key": "temperature",
           "label": "Temperature",
-          "type": "entity",
-          "filter": "sensor"
+          "type": "entity"
         },
         {
           "key": "humidity",

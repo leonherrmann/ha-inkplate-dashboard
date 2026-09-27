@@ -41,19 +41,33 @@ const ROOM_ROLES = [
   { key: "climate", domains: ["climate"] },
 ];
 
-const blankRoles = () =>
-  Object.fromEntries(ROOM_ROLES.map((role) => [role.key, ""]));
+// Not only the room card's. Any card that declares an `area` option is filled
+// in from the room it is set to -- the climate card is -- but only in the parts
+// it has: a role is written only when the card declares an option of that key,
+// and the counted list only when the card publishes a `capacity` for one, which
+// is what says it draws a list at all. Asked of the manifest, so a card the
+// firmware gives a room later needs nothing here.
+function areaFill(type) {
+  const declared = new Set((type?.options || []).map((option) => option.key));
+  return {
+    roles: ROOM_ROLES.filter((role) => declared.has(role.key)),
+    counts: (type?.sizes || []).some((size) => size.capacity > 0),
+    named: declared.has("name"),
+  };
+}
+
+const blankRoles = (roles) => Object.fromEntries(roles.map((role) => [role.key, ""]));
 
 // Which entity plays each part, and what is left for the list. An entity can
 // hold two parts at once -- a thermostat is both the temperature and the
 // heating -- but it is only ever counted once, and never in a bucket: it
 // describes the room rather than being a thing in it.
-function roomRoles(available) {
+function roomRoles(available, { roles, counts }) {
   const entities = available || [];
   const chosen = {};
   const taken = new Set();
 
-  for (const role of ROOM_ROLES) {
+  for (const role of roles) {
     const match =
       (role.domains || []).reduce(
         (found, domain) => found || entities.find((one) => one.domain === domain),
@@ -66,6 +80,8 @@ function roomRoles(available) {
     chosen[role.key] = match ? match.entity_id : "";
     if (match) taken.add(match.entity_id);
   }
+
+  if (!counts) return chosen;
 
   return {
     ...chosen,
@@ -286,20 +302,26 @@ function Option({ option, manifest, widget, value, entities, devices, areas, upl
   // the device card's: the room has five named readings between the picker and
   // the list, and burying the list among them would read as one more of them.
   if (option.type === "area") {
+    const fill = areaFill(widgetType(manifest, widget));
     return (
       <AreaPicker
         areas={areas}
         value={value}
-        chosen={widget?.options?.entities}
+        chosen={fill.counts ? widget?.options?.entities || [] : null}
         onChange={(area) => {
           if (!area) {
-            onChangeMany({ area: "", entities: [], ...blankRoles() });
+            onChangeMany({
+              area: "",
+              ...(fill.counts ? { entities: [] } : {}),
+              ...blankRoles(fill.roles),
+            });
             return;
           }
           onChangeMany({
             area: area.id,
-            ...roomRoles(area.entities),
-            ...(!widget?.options?.name || widget.options.name === widget.options.areaName
+            ...roomRoles(area.entities, fill),
+            ...(fill.named &&
+            (!widget?.options?.name || widget.options.name === widget.options.areaName)
               ? { name: area.name, areaName: area.name }
               : {}),
           });
@@ -575,9 +597,12 @@ export default function Inspector({
   const capacity = chosenSize?.capacity || 0;
 
   // The room this card is set to, if it is a room card at all. Its counted list
-  // is rendered below the options rather than beside the picker.
+  // is rendered below the options rather than beside the picker. A card that
+  // takes only its readings from a room -- the climate card -- has no list.
   const room =
-    options.some((one) => one.type === "area") && widget.options?.area
+    options.some((one) => one.type === "area") &&
+    areaFill(type).counts &&
+    widget.options?.area
       ? areas.find((one) => one.id === widget.options.area)
       : null;
 

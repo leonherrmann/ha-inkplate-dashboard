@@ -69,7 +69,7 @@ export default function AreaPicker({ areas, value, chosen, onChange }) {
         {selected ? (
           <>
             <span className="entity-trigger-name">{selected.name}</span>
-            <span className="entity-trigger-meta">{chosen?.length || 0} shown</span>
+            {chosen && <span className="entity-trigger-meta">{chosen.length} shown</span>}
           </>
         ) : (
           <span className="entity-trigger-empty">{value ? value : "Choose room…"}</span>
@@ -78,8 +78,9 @@ export default function AreaPicker({ areas, value, chosen, onChange }) {
 
       {missing && (
         <div className="hint">
-          Home Assistant no longer lists this room. The card still draws the{" "}
-          {chosen?.length || 0} entities already chosen; pick it again to refresh them.
+          {chosen
+            ? `Home Assistant no longer lists this room. The card still draws the ${chosen.length} entities already chosen; pick it again to refresh them.`
+            : "Home Assistant no longer lists this room. The card keeps the readings already chosen; pick a room again to refresh them."}
         </div>
       )}
 

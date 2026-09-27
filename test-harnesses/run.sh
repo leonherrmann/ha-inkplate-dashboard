@@ -88,7 +88,7 @@ if [ "$UI" = 1 ]; then
     done
     for h in shapecheck editcheck pickercheck devicecheck device-overrides \
              refreshfloorcheck iconcheck manifestcheck photosizecheck canvascheck \
-             chiprowcheck themecheck; do
+             chiprowcheck themecheck areacheck; do
         run "$h" "$HARN" node "$h.mjs"
     done
 fi
