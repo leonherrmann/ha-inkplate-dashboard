@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026.9.89
+
+Works with firmware **v2026.9.79**, which it needs for the climate card's
+room and radiator list; update the panel as well.
+
+- **Climate card by room.** The climate card has a Room option, like the
+  room card: picking one fills in the temperature, humidity and every
+  radiator in it. Each stays editable.
+- **Several radiators on one climate card.** Radiators is a list: each row
+  is the normal entity picker with a remove button, and "Add…" under them
+  adds another, up to four. The panel shows them as one badge.
+- Picking a room now fills in only what the card has, so a climate card
+  gets no list of things in the room and no name.
+
 ## 2026.9.88
 
 Add-on only. Works with firmware **v2026.9.77**; nothing to flash.
