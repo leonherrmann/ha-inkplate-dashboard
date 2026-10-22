@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import DeviceTab from "./DeviceTab.jsx";
+import { deepSleepMinutes } from "./DeepSleepSettings.jsx";
 import ImagesTab from "./ImagesTab.jsx";
 import Inspector, { EditHead } from "./Inspector.jsx";
 import Panel from "./Panel.jsx";
@@ -188,6 +189,14 @@ function useToast() {
 // rather than per install: two people can have two panels open at once, and the
 // add-on has no business remembering one of them as "the" choice.
 const PANEL_KEY = "inkplate.panel";
+
+// Whether any page, either way up, has a clock on it -- the one widget that is
+// plainly wrong on a panel that only wakes every few minutes.
+function layoutHasClock(layout) {
+  return (layout?.pages || []).some((page) =>
+    [...(page.widgets || []), ...(page.widgets_portrait || [])].some((widget) => widget.type === "clock")
+  );
+}
 
 export default function App() {
   // Chosen before anything is fetched: api.setPanel decides which panel every
@@ -1021,6 +1030,7 @@ export default function App() {
             areas={areas}
             uploads={uploads}
             albums={albums}
+            deepSleepMinutes={deepSleepMinutes(layout.refresh)}
             onSetOption={setOption}
             onSetOptions={setOptions}
             onSetSize={setSize}
@@ -1107,6 +1117,7 @@ export default function App() {
           onBatteryChange={(next) => persist({ ...layout, battery: next })}
           refresh={layout.refresh}
           onRefreshChange={(next) => persist({ ...layout, refresh: next })}
+          hasClock={layoutHasClock(layout)}
           orientation={layout.orientation}
           onOrientationChange={(next) => persist({ ...layout, orientation: next })}
           timerTickMs={layout.timer_tick_ms ?? (layout.timer_tick_seconds

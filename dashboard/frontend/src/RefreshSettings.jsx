@@ -82,7 +82,13 @@ export default function RefreshSettings({ refresh, onChange }) {
       <Setting
         stacked
         title="Redraw changed readings"
-        note={knownFloor ? knownFloor.note || "At most once a minute" : `${floor}, set through the API`}
+        note={
+          Number(value.deep_sleep_minutes) > 0
+            ? "Not used while the panel sleeps between updates: each wake draws everything that changed"
+            : knownFloor
+              ? knownFloor.note || "At most once a minute"
+              : `${floor}, set through the API`
+        }
         hint={
           <>
             Each repaint costs battery. A reading held back is still drawn at its newest

@@ -448,6 +448,7 @@ async def get_panels() -> dict[str, Any]:
             {
                 **panel,
                 "online": state.online,
+                "asleep": state.asleep,
                 "last_seen": state.last_seen or panel.get("last_seen"),
                 "width": grid.width,
                 "height": grid.height,
@@ -500,6 +501,7 @@ async def get_status(panel: str | None = None) -> dict[str, Any]:
         "device_id": panel_id,
         "panel": panels.get(panel_id),
         "online": state.online,
+        "asleep": state.asleep,
         "manifest": state.manifest,
         "applied": state.applied,
         "stats": state.stats,

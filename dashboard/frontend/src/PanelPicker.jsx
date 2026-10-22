@@ -109,12 +109,14 @@ export default function PanelPicker({ panels, selected, onSelect }) {
                 className={panel.id === selected ? "panel-choose selected" : "panel-choose"}
                 onClick={() => choose(panel.id)}
               >
-                <span className={panel.online ? "dot online" : "dot offline"} />
+                <span
+                  className={panel.online ? "dot online" : panel.asleep ? "dot asleep" : "dot offline"}
+                />
                 <span className="panel-text">
                   <span className="panel-name">{panelLabel(panel)}</span>
                   <span className="panel-spec">
                     {MODEL_LABELS[panel.model] || "Panel"}
-                    {panel.online ? "" : " · offline"}
+                    {panel.online ? "" : panel.asleep ? " · asleep" : " · offline"}
                     {!panel.has_manifest && " · not heard from yet"}
                   </span>
                 </span>

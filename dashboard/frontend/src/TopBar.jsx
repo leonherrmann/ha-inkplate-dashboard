@@ -95,6 +95,8 @@ export default function TopBar({
 }) {
   const stats = status?.stats;
   const online = Boolean(status?.online);
+  // Sleeping between updates: away on purpose, and back on its own.
+  const asleep = !online && Boolean(status?.asleep);
 
   // Saves since the last push. The backend bumps the version on every write,
   // so this is a real count -- but only while the draft is unpushed.
@@ -103,7 +105,11 @@ export default function TopBar({
     : Math.max(0, (status?.draft_version ?? 0) - (status?.pushed_version ?? 0));
 
   const health = [
-    online ? `Online, seen ${formatAge(lastSeenAge)}` : `Offline, last seen ${formatAge(lastSeenAge)}`,
+    online
+      ? `Online, seen ${formatAge(lastSeenAge)}`
+      : asleep
+        ? `Asleep between updates, last awake ${formatAge(lastSeenAge)}`
+        : `Offline, last seen ${formatAge(lastSeenAge)}`,
     stats?.rssi !== undefined ? `WiFi ${signalLabel(stats.rssi)} (${stats.rssi} dBm)` : null,
   ]
     .filter(Boolean)
@@ -118,8 +124,12 @@ export default function TopBar({
       />
 
       <span className="topbar-health" title={health}>
-        <span className={online ? "dot online" : "dot offline"} />
-        <span className="topbar-seen">{online ? "Online" : `Offline · ${formatAge(lastSeenAge)}`}</span>
+        <span className={online ? "dot online" : asleep ? "dot asleep" : "dot offline"} />
+        <span className="topbar-seen">
+          {online
+            ? "Online"
+            : `${asleep ? "Asleep" : "Offline"} · ${formatAge(lastSeenAge)}`}
+        </span>
         {stats?.battery !== undefined && (
           <Battery percentage={stats.battery ?? 0} charging={status?.charging} />
         )}
