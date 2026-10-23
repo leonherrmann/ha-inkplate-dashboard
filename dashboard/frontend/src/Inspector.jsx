@@ -5,6 +5,7 @@ import DevicePicker, { MAX_DEVICE_ENTITIES } from "./DevicePicker.jsx";
 import AreaPicker, { MAX_ROOM_ENTITIES } from "./AreaPicker.jsx";
 import DeviceEntities from "./DeviceEntities.jsx";
 import EntityList from "./EntityList.jsx";
+import { clockWarning } from "./DeepSleepSettings.jsx";
 import { IconField, IconGlyph, IconGrid } from "./IconGrid.jsx";
 import { useNarrow } from "./useNarrow.js";
 import { Menu, MenuItem } from "./Popover.jsx";
@@ -576,6 +577,7 @@ export default function Inspector({
   areas,
   uploads,
   albums,
+  deepSleepMinutes = 0,
   onSetOption,
   onSetOptions,
   onSetSize,
@@ -752,6 +754,10 @@ export default function Inspector({
 
   const fields = (
     <>
+      {widget.type === "clock" && deepSleepMinutes > 0 && (
+        <div className="note warn inspector-note">{clockWarning(deepSleepMinutes)}</div>
+      )}
+
       {/* Only for widgets that offer more than one; the specials have none. A
           div rather than a label: a <label> wrapping several buttons hands every
           one of them the others' text as its accessible name. */}

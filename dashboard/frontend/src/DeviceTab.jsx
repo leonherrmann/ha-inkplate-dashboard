@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import SleepSettings from "./SleepSettings.jsx";
 import BatterySettings, { DEFAULT_LOW_PERCENT } from "./BatterySettings.jsx";
 import RefreshSettings from "./RefreshSettings.jsx";
+import DeepSleepSettings, { deepSleepMinutes, deepSleepPhrase } from "./DeepSleepSettings.jsx";
 import OrientationSettings from "./OrientationSettings.jsx";
 import TimerSettings from "./TimerSettings.jsx";
 import AppearanceSettings, { THEME_LABELS, useThemeChoice } from "./AppearanceSettings.jsx";
@@ -195,6 +196,7 @@ export default function DeviceTab({
   onBatteryChange,
   refresh,
   onRefreshChange,
+  hasClock,
   orientation,
   onOrientationChange,
   timerTickMs,
@@ -291,7 +293,13 @@ export default function DeviceTab({
     "Every 5 seconds";
 
   const summaries = {
-    display: `${orientationLabel} · ${refreshLevel?.name || `${refreshPercent}%`} refresh`,
+    display: [
+      orientationLabel,
+      `${refreshLevel?.name || `${refreshPercent}%`} refresh`,
+      deepSleepMinutes(refresh) ? `updates ${deepSleepPhrase(deepSleepMinutes(refresh))}` : null,
+    ]
+      .filter(Boolean)
+      .join(" · "),
     power: [
       sleep?.enabled ? `Sleeps ${sleep.start || "23:00"}–${sleep.end || "06:00"}` : "No night sleep",
       lowPercent ? `warns at ${lowPercent}%` : null,
@@ -315,6 +323,7 @@ export default function DeviceTab({
       <SettingsCard>
         <OrientationSettings orientation={orientation} onChange={onOrientationChange} />
         <RefreshSettings refresh={refresh} onChange={onRefreshChange} />
+        <DeepSleepSettings refresh={refresh} onChange={onRefreshChange} hasClock={hasClock} />
       </SettingsCard>
     ),
     power: (
@@ -381,14 +390,20 @@ export default function DeviceTab({
             <Fact
               label="Last seen"
               value={formatAge(lastSeenAge)}
-              tone={status?.online ? "ok" : "bad"}
+              tone={status?.online || status?.asleep ? "ok" : "bad"}
             />
           </div>
           {images?.error && <p className="hint bad">{images.error}</p>}
           {images && !images.card && (
             <p className="hint">No SD card, so uploaded images cannot be shown.</p>
           )}
-          {!status?.online && (
+          {!status?.online && status?.asleep && (
+            <p className="hint">
+              Asleep between updates. It wakes on its own, or straight away when a button on it is
+              pressed.
+            </p>
+          )}
+          {!status?.online && !status?.asleep && (
             <p className="hint">A panel asleep for the night reports offline; that is expected.</p>
           )}
         </SettingsCard>
@@ -475,12 +490,14 @@ export default function DeviceTab({
             key={panel.id}
             title={
               <>
-                <span className={panel.online ? "dot online" : "dot offline"} />
+                <span
+                  className={panel.online ? "dot online" : panel.asleep ? "dot asleep" : "dot offline"}
+                />
                 {panelLabel(panel)}
                 {panel.id === panelId && <span className="badge blue">editing</span>}
               </>
             }
-            note={`${MODEL_LABELS[panel.model] || "Panel"} · ${panel.online ? "online" : "offline"}`}
+            note={`${MODEL_LABELS[panel.model] || "Panel"} · ${panel.online ? "online" : panel.asleep ? "asleep" : "offline"}`}
             control={
               <>
                 <PanelName panel={panel} onRename={onRenamePanel} />

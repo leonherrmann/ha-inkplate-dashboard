@@ -251,6 +251,39 @@ check(
 )
 
 
+print("--- a panel asleep between updates ---")
+#
+# It says "asleep" before deep sleep rather than "offline", so Home Assistant
+# keeps its readings. Here it must read as not online, but asleep -- through the
+# link's own message handler, not by setting the field.
+from mqtt import link  # noqa: E402
+
+
+class _Message:
+    def __init__(self, topic, payload):
+        self.topic = topic
+        self.payload = payload.encode()
+        self.retain = True
+
+
+def _status(panel_id, word):
+    link._on_message(None, None, _Message(f"{topics.root}/devices/{panel_id}/status", word))
+
+
+_status(V1, "asleep")
+status = editor.get(f"/api/status?panel={V1}").json()
+check(status["online"] is False and status["asleep"] is True, "asleep is not online, but asleep")
+check(
+    next(p for p in editor.get("/api/panels").json()["panels"] if p["id"] == V1)["asleep"] is True,
+    "and the dropdown says so too",
+)
+_status(V1, "online")
+status = editor.get(f"/api/status?panel={V1}").json()
+check(status["online"] is True and status["asleep"] is False, "waking clears it")
+_status(V1, "offline")
+check(editor.get(f"/api/status?panel={V1}").json()["asleep"] is False, "and offline is not asleep")
+
+
 print("--- announcing a panel that has said what it is running ---")
 #
 # The fault this exists for, found in production on 2026-09-19: an editor whose

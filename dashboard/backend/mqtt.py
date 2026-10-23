@@ -54,6 +54,10 @@ class PanelState:
         self.applied: dict[str, Any] | None = None
         self.stats: dict[str, Any] | None = None
         self.online: bool = False
+        # Asleep between updates (the panel's refresh.deep_sleep_minutes): it
+        # said "asleep" rather than "offline" before going down, and will be
+        # back on its own. Not online either way.
+        self.asleep: bool = False
         # None while there is not yet enough history to tell
         self.charging: bool | None = None
         self.current_page: str | None = None
@@ -202,11 +206,16 @@ class DeviceLink:
 
         if leaf == "status":
             state.online = payload.strip() == "online"
+            state.asleep = payload.strip() == "asleep"
             # Registered on every message, not only the first: this is what
             # keeps `last_seen` and the model current, and it is how a panel
             # that has never been heard from before gets into the device list.
             panels.seen(panel_id)
-            log.info("Panel %s is %s", panel_id, "online" if state.online else "offline")
+            log.info(
+                "Panel %s is %s",
+                panel_id,
+                "online" if state.online else "asleep" if state.asleep else "offline",
+            )
         elif leaf == "manifest":
             # Written through to the same place the HTTP route writes, so the
             # editor has one answer to what the panel can draw rather than two

@@ -894,6 +894,11 @@ button.danger,
   background: var(--yellow);
 }
 
+/* Asleep between updates: not a fault, so not red. */
+.dot.asleep {
+  background: var(--violet, var(--ink-40));
+}
+
 .dot.blue,
 .tab-dot {
   background: var(--blue);
@@ -4936,6 +4941,16 @@ span.topbar-panel {
 
 .setting .orient {
   flex: 1;
+}
+
+/* The clock warning under "Sleep between updates", and the same one at the top
+   of a clock's options in the editor. */
+.deep-sleep-note {
+  margin: 2px 0 10px;
+}
+
+.inspector-note {
+  margin-bottom: 12px;
 }
 
 .time-pair {

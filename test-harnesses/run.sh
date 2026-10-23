@@ -87,7 +87,7 @@ if [ "$UI" = 1 ]; then
         sleep 0.1
     done
     for h in shapecheck editcheck pickercheck devicecheck device-overrides \
-             refreshfloorcheck iconcheck manifestcheck photosizecheck canvascheck \
+             refreshfloorcheck deepsleepcheck iconcheck manifestcheck photosizecheck canvascheck \
              chiprowcheck themecheck areacheck; do
         run "$h" "$HARN" node "$h.mjs"
     done
