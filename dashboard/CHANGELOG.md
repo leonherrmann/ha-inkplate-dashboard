@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026.10.0
+
+Works with firmware **v2026.10.0**, which it needs for sleeping between
+updates and the new photo sizes; update the panel as well.
+
+- **Sleep between updates.** Settings → Display has "Sleep between updates":
+  off, or every 1, 2, 3, 5, 10, 15 or 30 minutes or every hour. The panel
+  deep sleeps and wakes on that schedule to collect what changed, draws it
+  once and sleeps again, which is what makes a battery last about a week.
+  Pressing a button on the panel wakes it at once and keeps it up for a
+  minute. Pushed layouts and Home Assistant buttons wait for the next wake.
+- **Clock warning.** While it is on, the setting and a clock's options in the
+  editor say the clock only moves when the panel wakes.
+- **Asleep, not offline.** A panel sleeping between updates shows as asleep,
+  with a violet dot, and its Home Assistant sensors keep their last readings.
+- **More photo album sizes** (firmware v2026.10.0): 1x1, 2x1, 2x2 (square),
+  5x2, 4x3 and 3x4.
+
 ## 2026.9.90
 
 Works with firmware **v2026.9.80** (the new battery chip); the add-on part
